@@ -51,9 +51,11 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
-    address public Moulinette; // QD windmill
-    modifier onlyMOulinette { // Modus Operandi
-        require(msg.sender == Moulinette, "42");
+    address public Moulinette; // windmill
+    modifier onlyGenerators { 
+        address sender = msg.sender;
+        require(sender == Moulinette ||
+                sender == address(this), "!");
         _;
     } // en.wiktionary.org/wiki/MOulinette 
     modifier postLaunch { // of the windmill
@@ -135,7 +137,7 @@ contract Quid is ERC20,
     }
 
     function burn(address from, uint value) public
-        onlyMOulinette { _transferHelper(from, address(0), value); 
+        onlyGenerators { _transferHelper(from, address(0), value); 
         MO(Moulinette).transferHelper(from, address(0), value); 
         // burn shouldn't affect carry.debit values of `from` or `to`
     }
@@ -266,21 +268,16 @@ contract Quid is ERC20,
     }
 
     function mint(uint amount, address pledge, 
-        address token) external onlyMOulinette 
-        returns (uint cost) { // in $
-        if (token == address(this)) { // we are minting quid...
-            _mint(pledge, amount); // not your usual.money...
-            consideration[pledge][currentBatch()] += amount;
+        address token) external onlyGenerators
+        returns (uint cost) { uint batch = currentBatch();
+        if (token == address(this)) { _mint(pledge, amount);
+            consideration[pledge][batch] += amount; // QD...
         }
         else if (blocktimestamp < START + DAYS) {
             // TODO if (token == address(this)) {
             // re-use QD to buy QD at better rate
-            uint in_days = (
-                (blocktimestamp - START) / 1 days
-            ); uint batch = currentBatch();
-            // ^^^^^^^^^^ should never be over 16
-            // because START stops getting reset in 
-            // onERC721Received when batch is 17...
+
+            uint in_days = ((blocktimestamp - START) / 1 days);
             require(amount >= DIME, "mint more QD");
             Pod memory total = Piscine[batch][43];
             Pod memory day = Piscine[batch][in_days]; 
@@ -340,18 +337,27 @@ contract Quid is ERC20,
                     && batch < 17, "hit final repeat");
             } // "like a boomerang...I need a ^^^^^^
             START = blocktimestamp; // "same level...
-            // same rebel that never settled..." ~ Logic
+            // same rebel that never settled..." Logic,
+            // so the SEC won't let me be, they tried to 
+            // shut me down on MTV...youtube.com/@QuidMint
             consideration[winner][batch] += BACKEND; // QD
             // TODO 8 lottery winners, make sure no repeats;
             // in the frontend, we do transferFrom in order
             // to receive NFT & pass in calldata for lotto
-            ICollection(F8N).transferFrom(address(this), 
-                from, LAMBO); _mint(winner, BACKEND); 
-            // MO(Moulinette).draw_stables(from, GRIEVANCES); 
+            // for (uint who=0; who < 8, who++) { winner[who]
+            //      _mint(winner, BACKEND); 
+            // }
+            ICollection(F8N).transferFrom(address(this), from, LAMBO); 
+            // uint qd = MO(Moulinette).draw(from, GRIEVANCES); 
             // half gets re-deposited to mint more QD at .50
+            // "they want their grievances aired on the assumption
+            // that all right-thinking persons would be persuaded
+            // that problems of the world can be solved," by true 
+            // dough, Pierre, not your unsual money, version mint
         } // TODO check off by one with batch
         return this.onERC721Received.selector; 
     }
+
     function restart() public { // TODO remove, Sepolia only
         if (START != 0) {
             (uint minted, uint roi) = calc_avg_return();

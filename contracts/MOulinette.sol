@@ -33,7 +33,8 @@ contract MO is Ownable {
     uint internal _ETH_PRICE; // TODO delete when finished testing
     uint24 constant POOL_FEE = 500;
     uint internal FEE = WAD / 28;
-    uint128 constant Q96 = 2**96; uint constant DIME = 10  * WAD;
+    uint128 constant Q96 = 2**96; 
+    uint constant DIME = 10  * WAD;
     uint constant public WAD = 1e18; 
     INonfungiblePositionManager NFPM;
     int24 internal LAST_TWAP_TICK;
@@ -350,7 +351,7 @@ contract MO is Ownable {
 
     // TODO uncomment when testing redeem
     /*
-    function draw_stables(address to, uint amount) 
+    function draw(address to, uint amount) 
         public { if (_msgSender() == address(QUID)) {
             to = owner();
         } else {
@@ -515,7 +516,7 @@ contract MO is Ownable {
             uint third = 3 * amount / 10; 
             // emit ThirdInRedeem(third);
             // emit QuidUSDCinRedeemBefore(pledges[address(this)].work.debit);
-            // draw_stables(_msgSender(), amount - third); // TODO uncomment !
+            // draw(_msgSender(), amount - third); // TODO uncomment !
             // convert 1/3 of amount into USDC precision...
             uint usdc = FullMath.mulDiv(1000000, third, WAD);
             // emit USDCinRedeem(usdc);
@@ -712,12 +713,12 @@ contract MO is Ownable {
     
     // "Entropy" comes from a Greek word for transformation; 
     // Clausius interpreted as the magnitude of the degree 
-    // to which molecules are separated from each other... 
-    // "so close no matter how far, rage be in it like you 
-    // couldn’t believe...or [work] like one could scarcely 
-    // imagine...if one isn’t satisfied, indulge the latter,
-    // ‘neath the halo of a street-lamp, I turn my [straddle]
-    // to the cold and damp...know when to hold 'em...know 
+    // to which Pods are separated from each other so close
+    // no matter how far, "rage be in it like you couldn’t
+    // believe," or work like I could've scarcely imagined.
+    // if one isn’t satisfied, indulge the latter, ‘neath 
+    // the halo of a street-lamp, I turn my straddle to
+    // the cold and damp..."know when to hold 'em...know 
     // when to..." 
      function fold(address beneficiary, // amount is...
         uint amount, bool sell) external { // in ETH
@@ -802,7 +803,7 @@ contract MO is Ownable {
             } 
         } // "things have gotten closer to the sun, and I've done 
         // things in small doses, so don't think that I'm pushing 
-        // you away...when you're...
+        // you away...when you're...amount the state repayment...
         if (state.liquidate && ( // the one that I've kept closest"
             QUID.blocktimestamp() - pledge.last/*.credit*/ > 1 hours)) {  
             amount = _min((100 + (100 - state.cap)) * state.repay / 100, 
@@ -825,6 +826,7 @@ contract MO is Ownable {
                     // Euler’s disk 💿 erasure code
                     pledge.work.credit -= amount; 
                     pledge.last/*.credit*/ = QUID.blocktimestamp();
+                    // pledge.last.debit = 
                 } else { // "it don't get no better than this, you catch my [dust]"
                     // otherwise we run into a vacuum leak (infinite contraction)
                     pledges[address(this)].weth.debit += pledge.work.debit;

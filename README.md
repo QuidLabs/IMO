@@ -33,8 +33,7 @@ over time, QD bridges
 30% in `capitalisastion`  
 becomes fully backed; with    
 discount windows, insurable  
-$ value in ΞTH and / or BTC  
-grows in a gradated manner,    
+growth in a gradated manner,    
 and in a manner providing  
 equal opportunity to stake.
 
@@ -53,16 +52,10 @@ Voting is incentivised by a
 small QD lotto, distributed  
 16x `onERC721Received`.  
 
-There will be a vetting  
-process for selecting   
-a pool of eligible lotto  
-recipients...must show  
-proof of `work`...both  
-ΞTH [informal](https://github.com/johnquid/RicardianTriplerDoubleTokenLeXscroW/tree/arbitration?tab=readme-ov-file#arbitration) & [formal](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L124).  
-
-Power is the work done  
-per unit of time. QuiD  
-powers an investment  
+Power is the `work` done  
+per unit of time...1 QuiD
+is `WAD` (rhymes with [Watt](),  
+chi per second) investment  
 **vehicle** for a `MO` mint:
 
 - electric ignition system (nervous system):  
@@ -71,8 +64,9 @@ powers an investment
 - `repackNFT`:  fuel management system;  
    most of the functionality is internal (send  
     wei gas to cylinders, combined with air)
-    - controlled by the electrical system, as are its sensors,  
-  observing temp. (TWAP) and air density (tick range)
+    - controlled by the electrical system,  
+  as are its sensors, observing temp.  
+  (TWAP) and air density (tick range)
 - `redeem` engine has a cooling system for absorbing liabilities
 - breaks, clutch, CDP transmission powered by hydraulic `withdraw` 
   - can't withdraw without steering (`vote`), and suspension is related:  
