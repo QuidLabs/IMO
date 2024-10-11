@@ -99,7 +99,7 @@ async function main() { // run some tests on our contracts...
     const latestBlock = await provider.getBlockNumber()
     
     const beneficiary = new ethers.Wallet(process.env.PRIVATE_KEY_1, provider)
-    const secondary = new ethers.Wallet( process.env.PRIVATE_KEY_2, provider)
+    const secondary = new ethers.Wallet(process.env.PRIVATE_KEY_2, provider)
     
     const MO = await getContract("MO", addresses.Moulinette, beneficiary)
     const MOWithSecondary = await getContract("MO", addresses.Moulinette, secondary)
@@ -173,15 +173,15 @@ async function main() { // run some tests on our contracts...
     const bill = '100000000000000000000'
     const rack = '1000000000000000000000'
     if (shouldDeploy) {
-      console.log('minting 1k USDE to', beneficiary)
+      console.log('minting 1k USDE to', beneficiary.address)
       await USDE.mint()
-      console.log('minting 1k USDE to', secondary)
+      console.log('minting 1k USDE to', secondary.address)
       await USDEwithSecondary.mint()
 
-      balance = await USDE.balanceOf(beneficiary)
+      balance = await USDE.balanceOf(beneficiary.address)
       console.log('balance beneficiary', balance)
 
-      balance = await USDE.balanceOf(secondary)
+      balance = await USDE.balanceOf(secondary.address)
       console.log('balance beneficiary', balance)
 
       console.log('approving beneficiary')
@@ -191,25 +191,25 @@ async function main() { // run some tests on our contracts...
       tx = await USDEwithSecondary.approve(addresses.Moulinette, rack)
       await tx.wait()
   
-      receipt = await USDE.allowance(beneficiary, addresses.Moulinette)
+      receipt = await USDE.allowance(beneficiary.address, addresses.Moulinette)
       console.log('allowance', receipt)
-      receipt = await USDEwithSecondary.allowance(secondary, addresses.Moulinette)
+      receipt = await USDEwithSecondary.allowance(secondary.address, addresses.Moulinette)
       console.log('allowance', receipt)
     }
     try {
-      tx = await MO.deposit(beneficiary, bill, addresses.USDe, false)
+      tx = await MO.deposit(beneficiary.address, bill, addresses.USDe, false)
       await tx.wait() 
       console.log('fastForwarding')
       tx = await QD.fast_forward(threeWeeks)
       await tx.wait() 
       
       // fastForward a bit, try deposit again
-      tx = await MOWithSecondary.deposit(secondary, bill, addresses.USDe, false)
+      tx = await MOWithSecondary.deposit(secondary.address, bill, addresses.USDe, false)
       await tx.wait() 
 
-      balance = await QD.balanceOf(beneficiary)
+      balance = await QD.balanceOf(beneficiary.address)
       console.log('balance of beneficiary', balance)
-      balance = await QD.balanceOf(secondary)
+      balance = await QD.balanceOf(secondary.address)
       console.log('balance of secondary', balance)
     }
     catch (error) {
@@ -224,13 +224,13 @@ async function main() { // run some tests on our contracts...
     // TODO transfer QD from one to the other and 
     // observe how the transferHelper and creditHelper
     // will respond
-    tx = await QDwithSecondary.transfer(beneficiary, grant)
+    tx = await QDwithSecondary.transfer(beneficiary.address, grant)
     await tx.wait()
 
-    tx = await MO.get_info(beneficiary)
+    tx = await MO.get_info(beneficiary.address)
     console.log("get_info(beneficiary):", tx.toString())
 
-    tx = await MO.get_info(secondary)
+    tx = await MO.get_info(secondary.address)
     console.log("get_info(secondary):", tx.toString())
     
     // const amountInWei = ethers.parseEther("0.01");

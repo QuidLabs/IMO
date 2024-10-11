@@ -99,7 +99,7 @@ contract MO is Ownable {
         external returns (uint, uint) {
         Offer memory pledge = pledges[who];
         return (pledge.carry.debit, QUID.balanceOf(who));
-        // we never need pledge.carry.credit in the frontend,
+        // never need pledge.carry.credit in the frontend,
         // this is more of an internal tracking variable...
     }
     function get_more_info(address who) view

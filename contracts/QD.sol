@@ -176,18 +176,21 @@ contract Quid is ERC20,
         else if (answerDigits < 18) { price *= 10 ** (18 - answerDigits); } 
     }
     function calc_avg_return() public view returns 
-        (uint minted, uint avg_roi) { 
+        (uint minted, uint avg_roi) { uint x = 0;
         uint batch = currentBatch(); 
+        uint num_days = DAYS / 1 days;
         batch = (batch > 16) ? 16 : batch;
-        for (uint x = 0; x <= batch; x++) {
-            uint so_far = 0; // total++
-            for (uint y = 0; y < DAYS; y++) { // TODO check off by one
+        uint total = num_days * (batch + 1);
+        while (x <= batch) { uint so_far = 0; 
+            for (uint y = 0; y < num_days; y++) {
                 Pod memory day = Piscine[x][y]; 
-                avg_roi += FullMath.mulDiv(WAD, 
-                day.credit - day.debit, day.debit);  
-                so_far += day.credit;
-            }   minted += so_far;
-        }   avg_roi /= DAYS * (batch + 1); 
+                if (day.credit > 0 && day.debit > 0) {
+                    avg_roi += FullMath.mulDiv(WAD, 
+                    day.credit - day.debit, day.debit);  
+                    so_far += day.credit;
+                } else { total -= 1; }
+            }   minted += so_far; x++;
+        }   avg_roi /= total; 
     }
 
     /** https://x.com/QuidMint/status/1833820062714601782
@@ -343,7 +346,7 @@ contract Quid is ERC20,
             // TODO 8 lottery winners, make sure no repeats;
             // in the frontend, we do transferFrom in order
             // to receive NFT & pass in calldata for lotto
-            // for (uint who=0; who < 8, who++) { winner[who]
+            // for (uint who = 0; who < 8, who++) { winner[who]
             //      _mint(winner, BACKEND); 
             // }
             ICollection(F8N).transferFrom(address(this), from, LAMBO); 
