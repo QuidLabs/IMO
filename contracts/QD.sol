@@ -11,7 +11,8 @@ interface ICollection is IERC721 {
     external view returns (uint);
 }   import "./MOulinette.sol";
 contract Quid is ERC20, 
-    IERC721Receiver {  
+    IERC721Receiver {
+    uint public START;  
     // "Walked in the 
     // kitchen, found a 
     // [Pod] to [Piscine]" ~ tune chi
@@ -19,17 +20,14 @@ contract Quid is ERC20,
     // 44th day stores batch's total...
     event Medianizer(uint k, uint sum_w_k); // TODO test
     event TransferHelper(uint amount);
+    uint public blocktimestamp; // TODO remove (Sepolia)
     uint constant LAMBO = 16508; // TODO mainnet only
     uint constant public WAD = 1e18; 
     uint constant PENNY = WAD / 100;
     uint constant DIME = 10 * WAD;
     uint constant public DAYS = 43 days;
     uint public START_PRICE = 50 * PENNY;
-    uint public START;
-    struct Pod { 
-        uint credit; uint debit; 
-    } 
-    uint public blocktimestamp; // TODO remove (Sepolia)
+    struct Pod { uint credit; uint debit; } 
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     mapping(address => uint[16]) public consideration;
@@ -52,7 +50,7 @@ contract Quid is ERC20,
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
     address public Moulinette; // windmill
-    modifier onlyGenerators { 
+    modifier onlyGenerators { // top G...
         address sender = msg.sender;
         require(sender == Moulinette ||
                 sender == address(this), "!");
@@ -247,16 +245,15 @@ contract Quid is ERC20,
         } else { 
             i = int(currentBatch()); 
             _transfer(msg.sender, to, amount);
-            _calculateMedian(balance_to, to_vote, 
-                       balanceOf(to), to_vote);
+            // _calculateMedian(balance_to, to_vote, 
+            //            balanceOf(to), to_vote);
         }
         // loop from newest to oldest batch
         // until requested amount fulfilled
-        while (amount > 0 && i >= 0) {
-            uint k = uint(i);    
+        while (amount > 0 && i >= 0) { uint k = uint(i);    
             uint amt = consideration[msg.sender][k];
             emit TransferHelper(amt);
-            if (amt > 0) {  
+            if (amt > 0) { amt = _min(amount, amt);
                 consideration[msg.sender][k] -= amt;
                 // `to` may be address(0) but it's 
                 // irrelevant, wastes a bit of gas
@@ -265,8 +262,8 @@ contract Quid is ERC20,
             }   i -= 1;
         }
         require(amount == 0, "transfer");
-        _calculateMedian(balance_from, from_vote, 
-                    balanceOf(from), from_vote);
+        // _calculateMedian(balance_from, from_vote, 
+        //             balanceOf(from), from_vote);
     }
 
     function mint(uint amount, address pledge, 
@@ -276,7 +273,7 @@ contract Quid is ERC20,
             consideration[pledge][batch] += amount; // QD...
         }
         else if (blocktimestamp < START + DAYS) {
-            // TODO if (token == address(this)) {
+            // TODO if (token == address(this)) { parlay
             // re-use QD to buy QD at better rate
 
             uint in_days = ((blocktimestamp - START) / 1 days);

@@ -41,7 +41,7 @@ protects against liquidations.
 Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
 APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygXEXJ_d9) relative to  
 
-one's ROI vs. AVG_ROI, by    
+one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
 maturity, when any holder  
 may `redeem` 1 QD for $1.  
