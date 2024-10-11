@@ -18,7 +18,7 @@ contract Quid is ERC20,
     Pod[44][16] Piscine; // 16 batches
     // 44th day stores batch's total...
     event Medianizer(uint k, uint sum_w_k); // TODO test
-    event TransferHelper(uint );
+    event TransferHelper(uint amount);
     uint constant LAMBO = 16508; // TODO mainnet only
     uint constant public WAD = 1e18; 
     uint constant PENNY = WAD / 100;
@@ -65,9 +65,8 @@ contract Quid is ERC20,
     function fast_forward(uint period) external { 
         // TODO remove...only for testing on Sepolia
         if (period == 0) { blocktimestamp += 360 days; } 
-        else {  blocktimestamp += 1 days * period;
-            if (period >= 43 days) { restart(); }
-        }   
+        else { blocktimestamp += 1 days * period; }   
+        if (period >= 43) { restart(); }
     } 
     
     constructor(address _mo) ERC20("QU!D", "QD") {
@@ -113,7 +112,7 @@ contract Quid is ERC20,
     }
 
     function currentBatch() public view returns (uint batch) {
-        batch = (blocktimestamp - deployed) / (DAYS);
+        batch = (blocktimestamp - deployed) / DAYS;
         // for last 8 batches to be redeemable, batch reaches 24
         require(batch < 24, "42"); 
     }

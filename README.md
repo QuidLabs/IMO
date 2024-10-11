@@ -31,11 +31,9 @@ coverage (not upfront)
 over time, QD bridges   
 
 30% in `capitalisastion`  
-becomes fully backed; with    
-discount windows, insurable  
-growth in a gradated manner,    
-and in a manner providing  
-equal opportunity to stake.
+to become fully backed with    
+discount windows: insurable  
+growth in a gradated manner.
 
 Levering long while buying  
 insurance (at the same time)  
@@ -43,7 +41,7 @@ protects against liquidations.
 Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
 APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygXEXJ_d9) relative to  
 
-one's ROI versus avg. ROI,    
+one's ROI vs. AVG_ROI, by    
 absorbing liabilties upon  
 maturity, when any holder  
 may `redeem` 1 QD for $1.  
