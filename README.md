@@ -18,7 +18,7 @@ the receivables are collateral
 for future cash flow from ΞTH  
 getting deployed into UniV3,  
 
-fees retained to capitalise QD...  
+fees retained to capitalise QD,  
 as well as sUSDe yield (Morpho  
 boosted), **gradated** liquidations  
 from longs, and deductibles of
@@ -53,10 +53,10 @@ small QD lotto, distributed
 16x `onERC721Received`.  
 
 Power is the `work` done  
-per unit of time...1 QuiD
-is `WAD` (rhymes with [Watt](),  
-chi per second) investment  
-**vehicle** for a `MO` mint:
+per unit of time: 1 QuiD  
+= `WAD` (similar to watt,  
+chi per sec.) investment  
+**vehicle** for a `MO` mint...
 
 - electric ignition system (nervous system):  
   `deposit` ΞTH if nervous about its price,  
