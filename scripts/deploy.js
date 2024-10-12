@@ -118,9 +118,9 @@ async function main() { // run some tests on our contracts...
     const filterMO = { address: addresses.Moulinette, 
         fromBlock: fromBlock, toBlock: toBlock 
     };
-    const filterQD = { address: addresses.Quid, 
-      fromBlock: fromBlock, toBlock: toBlock 
-    };
+    // const filterQD = { address: addresses.Quid, 
+    //   fromBlock: fromBlock, toBlock: toBlock 
+    // };
     // Query logs based on the filter
     const logsMO = await provider.getLogs(filterMO)
     logsMO.forEach((log) => {
@@ -129,7 +129,7 @@ async function main() { // run some tests on our contracts...
           const parsedLog = MO.interface.parseLog(log)
           // Custom handling of BigInt serialization
           const argsWithBigIntConverted = JSON.stringify(parsedLog.args, (key, value) =>
-              value.toString()
+            typeof value === 'bigint' ? value.toString() : value
           )
           console.log(`Event: ${parsedLog.name}`)
           console.log(`Args: ${argsWithBigIntConverted}`)
@@ -148,25 +148,25 @@ async function main() { // run some tests on our contracts...
     //     fromBlock: fromBlock, toBlock: toBlock 
     // };
     // // Query logs based on the filter
-    const logsQD = await provider.getLogs(filterQD)
-    // TODO test medianiser
-    logsQD.forEach((log) => {
-        try {
-            // Decode the log using the contract's interface
-            const parsedLog = QD.interface.parseLog(log)
-            // Custom handling of BigInt serialization
-            const argsWithBigIntConverted = JSON.stringify(parsedLog.args, (key, value) =>
-                value.toString()
-            );
-            console.log(`Event: ${parsedLog.name}`)
-            console.log(`Args: ${argsWithBigIntConverted}`)
-        } catch (error) {
-            console.error("Error decoding log:", error)
-        }
-        console.log(`Block Number: ${log.blockNumber}`)
-        console.log(`Transaction Hash: ${log.transactionHash}`)
-        console.log('----------------------------------------')
-    })
+    // const logsQD = await provider.getLogs(filterQD)
+    // // TODO test medianiser
+    // logsQD.forEach((log) => {
+    //     try {
+    //         // Decode the log using the contract's interface
+    //         const parsedLog = QD.interface.parseLog(log)
+    //         // Custom handling of BigInt serialization
+    //         const argsWithBigIntConverted = JSON.stringify(parsedLog.args, (key, value) =>
+    //           typeof value === 'bigint' ? value.toString() : value
+    //         );
+    //         console.log(`Event: ${parsedLog.name}`)
+    //         console.log(`Args: ${argsWithBigIntConverted}`)
+    //     } catch (error) {
+    //         console.error("Error decoding log:", error)
+    //     }
+    //     console.log(`Block Number: ${log.blockNumber}`)
+    //     console.log(`Transaction Hash: ${log.transactionHash}`)
+    //     console.log('----------------------------------------')
+    // })
     var balance
     var tx; var receipt
     const threeWeeks = '22' // in seconds
@@ -252,10 +252,10 @@ async function main() { // run some tests on our contracts...
     // we have insurance capital (USDe), 
     // we can actually insure some ETH
     try {
-      tx = await MO.deposit(beneficiary, 0, WETH, false, {
+      tx = await MO.deposit(beneficiary, 0, WETH, false,  {
         value: amountInWei // Attach Ether to transaction
         //gasLimit 
-      });
+      })
       await tx.wait()
     } catch (error) {
         console.error("Error in ETH deposit:", error)

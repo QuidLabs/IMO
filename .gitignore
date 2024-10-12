@@ -1,15 +1,17 @@
 .DS_Store
+.vscode
+.idea
+.env
+//
+/artifacts
 /node_modules
 /typechain
 /cache
-/artifacts
-.env
-
+/out
+//
+/frontend/node_modules
+/frontend/build
 # solidity-coverage files
 /coverage
 /coverage.json
 package-lock.json
-
-/frontend/node_modules
-
-/frontend/build

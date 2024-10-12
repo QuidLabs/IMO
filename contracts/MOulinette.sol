@@ -123,6 +123,7 @@ contract MO is Ownable {
     } /* for QD, credit = contribution to weighted
     ...SUM of (QD / total QD) x (ROI / avg ROI) */
     uint public SUM = 1; uint public AVG_ROI = 1; 
+    uint public liquidityUnderManagement; // UniV3...
     // formal contracts require a specific method of 
     // formation to be enforaceable; one example is
     // negotiable instruments like promissory notes 
@@ -491,17 +492,17 @@ contract MO is Ownable {
         );  // if not all the mature QD is
         if (WAD > share) { // being redeemed
             absorb = FullMath.mulDiv(absorb, share, WAD);
-        }   // emit AbsorbInRedeem(absorb);
+        } // emit AbsorbInRedeem(absorb);
         QUID.burn(_msgSender(), amount); 
         max = amount; // convert amount
         // from QD to value in dollars...
         amount = amount * capitalisation(amount, true) / 100;
-         // we preserve over-capitalisation
+        // we preserve over-capitalisation
         if (amount > max) { amount = max; }
         // should almost always evaluate true
         if (amount > absorb) { amount -= absorb; 
-            // remainder is the $ value released 
-            // after taking into account P&L...
+            // remainder is $ value released 
+            // after taking into account P&L
             uint third = 3 * amount / 10; 
             // emit ThirdInRedeem(third);
             // emit QuidUSDCinRedeemBefore(pledges[address(this)].work.debit);
@@ -524,7 +525,8 @@ contract MO is Ownable {
             uint128 liquidity1 = LiquidityAmounts.getLiquidityForAmount1(
                 sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, amount
             );
-            uint128 liquidity = _max(liquidity0, liquidity1);
+            uint128 liquidity = _max(liquidity0, liquidity1); // TODO update
+            // require(liquidity < liquidityUnderManagement, "overflow NFT");
             (uint amount0, uint amount1) = _withdrawAndCollect(liquidity);
             if (amount1 >= amount) { 
                 TransferHelper.safeTransfer(WETH, 
@@ -553,14 +555,14 @@ contract MO is Ownable {
     // quid says if amount is QD...
     // ETH can only be withdrawn from
     // pledge.work.debit; if ETH was 
-    // deposited into pledge.weth.debit,
-    // first call fold() before withdraw()
+    // deposited pledge.weth.debit,
+    // call fold() before withdraw()
     function withdraw(uint amount, 
         bool quid) external payable {
         uint amount0; uint amount1; 
         uint price = _getPrice();
         Offer memory pledge = pledges[_msgSender()];
-        if (quid) { // amount is in units of QD
+        if (quid) { // amount is in units of QD...
             require(amount >= DIME, "too small");
             if (msg.value > 0) { amount0 = msg.value;
                 IWETH(WETH).deposit{value: amount0}();
@@ -568,23 +570,14 @@ contract MO is Ownable {
                 amount0; pledge.work.debit += amount0;
             }   uint debit = FullMath.mulDiv(price, 
                              pledge.work.debit, WAD
-            ); uint buffered = debit - debit / 5;
-            uint credit = FullMath.mulDiv(capitalisation(amount, false), 
-            amount, 100);  require(buffered >= pledge.work.credit, "CR");
-            credit = _min(credit, buffered - pledge.work.credit);
-            amount = (100 + (100 - capitalisation(0, false))) * 
-            credit / 100; QUID.mint(amount, _msgSender(), 
-            address(QUID)); pledge.work.credit += credit;
-            // take a batch out of withdrawable
-            // consideration swap for ETH TODO
-            // if we had more space (not 2.4
-            // limited by 24kb bytecode)
-            // would automatically pull 
-            // from pledge.weth.debit...
-            // alas, depositor must first
-            // call fold(), if need be,
-            // prior to doing withdraw()...
-        } else { uint withdrawable; // ETH
+            );  uint buffered = debit - (debit / 5);
+            require(buffered >= pledge.work.credit, "CR");
+            amount = _min(amount, buffered - pledge.work.credit);
+            pledge.work.credit += amount; amount = (100 + (100 - 
+                capitalisation(0, false))) * amount / 100; 
+                QUID.mint(amount, _msgSender(), address(QUID)); 
+        } else { 
+            uint withdrawable; // ETH...
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
                     pledge.work.debit, WAD
@@ -617,11 +610,11 @@ contract MO is Ownable {
             if (amount1 >= transfer) { 
                 // address(this) balance should be >= amount1
                 TransferHelper.safeTransfer(
-                    WETH, _msgSender(), transfer
-                );
+                    WETH, _msgSender(), transfer);
                              amount1 -= transfer;
-            }     _repackNFT(amount0, amount1);
-        }   pledges[_msgSender()] = pledge;
+            }     
+        } pledges[_msgSender()] = pledge;
+        _repackNFT(amount0, amount1);
     }
 
     // allowing deposits on behalf of a benecifiary

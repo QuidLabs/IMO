@@ -19,7 +19,7 @@ contract Quid is ERC20,
     Pod[44][16] Piscine; // 16 batches
     // 44th day stores batch's total...
     event Medianizer(uint k, uint sum_w_k); // TODO test
-    event TransferHelper(uint amount);
+    // event TransferHelper(uint amount);
     uint public blocktimestamp; // TODO remove (Sepolia)
     uint constant LAMBO = 16508; // TODO mainnet only
     uint constant public WAD = 1e18; 
@@ -233,7 +233,7 @@ contract Quid is ERC20,
         uint balance_to = balanceOf(to); 
         uint from_vote = feeVotes[from];
         uint to_vote = feeVotes[to];
-
+        
         amount = _min(amount, balanceOf(from));
         require(amount > WAD, "insufficient QD"); 
         int i; // must be int otherwise tx reverts
@@ -247,12 +247,11 @@ contract Quid is ERC20,
             _transfer(msg.sender, to, amount);
             // _calculateMedian(balance_to, to_vote, 
             //            balanceOf(to), to_vote);
-        }
-        // loop from newest to oldest batch
-        // until requested amount fulfilled
+        }   // loop from newest to oldest batch
+        // until requested amount fulfilled...
         while (amount > 0 && i >= 0) { uint k = uint(i);    
             uint amt = consideration[msg.sender][k];
-            emit TransferHelper(amt);
+            // emit TransferHelper(amt);
             if (amt > 0) { amt = _min(amount, amt);
                 consideration[msg.sender][k] -= amt;
                 // `to` may be address(0) but it's 
@@ -260,8 +259,7 @@ contract Quid is ERC20,
                 consideration[to][k] += amt; 
                 amount -= amt;
             }   i -= 1;
-        }
-        require(amount == 0, "transfer");
+        }   require(amount == 0, "transfer");
         // _calculateMedian(balance_from, from_vote, 
         //             balanceOf(from), from_vote);
     }
@@ -271,11 +269,9 @@ contract Quid is ERC20,
         returns (uint cost) { uint batch = currentBatch();
         if (token == address(this)) { _mint(pledge, amount);
             consideration[pledge][batch] += amount; // QD...
-        }
-        else if (blocktimestamp < START + DAYS) {
+            }   else if (blocktimestamp < START + DAYS) {
             // TODO if (token == address(this)) { parlay
             // re-use QD to buy QD at better rate
-
             uint in_days = ((blocktimestamp - START) / 1 days);
             require(amount >= DIME, "mint more QD");
             Pod memory total = Piscine[batch][43];
@@ -288,9 +284,8 @@ contract Quid is ERC20,
             uint price = in_days * PENNY + START_PRICE;
             cost = _minAmount(pledge, token, // USDe
                 FullMath.mulDiv(price, amount, WAD)
-            );
+            ); // _minAmount returns less than expected
             // we calculate amount twice because maybe
-            // _minAmount returns less than expected...
             amount = FullMath.mulDiv(WAD, cost, price); 
             consideration[pledge][batch] += amount;
             _mint(pledge, amount); // totalSupply++
@@ -353,7 +348,7 @@ contract Quid is ERC20,
             // that all right-thinking persons would be persuaded
             // that problems of the world can be solved," by true 
             // dough, Pierre, not your unsual money, version mint
-        } // TODO check off by one with batch
+        } // TODO check off by one with batcha
         return this.onERC721Received.selector; 
     }
 
