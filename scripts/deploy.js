@@ -115,11 +115,14 @@ async function main() { // run some tests on our contracts...
     const fromBlock = latestBlock - 1000
     const toBlock = latestBlock
     // Create a filter to get all logs emitted
-    var filter = { address: addresses.Moulinette, 
+    const filterMO = { address: addresses.Moulinette, 
         fromBlock: fromBlock, toBlock: toBlock 
     };
+    const filterQD = { address: addresses.Quid, 
+      fromBlock: fromBlock, toBlock: toBlock 
+    };
     // Query logs based on the filter
-    const logsMO = await provider.getLogs(filter)
+    const logsMO = await provider.getLogs(filterMO)
     logsMO.forEach((log) => {
       try {
           // Decode the log using the contract's interface
@@ -145,7 +148,7 @@ async function main() { // run some tests on our contracts...
     //     fromBlock: fromBlock, toBlock: toBlock 
     // };
     // // Query logs based on the filter
-    const logsQD = await provider.getLogs(filter)
+    const logsQD = await provider.getLogs(filterQD)
     // TODO test medianiser
     logsQD.forEach((log) => {
         try {
@@ -240,72 +243,72 @@ async function main() { // run some tests on our contracts...
     tx = await MO.get_info(secondary.address)
     console.log("get_info(secondary):", tx.toString())
     
-    // const amountInWei = ethers.parseEther("0.01");
-    // const largeAmountInWei = ethers.parseEther("0.1");
-    // const WETH = '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14';
-    // var myETH = await provider.getBalance(beneficiary) 
-    // var before = new BN(myETH.toString())
-    // console.log('myETH before deposit', before.toString())
-    // // now that we have insurance capital (USDe), we can 
-    // // actually insure some ETH (up to $265 worth)
-    // //const gasLimit = 5_000_000; // High gas limit
+    const amountInWei = ethers.parseEther("0.01");
+    const largeAmountInWei = ethers.parseEther("0.1");
+    const WETH = '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14';
+    var myETH = await provider.getBalance(beneficiary) 
+    var before = new BN(myETH.toString())
+    console.log('myETH before deposit', before.toString())
+    // now that we have insurance capital (USDe), we can 
+    // actually insure some ETH (up to $265 worth)
+    //const gasLimit = 5_000_000; // High gas limit
 
-    // try {
-    //   tx = await MO.deposit(beneficiary, 0, WETH, false, {
-    //     value: amountInWei // Attach Ether to transaction
-    //     //gasLimit 
-    //   });
-    //   await tx.wait()
-    // } catch (error) {
-    //     console.error("Error in ETH deposit:", error)
-    // }
+    try {
+      tx = await MO.deposit(beneficiary, 0, WETH, false, {
+        value: amountInWei // Attach Ether to transaction
+        //gasLimit 
+      });
+      await tx.wait()
+    } catch (error) {
+        console.error("Error in ETH deposit:", error)
+    }
     
-    // tx = await MO.get_more_info(addresses.Moulinette)
-    // console.log("get_more_info(MO):", tx.toString());
+    tx = await MO.get_more_info(addresses.Moulinette)
+    console.log("get_more_info(MO):", tx.toString());
     
-    // myETH = await provider.getBalance(beneficiary) // TODO print before and after
-    // console.log('myETH after deposit', myETH)
-    // myETH =  new BN(myETH.toString())
-    // var difference = before.sub(myETH)
-    // console.log('difference', difference.toString())
+    myETH = await provider.getBalance(beneficiary) // TODO print before and after
+    console.log('myETH after deposit', myETH)
+    myETH =  new BN(myETH.toString())
+    var difference = before.sub(myETH)
+    console.log('difference', difference.toString())
 
-    // tx = await MO.get_more_info(beneficiary)
-    // console.log("get_more_info(beneficiary):", tx.toString());
+    tx = await MO.get_more_info(beneficiary)
+    console.log("get_more_info(beneficiary):", tx.toString());
 
-    // var cap = await MO.capitalisation(0, false)
-    // console.log('capitalisation...', cap.toString())
+    var cap = await MO.capitalisation(0, false)
+    console.log('capitalisation...', cap.toString())
     
-    // try {
-    //   tx = await MO.withdraw(bill, true, {
-    //     value: largeAmountInWei
-    //   })
-    //   await tx.wait()
-    // } catch (error) {
-    //   console.error("Error in withdraw:", error)
-    // }
+    try {
+      tx = await MO.withdraw(bill, true, {
+        value: largeAmountInWei
+      })
+      await tx.wait()
+    } catch (error) {
+      console.error("Error in withdraw:", error)
+    }
    
     // simulate a price drop, so that we can claim 
-    // tx = await MO.set_price_eth(false, false) 
-    // await tx.wait()
+    tx = await MO.set_price_eth(false, false) 
+    await tx.wait()
 
-    // console.log("calling fold")
-    // // simulate a price drop, so that we can claim 
-    // tx = await MO.fold(beneficiary, amountInWei, false) 
-    // await tx.wait() // this seems to work!
+    console.log("calling fold")
+    // simulate a price drop, so that we can claim 
+    tx = await MO.fold(beneficiary, amountInWei, false) 
+    await tx.wait() // this seems to work!
  
     // try fold with sell
     // // simulate a price drop, so that we can claim 
     // tx = await MO.fold(beneficiary, amountInWei, true) 
     // await tx.wait() // this seems to work    
 
-    // tx = await MO.get_more_info(beneficiary)
-    // console.log("get_more_info() of beneficiary:", tx.toString());
+    tx = await MO.get_more_info(beneficiary)
+    console.log("get_more_info() of beneficiary:", tx.toString());
 
-    // tx = await MO.get_more_info(addresses.Moulinette)
-    // console.log("get_more_info() of MO:", tx.toString());
+    tx = await MO.get_more_info(addresses.Moulinette)
+    console.log("get_more_info() of MO:", tx.toString());
 
-    // balance = await QD.balanceOf(beneficiary)
-    // console.log('balance QD...', balance)
+    balance = await QD.balanceOf(beneficiary)
+    console.log('balance QD...', balance)
 
     // TODO final
     // before we redeem, add another user,
