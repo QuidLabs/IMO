@@ -145,25 +145,25 @@ async function main() { // run some tests on our contracts...
     //     fromBlock: fromBlock, toBlock: toBlock 
     // };
     // // Query logs based on the filter
-    // const logsQD = await provider.getLogs(filter);
-    // // TODO test medianiser
-    // logsQD.forEach((log) => {
-    //     try {
-    //         // Decode the log using the contract's interface
-    //         const parsedLog = QD.interface.parseLog(log);
-    //         // Custom handling of BigInt serialization
-    //         const argsWithBigIntConverted = JSON.stringify(parsedLog.args, (key, value) =>
-    //             value.toString()
-    //         );
-    //         console.log(`Event: ${parsedLog.name}`);
-    //         console.log(`Args: ${argsWithBigIntConverted}`);
-    //     } catch (error) {
-    //         console.error("Error decoding log:", error);
-    //     }
-    //     console.log(`Block Number: ${log.blockNumber}`);
-    //     console.log(`Transaction Hash: ${log.transactionHash}`);
-    //     console.log('----------------------------------------');
-    // });
+    const logsQD = await provider.getLogs(filter)
+    // TODO test medianiser
+    logsQD.forEach((log) => {
+        try {
+            // Decode the log using the contract's interface
+            const parsedLog = QD.interface.parseLog(log)
+            // Custom handling of BigInt serialization
+            const argsWithBigIntConverted = JSON.stringify(parsedLog.args, (key, value) =>
+                value.toString()
+            );
+            console.log(`Event: ${parsedLog.name}`)
+            console.log(`Args: ${argsWithBigIntConverted}`)
+        } catch (error) {
+            console.error("Error decoding log:", error)
+        }
+        console.log(`Block Number: ${log.blockNumber}`)
+        console.log(`Transaction Hash: ${log.transactionHash}`)
+        console.log('----------------------------------------')
+    })
     var balance
     var tx; var receipt
     const threeWeeks = '22' // in seconds
@@ -217,10 +217,17 @@ async function main() { // run some tests on our contracts...
     }
     balance = await sUSDE.balanceOf(addresses.Moulinette)
     console.log('sUSDe balance MO after', balance)
+
+    tx = await MO.get_info(beneficiary.address)
+    console.log("get_info(beneficiary):", tx.toString())
+
+    tx = await MO.get_info(secondary.address)
+    console.log("get_info(secondary):", tx.toString())
     
     tx = await QD.fast_forward(sixWeeks)
     await tx.wait() 
 
+    console.log('doing transfer from secondary to beneficiary')
     // TODO transfer QD from one to the other and 
     // observe how the transferHelper and creditHelper
     // will respond

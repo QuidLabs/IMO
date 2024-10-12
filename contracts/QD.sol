@@ -140,15 +140,15 @@ contract Quid is ERC20,
     }
     function transfer(address to, uint value) 
         public override(ERC20) returns (bool) {
-        _transferHelper(msg.sender, to, value); 
         MO(Moulinette).transferHelper(msg.sender, 
-            to, value);  return true;      
+            to, value); _transferHelper(msg.sender, 
+            to, value); return true;      
     }
     function transferFrom(address from, address to, uint value) 
         public override(ERC20) returns (bool) {
         _spendAllowance(from, msg.sender, value);
-        _transferHelper(from, to, value); 
         MO(Moulinette).transferHelper(from, 
+            to, value); _transferHelper(from, 
             to, value); return true;
     }
     

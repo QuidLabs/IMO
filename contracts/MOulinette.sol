@@ -63,9 +63,10 @@ contract MO is Ownable {
         bool sell0;
     }   Quid QUID;
     // TODO test...
-    event CreditHelperShare(uint share); 
-    event CreditHelperROI(uint roi);
-    event CreditHelper(uint credit);
+    event CreditHelperShare(uint share, address who); 
+    event CreditHelperROI(uint roi, address who);
+    event CreditHelper(uint credit, address who);
+    event TransferHelperEvent(uint ratio);
     // event DebitTransferHelper(uint debit);
     // event WithdrawingETH(uint amount, uint amount0, uint ammount1);
     
@@ -199,24 +200,20 @@ contract MO is Ownable {
         // earned from deductibles and Uniswap fees
         Offer memory pledge = pledges[address(this)];
         uint collateral = FullMath.mulDiv(price,
-            pledge.work.credit, WAD
+            pledge.work.credit, WAD // in $
         );
         uint deductibles = FullMath.mulDiv(price,
-            pledge.weth.debit, WAD
+            pledge.weth.debit, WAD // in $
         ); // composition of insurance capital:
         uint assets = collateral + deductibles + 
+            // USDC + sUSDe (not incl yield)
             pledge.work.debit + pledge.carry.debit;
-             // sUSDe (not including stake yield)
         // doesn't account for pledge.weth.credit,
         // which are liabilities (that are insured)
-        if (burn) {
-            return FullMath.mulDiv(100, assets, 
-                QUID.totalSupply() - qd); 
-        } else {
-            return FullMath.mulDiv(100, assets, 
-                QUID.totalSupply() + qd); 
-        }
-    }
+        uint total = QUID.totalSupply(); 
+        total = (burn) ? total - qd : total + qd;
+        return FullMath.mulDiv(100, assets, total); 
+    } // TODO compound sUSDe and sDAI fees?
 
     function transferHelper(address from, 
         address to, uint amount) onlyQuid public {
@@ -228,6 +225,7 @@ contract MO is Ownable {
                 // transferred for ROI pro rata
                 uint ratio = FullMath.mulDiv(WAD, 
                     amount, QUID.balanceOf(from));
+                emit TransferHelperEvent(ratio);
                 // proportionally transfer debit...
                 uint debit = FullMath.mulDiv(ratio, 
                 pledges[from].carry.debit, WAD);
@@ -254,7 +252,7 @@ contract MO is Ownable {
             uint debit = pledges[who].carry.debit;
             uint share = FullMath.mulDiv(WAD, 
                 balance, QUID.totalSupply());
-            emit CreditHelperShare(share);
+            emit CreditHelperShare(share, who);
             credit = share;
             if (debit > 0) { // share is product
                 // projected ROI if QD is $1...
@@ -264,14 +262,14 @@ contract MO is Ownable {
                 // calculate individual ROI over total 
                 roi = FullMath.mulDiv(WAD, roi, AVG_ROI);
                 credit = FullMath.mulDiv(roi, share, WAD);
-                emit CreditHelperROI(roi);
+                emit CreditHelperROI(roi, who);
                 // credit is the product (composite) of 
                 // two separate share (ratio) quantities 
                 // and the sum of products is what we use
                 // in determining pro rata in redeem()...
             }   pledges[who].carry.credit = credit;
             SUM += credit; // update sum with new share
-            emit CreditHelper(credit);
+            emit CreditHelper(credit, who);
         }
     }
 
@@ -803,7 +801,7 @@ contract MO is Ownable {
             } 
         } // "things have gotten closer to the sun, and I've done 
         // things in small doses, so don't think that I'm pushing 
-        // you away...when you're...amount the state repayment...
+        // you away...when you're...amount: the state repayment...
         if (state.liquidate && ( // the one that I've kept closest"
             QUID.blocktimestamp() - pledge.last/*.credit*/ > 1 hours)) {  
             amount = _min((100 + (100 - state.cap)) * state.repay / 100, 
@@ -837,7 +835,7 @@ contract MO is Ownable {
             }
         }   pledges[beneficiary] = pledge;
     }
-    // fold(...) doesn't do _repackNFT, only withdraw or deposit;
+    // fold(...) doesn't _repackNFT...only withdraw or deposit;
     // "to improve is to change, to perfect is to change often,"
     // we want to make sure that all of the WETH deposited to 
     // this contract is always in range (collecting), since 

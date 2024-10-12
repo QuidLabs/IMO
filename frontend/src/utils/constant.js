@@ -1,9 +1,9 @@
 
 // TODO replace address
-export const addressQD = '0x99601270bb5a91196f9a20d25B358054e7a5003A';
-export const addressMO = '0x4088eD561B8a174A7bc3Af7763c89A0E3516BD31'
-export const addressUSDE = '0xf9890FE114B0E17134144Cf5331ECCc07e311C5a';
-export const addressSUSDE = '0x7E4670E878BF7853Ad7Cad82E0C90207D342a8B9';
+export const addressQD = '0x93d16f846fF104CA4389CAA6504b817172d87F43';
+export const addressMO = '0x8F54ba0EAe15Ee0Bf016338cF09543Be33e65DB8'
+export const addressUSDE = '0x272fd00E4F25C75F1BF111E285A1e045dC06Ad08';
+export const addressSUSDE = '0x2Dea469F85ccD6866Ec046c42e924cF405E05DC6';
 
 export const QUID = [{
   "inputs": [
@@ -83,6 +83,19 @@ export const QUID = [{
     }
   ],
   "name": "Transfer",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount",
+      "type": "uint256"
+    }
+  ],
+  "name": "TransferHelper",
   "type": "event"
 },
 {
@@ -401,9 +414,9 @@ export const QUID = [{
 {
   "inputs": [
     {
-      "internalType": "bool",
-      "name": "year",
-      "type": "bool"
+      "internalType": "uint256",
+      "name": "period",
+      "type": "uint256"
     }
   ],
   "name": "fast_forward",
@@ -766,7 +779,7 @@ export const QUID = [{
   "type": "function"
 }];
 
-export const MO = [  {
+export const MO = [{
   "inputs": [
     {
       "internalType": "address",
@@ -788,11 +801,17 @@ export const MO = [  {
     {
       "indexed": false,
       "internalType": "uint256",
-      "name": "deductible",
+      "name": "credit",
       "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "address",
+      "name": "who",
+      "type": "address"
     }
   ],
-  "name": "DepositDeductibleInDollars",
+  "name": "CreditHelper",
   "type": "event"
 },
 {
@@ -801,11 +820,17 @@ export const MO = [  {
     {
       "indexed": false,
       "internalType": "uint256",
-      "name": "deductible",
+      "name": "roi",
       "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "address",
+      "name": "who",
+      "type": "address"
     }
   ],
-  "name": "DepositDeductibleInETH",
+  "name": "CreditHelperROI",
   "type": "event"
 },
 {
@@ -814,24 +839,17 @@ export const MO = [  {
     {
       "indexed": false,
       "internalType": "uint256",
-      "name": "in_dollars",
+      "name": "share",
       "type": "uint256"
-    }
-  ],
-  "name": "DepositInDollars",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
+    },
     {
       "indexed": false,
-      "internalType": "uint256",
-      "name": "insured",
-      "type": "uint256"
+      "internalType": "address",
+      "name": "who",
+      "type": "address"
     }
   ],
-  "name": "DepositInsured",
+  "name": "CreditHelperShare",
   "type": "event"
 },
 {
@@ -858,119 +876,12 @@ export const MO = [  {
   "inputs": [
     {
       "indexed": false,
-      "internalType": "int24",
-      "name": "upper",
-      "type": "int24"
-    },
-    {
-      "indexed": false,
-      "internalType": "int24",
-      "name": "lower",
-      "type": "int24"
-    },
-    {
-      "indexed": false,
       "internalType": "uint256",
-      "name": "amount0",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount1",
+      "name": "ratio",
       "type": "uint256"
     }
   ],
-  "name": "RepackMintingNFT",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount0",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount1",
-      "type": "uint256"
-    }
-  ],
-  "name": "RepackNFTamountsAfterCollect",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount0",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount1",
-      "type": "uint256"
-    }
-  ],
-  "name": "RepackNFTamountsAfterCollectInBurn",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount0",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount1",
-      "type": "uint256"
-    }
-  ],
-  "name": "RepackNFTamountsAfterSwap",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount0",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount1",
-      "type": "uint256"
-    }
-  ],
-  "name": "RepackNFTamountsBefore",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "int24",
-      "name": "twap",
-      "type": "int24"
-    }
-  ],
-  "name": "RepackNFTtwap",
+  "name": "TransferHelperEvent",
   "type": "event"
 },
 {
@@ -1002,19 +913,6 @@ export const MO = [  {
 {
   "inputs": [],
   "name": "MINTED",
-  "outputs": [
-    {
-      "internalType": "uint256",
-      "name": "",
-      "type": "uint256"
-    }
-  ],
-  "stateMutability": "view",
-  "type": "function"
-},
-{
-  "inputs": [],
-  "name": "MIN_CR",
   "outputs": [
     {
       "internalType": "uint256",
@@ -1120,11 +1018,11 @@ export const MO = [  {
   "outputs": [
     {
       "internalType": "uint256",
-      "name": "ratio",
+      "name": "",
       "type": "uint256"
     }
   ],
-  "stateMutability": "nonpayable",
+  "stateMutability": "view",
   "type": "function"
 },
 {
@@ -1233,7 +1131,7 @@ export const MO = [  {
       "type": "uint256"
     }
   ],
-  "stateMutability": "nonpayable",
+  "stateMutability": "view",
   "type": "function"
 },
 {
