@@ -175,7 +175,8 @@ async function main() { // run some tests on our contracts...
     const grant = '50000000000000000000'
     const bill = '100000000000000000000'
     const rack = '1000000000000000000000'
-    if (shouldDeploy) {
+    const rock = '500000000000000000000'
+    if (shouldDeploy) { 
       console.log('minting 1k USDE to', beneficiary.address)
       await USDE.mint()
       console.log('minting 1k USDE to', secondary.address)
@@ -227,32 +228,29 @@ async function main() { // run some tests on our contracts...
     tx = await MO.get_info(secondary.address)
     console.log("get_info(secondary):", tx.toString())
     
-    tx = await QD.fast_forward(sixWeeks)
-    await tx.wait() 
+    // THIS commented out piece seems to work properly
+    // tx = await QD.fast_forward(sixWeeks)
+    // await tx.wait() 
 
-    console.log('doing transfer from secondary to beneficiary')
-    // TODO transfer QD from one to the other and 
-    // observe how the transferHelper and creditHelper
-    // will respond
-    tx = await QDwithSecondary.transfer(beneficiary.address, grant)
-    await tx.wait()
-
-    tx = await MO.get_info(beneficiary.address)
-    console.log("get_info(beneficiary):", tx.toString())
-
-    tx = await MO.get_info(secondary.address)
-    console.log("get_info(secondary):", tx.toString())
+    // console.log('doing transfer from secondary to beneficiary')
     
-    const amountInWei = ethers.parseEther("0.01");
-    const largeAmountInWei = ethers.parseEther("0.1");
+    // tx = await QDwithSecondary.transfer(beneficiary.address, grant)
+    // await tx.wait()
+
+    // tx = await MO.get_info(beneficiary.address)
+    // console.log("get_info(beneficiary):", tx.toString())
+
+    // tx = await MO.get_info(secondary.address)
+    // console.log("get_info(secondary):", tx.toString())
+    
+    const amountInWei = ethers.parseEther("0.01"); // 
+    const largeAmountInWei = ethers.parseEther("0.1"); // 245.7
     const WETH = '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14';
     var myETH = await provider.getBalance(beneficiary) 
     var before = new BN(myETH.toString())
     console.log('myETH before deposit', before.toString())
-    // now that we have insurance capital (USDe), we can 
-    // actually insure some ETH (up to $265 worth)
-    //const gasLimit = 5_000_000; // High gas limit
-
+    // we have insurance capital (USDe), 
+    // we can actually insure some ETH
     try {
       tx = await MO.deposit(beneficiary, 0, WETH, false, {
         value: amountInWei // Attach Ether to transaction
@@ -262,7 +260,6 @@ async function main() { // run some tests on our contracts...
     } catch (error) {
         console.error("Error in ETH deposit:", error)
     }
-    
     tx = await MO.get_more_info(addresses.Moulinette)
     console.log("get_more_info(MO):", tx.toString());
     
@@ -272,21 +269,24 @@ async function main() { // run some tests on our contracts...
     var difference = before.sub(myETH)
     console.log('difference', difference.toString())
 
-    tx = await MO.get_more_info(beneficiary)
-    console.log("get_more_info(beneficiary):", tx.toString());
-
     var cap = await MO.capitalisation(0, false)
     console.log('capitalisation...', cap.toString())
     
     try {
       tx = await MO.withdraw(bill, true, {
-        value: largeAmountInWei
+        value: largeAmountInWei // 245
+      })
+      await tx.wait()
+      tx = await MO.withdraw(bill, true, {
+        value: largeAmountInWei // 245
       })
       await tx.wait()
     } catch (error) {
       console.error("Error in withdraw:", error)
     }
-   
+    tx = await MO.get_more_info(beneficiary)
+    console.log("get_more_info(beneficiary):", tx.toString());
+    
     // simulate a price drop, so that we can claim 
     tx = await MO.set_price_eth(false, false) 
     await tx.wait()
@@ -302,10 +302,16 @@ async function main() { // run some tests on our contracts...
     // await tx.wait() // this seems to work    
 
     tx = await MO.get_more_info(beneficiary)
-    console.log("get_more_info() of beneficiary:", tx.toString());
+    console.log("get_more_info(beneficiary)", tx.toString());
+    
+    tx = await MO.get_info(beneficiary)
+    console.log("get_info(beneficiary):", tx.toString());
 
     tx = await MO.get_more_info(addresses.Moulinette)
-    console.log("get_more_info() of MO:", tx.toString());
+    console.log("get_more_info(MO) of MO:", tx.toString());
+
+    tx = await MO.get_info(addresses.Moulinette)
+    console.log("get_info(MO):", tx.toString());
 
     balance = await QD.balanceOf(beneficiary)
     console.log('balance QD...', balance)

@@ -62,13 +62,14 @@ contract MO is Ownable {
         uint256 delta1;
         bool sell0;
     }   Quid QUID;
-    // TODO test...
-    event CreditHelperShare(uint share, address who); 
-    event CreditHelperROI(uint roi, address who);
-    event CreditHelper(uint credit, address who);
-    event TransferHelperEvent(uint ratio);
+    
+    // event CreditHelperShare(uint share, address who); 
+    // event CreditHelperROI(uint roi, address who);
+    // event CreditHelper(uint credit, address who);
+    // event TransferHelperEvent(uint ratio);
     // event DebitTransferHelper(uint debit);
     // event WithdrawingETH(uint amount, uint amount0, uint ammount1);
+    // TODO ^these seem right, double check later?
     
     // TODO test redeem after all others 
     // event USDCinRedeem(uint usdc);
@@ -78,9 +79,9 @@ contract MO is Ownable {
     // event ThirdInRedeem(uint third);
     // event AbsorbInRedeem(uint absorb);
     
-    // event Fold(uint price, uint value, uint cover);
-    // event FoldDelta(uint delta);
-    // event FoldMinted(uint minted);
+    event Fold(uint price, uint value, uint cover);
+    event FoldDelta(uint delta);
+    event FoldMinted(uint minted);
 
     // event SwapAmountsForLiquidity(uint amount0, uint amount1);
     // event RepackNFTamountsAfterCollectInBurn(uint amount0, uint amount1);
@@ -89,7 +90,7 @@ contract MO is Ownable {
     // event RepackNFTamountsAfterCollect(uint amount0, uint amount1);
     // event RepackNFTamountsAfterSwap(uint amount0, uint amount1);
     // event RepackMintingNFT(int24 upper, int24 lower, uint amount0, uint amount1);
-    
+    // TODO ^these seem right, double check later?
     // event DepositDeductibleInDollars(uint deductible);
     // event DepositDeductibleInETH(uint deductible);
     // event DepositInsured(uint insured);
@@ -225,7 +226,7 @@ contract MO is Ownable {
                 // transferred for ROI pro rata
                 uint ratio = FullMath.mulDiv(WAD, 
                     amount, QUID.balanceOf(from));
-                emit TransferHelperEvent(ratio);
+                // emit TransferHelperEvent(ratio);
                 // proportionally transfer debit...
                 uint debit = FullMath.mulDiv(ratio, 
                 pledges[from].carry.debit, WAD);
@@ -252,7 +253,7 @@ contract MO is Ownable {
             uint debit = pledges[who].carry.debit;
             uint share = FullMath.mulDiv(WAD, 
                 balance, QUID.totalSupply());
-            emit CreditHelperShare(share, who);
+            /// emit CreditHelperShare(share, who);
             credit = share;
             if (debit > 0) { // share is product
                 // projected ROI if QD is $1...
@@ -262,14 +263,14 @@ contract MO is Ownable {
                 // calculate individual ROI over total 
                 roi = FullMath.mulDiv(WAD, roi, AVG_ROI);
                 credit = FullMath.mulDiv(roi, share, WAD);
-                emit CreditHelperROI(roi, who);
+                // emit CreditHelperROI(roi, who);
                 // credit is the product (composite) of 
                 // two separate share (ratio) quantities 
                 // and the sum of products is what we use
                 // in determining pro rata in redeem()...
             }   pledges[who].carry.credit = credit;
             SUM += credit; // update sum with new share
-            emit CreditHelper(credit, who);
+            // emit CreditHelper(credit, who);
         }
     }
 
@@ -473,18 +474,15 @@ contract MO is Ownable {
     // and then adjusting based on average ROI...
     // (insurers w/ higher avg. ROI absorb more) 
     // "you never count your money while you're
-    // sittin' at the table...there'll be time 
-    // enough for countin' when dealin's done."
-    function redeem(uint amount) 
-        external returns (uint absorb) {
+    // sittin' at the table...there'll be time
+    function redeem(uint amount) // enough for 
+        external returns (uint absorb) { // countin' when the...
         uint max = _min(amount, QUID.balanceOf(_msgSender()));
         amount = _min(max, QUID.matureBalanceOf(_msgSender())); 
-        uint share = FullMath.mulDiv(WAD, amount, max); // %
-        // of overall balance, but not more than mature QD:
-        // share helps determine pledge's share of coverage
+        uint share = FullMath.mulDiv(WAD, amount, max); // done
+        // of overall balance, but not more than mature QD %
         uint coverage = pledges[address(this)].carry.credit; 
         Offer storage pledge = pledges[_msgSender()];     
-
         // maximum that pledge would absorb
         // if they redeemed all their QD...
         absorb = FullMath.mulDiv(coverage, 
@@ -493,24 +491,17 @@ contract MO is Ownable {
         );  // if not all the mature QD is
         if (WAD > share) { // being redeemed
             absorb = FullMath.mulDiv(absorb, share, WAD);
-        }   
-        // emit AbsorbInRedeem(absorb);
+        }   // emit AbsorbInRedeem(absorb);
         QUID.burn(_msgSender(), amount); 
-
-        max = amount;
-        // convert amount from QD to value in dollars
+        max = amount; // convert amount
+        // from QD to value in dollars...
         amount = amount * capitalisation(amount, true) / 100;
-        if (amount > max) { // we preserve over-capitalisation
-            amount = max;
-        }
-        // should almost always
-        // evaluate to true...
-        if (amount > absorb) {
-            amount -= absorb; 
-            // remainder is the 
-            // $ value released 
-            // after taking into 
-            // account total liabilities 
+         // we preserve over-capitalisation
+        if (amount > max) { amount = max; }
+        // should almost always evaluate true
+        if (amount > absorb) { amount -= absorb; 
+            // remainder is the $ value released 
+            // after taking into account P&L...
             uint third = 3 * amount / 10; 
             // emit ThirdInRedeem(third);
             // emit QuidUSDCinRedeemBefore(pledges[address(this)].work.debit);
@@ -575,24 +566,24 @@ contract MO is Ownable {
                 IWETH(WETH).deposit{value: amount0}();
                 pledges[address(this)].work.credit += 
                 amount0; pledge.work.debit += amount0;
-            }     
-            uint debit = FullMath.mulDiv(price, 
-                         pledge.work.debit, WAD
+            }   uint debit = FullMath.mulDiv(price, 
+                             pledge.work.debit, WAD
             ); uint buffered = debit - debit / 5;
-            uint credit = FullMath.mulDiv(
-                capitalisation(amount, false), amount, 100
-            );  require(buffered >= pledge.work.credit, "CR");
+            uint credit = FullMath.mulDiv(capitalisation(amount, false), 
+            amount, 100);  require(buffered >= pledge.work.credit, "CR");
             credit = _min(credit, buffered - pledge.work.credit);
-            amount = (100 + (100 - capitalisation(0, false))) * credit / 100;
-            QUID.mint(amount, _msgSender(), address(QUID));
-            pledge.work.credit += credit;
-            // if we had more space (not 
+            amount = (100 + (100 - capitalisation(0, false))) * 
+            credit / 100; QUID.mint(amount, _msgSender(), 
+            address(QUID)); pledge.work.credit += credit;
+            // take a batch out of withdrawable
+            // consideration swap for ETH TODO
+            // if we had more space (not 2.4
             // limited by 24kb bytecode)
             // would automatically pull 
             // from pledge.weth.debit...
             // alas, depositor must first
             // call fold(), if need be,
-            // prior to doing withdraw()
+            // prior to doing withdraw()...
         } else { uint withdrawable; // ETH
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
@@ -700,15 +691,13 @@ contract MO is Ownable {
                 pledge.weth.credit += in_dollars;
                 in_dollars = FullMath.mulDiv(price, 
                     pledges[address(this)].weth.credit, WAD
-                );
-                require(pledges[address(this)].carry.debit >
-                    in_dollars, "insuring too much"
-                ); 
+                );  require(pledges[address(this)].carry.debit
+                            > in_dollars, "insuring too much"); 
                 pledges[beneficiary] = pledge; // save changes
-            }   _repackNFT(0, amount); // 0 represents USDC...
-        } 
+            }   _repackNFT(0, amount); // 0 represents USDC
+        } // or somebody cut you heart you believe you used 
+        // WBTC, quid respects process pledge.carry.credit 
     }
-    
     // "Entropy" comes from a Greek word for transformation; 
     // Clausius interpreted as the magnitude of the degree 
     // to which Pods are separated from each other so close
@@ -734,11 +723,10 @@ contract MO is Ownable {
         if (pledge.work.credit > 0) {
             state.collat = FullMath.mulDiv(
                 state.price, pledge.work.debit, WAD
-            );
-            // "lookin' too hot; simmer down, or soon,"
-            if (pledge.work.credit > state.collat) {
+            );  // "lookin' too hot; simmer down, or... 
+            if (pledge.work.credit > state.collat) { // soon,"
                 state.repay = pledge.work.credit - state.collat; 
-                state.repay += state.collat / 10; 
+                state.repay += state.collat / 10; // 
                 state.liquidate = true; // try to
             } else { 
                 state.delta = state.collat - pledge.work.credit;
@@ -746,8 +734,7 @@ contract MO is Ownable {
                     state.repay = (state.collat / 10) - state.delta;
                 }
             }   
-        }
-        if (amount > 0) { // claim ETH amount that's been insured...
+        } if (amount > 0) { // claim ETH amount that's been insured
             state.collat = FullMath.mulDiv(amount, state.price, WAD);
             state.average_price = FullMath.mulDiv(WAD, 
                 pledge.weth.credit, pledge.weth.debit
@@ -755,33 +742,30 @@ contract MO is Ownable {
             state.average_value = FullMath.mulDiv( 
                 amount, state.average_price, WAD
             );  
-            // emit Fold(state.average_price, state.average_value, FullMath.mulDiv(110, state.price, 100));
+            emit Fold(state.average_price, state.average_value, FullMath.mulDiv(110, state.price, 100));
             // if price drop > 10% (average_value > 10% more than current value) 
             if (state.average_price >= FullMath.mulDiv(110, state.price, 100)) { 
                 state.delta = state.average_value - state.collat;
-                // emit FoldDelta(state.delta);
+                emit FoldDelta(state.delta);
                 if (!sell) { state.minting = state.delta;  
                     state.deductible = FullMath.mulDiv(WAD, 
                         FullMath.mulDiv(state.collat, FEE, WAD), 
                         state.price
                     ); 
-                }
-                else { state.deductible = amount;  
+                } else { state.deductible = amount;  
                     state.minting = state.collat - 
                         FullMath.mulDiv( // deducted
                             state.collat, FEE, WAD
                         );
-                }
-                if (state.repay > 0) { // capitalise into credit
+                } if (state.repay > 0) { // capitalise into credit
                     state.cap = _min(state.minting, state.repay);
                     pledge.work.credit -= state.cap; 
                     state.minting -= state.cap; 
                     state.repay -= state.cap; 
-                }
-                state.cap = capitalisation(state.delta, false); 
+                }   state.cap = capitalisation(state.delta, false); 
                 if (state.minting > state.delta || state.cap > 57) { 
                     state.minting *= (100 + (100 - state.cap));
-                    // emit FoldMinted(state.minting);
+                    emit FoldMinted(state.minting);
                     QUID.mint(state.minting / 100, 
                         beneficiary, address(QUID)
                     );
