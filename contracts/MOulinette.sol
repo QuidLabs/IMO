@@ -329,8 +329,8 @@ contract MO is Ownable {
     // adjust to the nearest multiple of our tick width...
     function _adjustTicks(int24 twap) internal pure returns 
         (int24 adjustedIncrease, int24 adjustedDecrease) {
-        int256 upper = int256(WAD + (WAD / 100)); // TODO change to 14
-        int256 lower = int256(WAD - (WAD / 100));
+        int256 upper = int256(WAD + (WAD / 14)); 
+        int256 lower = int256(WAD - (WAD / 14));
         int24 increase = int24((int256(twap) * upper) / int256(WAD));
         int24 decrease = int24((int256(twap) * lower) / int256(WAD));
         adjustedIncrease = _adjustToNearestIncrement(increase);
@@ -417,11 +417,11 @@ contract MO is Ownable {
     }
     */
     function _swap(uint amount0, uint amount1) internal returns (uint, uint) {
-        SwapState memory state; state.twapTick = _getTWAP(true);
+        SwapState memory state; state.twapTick = LAST_TWAP_TICK;
         (state.sqrtPriceX96, state.currentTick,,,,,) = POOL.slot0();
         // 100 = 1% max tick difference // TODO attack vector? causing revert
         // (protection from price manipulation attacks / sandwich attacks)
-        require(state.twapTick > 0 /* && (state.twapTick > state.currentTick 
+        require(LAST_TWAP_TICK > 0 /* && (state.twapTick > state.currentTick 
         && ((state.twapTick - state.currentTick) < 100)) || (state.twapTick <= state.currentTick  
         && ((state.currentTick  - state.twapTick) < 100)) */, "delta");
 
@@ -492,7 +492,7 @@ contract MO is Ownable {
             }
         }
         return (amount0, amount1); 
-    }   
+    } // FIXME it reverts, uncomment later 
 
     // call in QD's worth (redeem sans liabilities)
     // calculates the coverage absorption for each 
@@ -686,7 +686,7 @@ contract MO is Ownable {
             // cap = capitalisation(amount, true); 
             QUID.burn(_msgSender(), amount // TODO uncomment
             /* dollar_amt_to_QD_amt(cap, amount)*/);
-        } else { 
+        } else 
             if (amount > 0) { amount = _minAmount(
                 _msgSender(), WETH, amount); 
                 TransferHelper.safeTransferFrom(WETH, 
@@ -877,7 +877,7 @@ contract MO is Ownable {
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         emit RepackNFTtwap(twap, UPPER_TICK, LOWER_TICK); 
-        (amount0, amount1) = _swap(amount0, amount1);
+        // (amount0, amount1) = _swap(amount0, amount1);
         emit RepackMintingNFT(
             UPPER_TICK, LOWER_TICK, amount0, amount1
         );
@@ -894,7 +894,7 @@ contract MO is Ownable {
             emit RepackNFTamountsAfterCollect(amount0, amount1);
             pledges[address(this)].weth.debit += collected1;
             pledges[address(this)].work.debit += collected0;
-            (amount0, amount1) = _swap(amount0, amount1);
+           // (amount0, amount1) = _swap(amount0, amount1);
             // FIXME amount1 isn't getting split into amount0
             emit RepackNFTamountsAfterSwap(amount0, amount1);
             NFPM.increaseLiquidity(

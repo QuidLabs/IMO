@@ -10,6 +10,7 @@ interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
 }   import "./MOulinette.sol";
+// 
 contract Quid is ERC20, 
     IERC721Receiver {
     uint public START;  
@@ -284,7 +285,6 @@ contract Quid is ERC20,
             require(total.credit + amount < supply_cap, "cap"); 
             // Yesterday's price is NOT today's price,
             // and when I think I'm running low, you're 
-            // all I need, I wanna feel that in a chit
             uint price = in_days * PENNY + START_PRICE;
             cost = _minAmount(pledge, token, // USDe
                 FullMath.mulDiv(price, amount, WAD)

@@ -56,10 +56,11 @@ per unit of time: 1 QuiD
     - controlled by the electrical system,  
   as are its sensors, observing temp.  
   (TWAP) and air density (tick range)
-- `redeem` engine has a cooling system for absorbing liabilities
-- breaks, clutch, CDP transmission powered by hydraulic `withdraw` 
-  - can't withdraw without steering (`vote`), and suspension is related:  
-  determines your ride quality (`fold` as suspension === liquidation)
+- `redeem` engine has a cooling system for absorbing  
+  ~~liabilities~~ breaks, ~~clutch~~ CDP hydraulic `withdraw` 
+  - can't withdraw without steering (`vote`),  
+  and suspension is related: determines your  
+  ride quality (`fold` suspension/liquidation)
 
 Speaking of cars, another decent  
 analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** *lux*  
