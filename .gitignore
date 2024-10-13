@@ -3,10 +3,13 @@
 .idea
 .env
 /out
+/foundry/out
 /artifacts
 /node_modules
+/foundry/node_modules
 /typechain
 /cache
+/foundry/cache
 /frontend/node_modules
 /frontend/build
 # solidity-coverage files
