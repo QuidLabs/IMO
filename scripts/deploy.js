@@ -182,7 +182,7 @@ async function main() { // run some tests on our contracts...
     var tx; var receipt
     const threeWeeks = '22' // in seconds
     const sixWeeks = '44'
-
+                // 200000000000000000
     const grant = '50000000000000000000'
     const bill = '100000000000000000000'
     const rack = '1000000000000000000000'
@@ -293,8 +293,8 @@ async function main() { // run some tests on our contracts...
         value: largeAmountInWei // 245
       })
       await tx.wait()
-      console.log('next withdraw')
-      tx = await MO.withdraw(grant, true, {
+      console.log('should draw less than bill')
+      tx = await MO.withdraw(bill, true, {
         value: largeAmountInWei // 245
       })
       await tx.wait()

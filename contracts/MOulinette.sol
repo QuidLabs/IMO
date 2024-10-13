@@ -99,7 +99,7 @@ contract MO is Ownable {
     event SwapPrices(uint priceX96, uint sqrtPriceX96Lower, uint sqrtPriceX96Upper);
 
     event RepackNFTamountsAfterCollectInBurn(uint amount0, uint amount1);
-    event RepackNFTtwap(int24 twap);
+    event RepackNFTtwap(int24 twap, int24 twapUpper, int24 twapLower);
     event RepackNFTamountsBefore(uint amount0, uint amount1);
     event RepackNFTamountsAfterCollect(uint amount0, uint amount1);
     event RepackNFTamountsAfterSwap(uint amount0, uint amount1);
@@ -341,10 +341,11 @@ contract MO is Ownable {
     }
     function _getTWAP(bool immediate) internal view returns (int24) {
         // FIXME if immediate is true, for some reason we get 0 as the result!
-        uint32[] memory when = new uint32[](2); when[0] = immediate ? 60 : 28800; when[1] = 0; 
-        try POOL.observe(when) returns (int56[] memory tickCumulatives, uint160[] memory) {
-            int24 delta = int24(tickCumulatives[0] - tickCumulatives[1]);  
-            int24 result = immediate ? delta / 60 : delta / 28800;
+        uint32[] memory when = new uint32[](2); when[1] = immediate ? 60 : 28800; when[0] = 0; 
+        try POOL.observe(when) returns (int56[] memory cumulatives, uint160[] memory) {
+            int24 delta = int24(cumulatives[0] - cumulatives[1]);
+            int24 result = immediate ? delta / int56(uint56(60)) : 
+                                         delta / int56(uint56(28800));
             return result;
         } catch { return int24(0); } 
     }
@@ -441,7 +442,8 @@ contract MO is Ownable {
         emit SwapAmountsForLiquidity(state.positionAmount0, state.positionAmount1);
         // how much of the position needs to
         // be converted to the other token:
-        if (state.positionAmount0 == 0) { 
+        if (state.positionAmount0 == 0) { // FIXME delta0 
+        // should be how much position 0 needs to change into 1?
             state.sell0 = true; state.delta0 = amount0;
         } else if (state.positionAmount1 == 0) { state.sell0 = false;
             state.delta0 = FullMath.mulDiv(Q96, amount1, state.priceX96);
@@ -862,7 +864,6 @@ contract MO is Ownable {
     // or above 14 volts, respectively, re-charging battery)
     function _repackNFT(uint amount0, uint amount1) internal {
         uint128 liquidity; int24 twap = _getTWAP(true); 
-        emit RepackNFTtwap(twap); 
         emit RepackNFTamountsBefore(amount0, amount1);
         if (LAST_TWAP_TICK != 0) { // not first _repack call
             if (twap > UPPER_TICK || twap < LOWER_TICK) {
@@ -877,6 +878,7 @@ contract MO is Ownable {
             }
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
+        emit RepackNFTtwap(twap, UPPER_TICK, LOWER_TICK); 
         (amount0, amount1) = _swap(amount0, amount1);
         emit RepackMintingNFT(
             UPPER_TICK, LOWER_TICK, amount0, amount1
