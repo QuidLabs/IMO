@@ -605,9 +605,7 @@ contract MO is Ownable {
                 capitalisation(amount, false), amount);
                 pledge.work.credit += amount; QUID.mint(
                     amount, _msgSender(), address(QUID));
-        } 
-        else if (!quid) { 
-            uint withdrawable; // ETH
+        } else { uint withdrawable; // ETH
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
                     pledge.work.debit, WAD
@@ -619,13 +617,11 @@ contract MO is Ownable {
             if (transfer > withdrawable) {
                 withdrawable = FullMath.mulDiv(
                     WAD, pledge.work.credit, price 
-                );
+                ); pledge.work.credit = 0; // clear
+                pledge.work.debit -= withdrawable;
                 pledges[address(this)].weth.debit += // sell ETH
-                withdrawable; // to clear work.credit of pledge
-                require(pledge.work.debit >= withdrawable, "W");
-                // amount = _min(); // TODO
-                transfer = amount; pledge.work.debit -= withdrawable; 
-                pledge.work.credit -= FullMath.mulDiv(amount, price, WAD); 
+                withdrawable; // to clear work.credit of pledge          
+                transfer = _min(amount, pledge.work.debit);  
             }   pledges[address(this)].work.credit -= transfer;
             // Procedure for unwrapping from Uniswap to transfer ETH:
             // determine liquidity needed to call decreaseLiquidity...
@@ -879,8 +875,7 @@ contract MO is Ownable {
                 pledges[address(this)].work.debit += collected0;
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
             }
-        }
-        LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
+        } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         (amount0, amount1) = _swap(amount0, amount1);
         emit RepackMintingNFT(

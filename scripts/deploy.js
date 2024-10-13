@@ -293,7 +293,7 @@ async function main() { // run some tests on our contracts...
         value: largeAmountInWei // 245
       })
       await tx.wait()
-      console.log('next withdraw should fail')
+      console.log('next withdraw')
       tx = await MO.withdraw(grant, true, {
         value: largeAmountInWei // 245
       })
