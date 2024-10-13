@@ -269,7 +269,9 @@ contract Quid is ERC20,
         returns (uint cost) { uint batch = currentBatch();
         if (token == address(this)) { _mint(pledge, amount);
             consideration[pledge][batch] += amount; // QD...
-            }   else if (blocktimestamp < START + DAYS) {
+        }   
+        else if (blocktimestamp <= START + DAYS) {
+            consideration[pledge][batch] += amount;
             // TODO if (token == address(this)) { parlay
             // re-use QD to buy QD at better rate
             uint in_days = ((blocktimestamp - START) / 1 days);

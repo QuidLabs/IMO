@@ -2,16 +2,18 @@
 .vscode
 .idea
 .env
-//
+/out
 /artifacts
 /node_modules
 /typechain
 /cache
-/out
-//
 /frontend/node_modules
 /frontend/build
 # solidity-coverage files
 /coverage
 /coverage.json
 package-lock.json
+# Ignores development broadcast logs
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/

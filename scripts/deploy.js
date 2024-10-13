@@ -28,60 +28,75 @@ function saveAddresses(addresses) {
   fs.writeFileSync(addressesFilePath, JSON.stringify(addresses, null, 2))
 }
 
-async function deployContracts() {
-    try {
-      console.log('deploy mocks')
-      let mockToken = await ethers.getContractFactory("mockToken")
-      let mockVault = await ethers.getContractFactory("mockVault")
+async function deployAndInitializeContracts() {
+    var addresses; var mockToken; var mockVault;
+    var mockUSDe; var USDeToken; var sUSDeToken;
+    var MO; var mo; var QD; var q; var QDaddress;
+
+    try { console.log('deploy mocks')
+      mockToken = await ethers.getContractFactory("mockToken")
+      mockVault = await ethers.getContractFactory("mockVault")
       
-      const mockUSDe = await mockToken.deploy()
-      const USDeToken = await mockUSDe.getAddress()
+      mockUSDe = await mockToken.deploy()
+      USDeToken = await mockUSDe.getAddress()
       console.log('USDe deployed at', USDeToken)
 
-      const mockSUSDe = await mockVault.deploy(USDeToken)
-      const sUSDeToken = await mockSUSDe.getAddress()
+      mockSUSDe = await mockVault.deploy(USDeToken)
+      sUSDeToken = await mockSUSDe.getAddress()
       console.log('sUSDe deployed at', sUSDeToken)
 
       console.log('deploying MO')
-      const MO = await ethers.getContractFactory("MO")
-
-      const mo = await MO.deploy(USDeToken, sUSDeToken)
-      const MOaddress = await mo.getAddress()
+      MO = await ethers.getContractFactory("MO")
+      mo = await MO.deploy(USDeToken, sUSDeToken)
+      MOaddress = await mo.getAddress()
       console.log("MO deployed at", MOaddress)
 
-      const QD = await ethers.getContractFactory("Quid")
-      const qd = await QD.deploy(MOaddress)
-      
-      const QDaddress = await qd.getAddress()
+      QD = await ethers.getContractFactory("Quid")
+      qd = await QD.deploy(MOaddress)
+      QDaddress = await qd.getAddress()
       console.log("QD deployed at", QDaddress)
-      
-      // Save addresses to the file
-      const addresses = {
-        USDe: USDeToken,
-        sUSDe: sUSDeToken,
-        Moulinette: MOaddress,
-        Quid: QDaddress
-      }
-      saveAddresses(addresses)
-      console.log("setQuid")
-      
-      var tx = await mo.setQuid(QDaddress)
-      await tx.wait()
-      
-      console.log("set price")  
-      tx = await mo.set_price_eth(false, true) 
-      console.log("START");
-      await tx.wait()
-      
-      tx = await qd.restart()
-      return addresses
     }
     catch (error) {
       console.error("Error deployment:", error)
     }
+    // Save addresses to the file
+    addresses = {
+      USDe: USDeToken,
+      sUSDe: sUSDeToken,
+      Moulinette: MOaddress,
+      Quid: QDaddress
+    }
+    saveAddresses(addresses)
+    try { 
+      console.log("setting Quid")
+      var tx = await mo.setQuid(QDaddress)
+      await tx.wait()
+    } 
+    catch (error) {
+      console.error("Error in setQuid", error)
+    }
+    try {  
+      console.log("START");
+      tx = await qd.restart()
+      await tx.wait()
+    }
+    catch (error) {
+       console.error("Error in restart", error)
+    }
+    try {
+      console.log("setting price")  
+      tx = await mo.set_price_eth(false, true) 
+      await tx.wait()
+    }
+    catch (error) {
+      console.error("Error in setPrice", error)
+    }
+    return addresses
 }
 
 async function main() { // run some tests on our contracts... 
+    const provider = ethers.provider
+    const latestBlock = await provider.getBlockNumber()  
     const shouldDeploy = process.env.SHOULD_DEPLOY !== 'false'
     var addresses;
     if (!shouldDeploy) {
@@ -92,12 +107,8 @@ async function main() { // run some tests on our contracts...
       }
     }
     else {
-      addresses = await deployContracts()
+      addresses = await deployAndInitializeContracts()
     }
-    const provider = ethers.provider
-    
-    const latestBlock = await provider.getBlockNumber()
-    
     const beneficiary = new ethers.Wallet(process.env.PRIVATE_KEY_1, provider)
     const secondary = new ethers.Wallet(process.env.PRIVATE_KEY_2, provider)
     
@@ -178,15 +189,18 @@ async function main() { // run some tests on our contracts...
     const rock = '500000000000000000000'
     if (shouldDeploy) { 
       console.log('minting 1k USDE to', beneficiary.address)
-      await USDE.mint()
+      tx = await USDE.mint()
+      await tx.wait()
+      
       console.log('minting 1k USDE to', secondary.address)
-      await USDEwithSecondary.mint()
-
+      tx = await USDEwithSecondary.mint()
+      await tx.wait() 
+      
       balance = await USDE.balanceOf(beneficiary.address)
       console.log('balance beneficiary', balance)
 
       balance = await USDE.balanceOf(secondary.address)
-      console.log('balance beneficiary', balance)
+      console.log('balance secondary', balance)
 
       console.log('approving beneficiary')
       tx = await USDE.approve(addresses.Moulinette, rack)
@@ -197,12 +211,14 @@ async function main() { // run some tests on our contracts...
   
       receipt = await USDE.allowance(beneficiary.address, addresses.Moulinette)
       console.log('allowance', receipt)
+      
       receipt = await USDEwithSecondary.allowance(secondary.address, addresses.Moulinette)
       console.log('allowance', receipt)
     }
     try {
       tx = await MO.deposit(beneficiary.address, bill, addresses.USDe, false)
       await tx.wait() 
+      
       console.log('fastForwarding')
       tx = await QD.fast_forward(threeWeeks)
       await tx.wait() 
@@ -277,15 +293,22 @@ async function main() { // run some tests on our contracts...
         value: largeAmountInWei // 245
       })
       await tx.wait()
-      tx = await MO.withdraw(bill, true, {
+      console.log('next withdraw should fail')
+      tx = await MO.withdraw(grant, true, {
         value: largeAmountInWei // 245
       })
       await tx.wait()
     } catch (error) {
-      console.error("Error in withdraw:", error)
+      console.error("Error in withdraw QD:", error)
     }
     tx = await MO.get_more_info(beneficiary)
     console.log("get_more_info(beneficiary):", tx.toString());
+
+    tx = await MO.get_info(beneficiary)
+    console.log("get_info(beneficiary):", tx.toString());
+
+    var cap = await MO.capitalisation(0, false)
+    console.log('capitalisation...', cap.toString())
     
     // simulate a price drop, so that we can claim 
     tx = await MO.set_price_eth(false, false) 
@@ -312,9 +335,6 @@ async function main() { // run some tests on our contracts...
 
     tx = await MO.get_info(addresses.Moulinette)
     console.log("get_info(MO):", tx.toString());
-
-    balance = await QD.balanceOf(beneficiary)
-    console.log('balance QD...', balance)
 
     // TODO final
     // before we redeem, add another user,

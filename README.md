@@ -46,8 +46,8 @@ absorbing liabilties upon
 maturity, when any holder  
 may `redeem` 1 QD for $1.  
 
-Voting is incentivised by a  
-small QD lotto, distributed  
+Voting is incentivised by  
+8 x 50k QD, distributed  
 16x `onERC721Received`.  
 
 Power is the `work` done  
