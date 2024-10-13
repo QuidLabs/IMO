@@ -70,7 +70,7 @@ to the initial capitalisation of QD...
 Earth's surface is also 70% liquid.     
 Over time QD reach [💯%]() backed...  
  © 2022-2026 QuidMint Foundation  
-All Rights Reserved - : john@quid.io  
+All Rights Reserved: rico@quid.io  
 
 This software README includes material   
 of Quid Labs, quid.io owned by QU!D LTD  
