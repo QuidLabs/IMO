@@ -30,9 +30,10 @@ contract Quid is ERC20,
     struct Pod { uint credit; uint debit; } 
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
+    // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
-    // an exchange agreement, for the breach of which 
+    // an exchange agreement, for the breach of which
     // Moulinette gives an equitable remedy, and whose 
     // performance is recognised as reasonable duty or
     // tender (an unconditional offer to perform)...
@@ -262,7 +263,7 @@ contract Quid is ERC20,
         }   require(amount == 0, "transfer");
         // _calculateMedian(balance_from, from_vote, 
         //             balanceOf(from), from_vote);
-    }
+    } // TODO test medianizer last 
 
     function mint(uint amount, address pledge, 
         address token) external onlyGenerators
@@ -272,8 +273,9 @@ contract Quid is ERC20,
         }   
         else if (blocktimestamp <= START + DAYS) {
             consideration[pledge][batch] += amount;
-            // TODO if (token == address(this)) { parlay
-            // re-use QD to buy QD at better rate
+            // TODO instead of refund if we didn't
+            // reach 70% liquid parlay (butn QD 
+            // reuse carry.debit to buy QD at better rate)
             uint in_days = ((blocktimestamp - START) / 1 days);
             require(amount >= DIME, "mint more QD");
             Pod memory total = Piscine[batch][43];

@@ -294,10 +294,10 @@ async function main() { // run some tests on our contracts...
       })
       await tx.wait()
       console.log('should draw less than bill')
-      tx = await MO.withdraw(bill, true, {
-        value: largeAmountInWei // 245
-      })
-      await tx.wait()
+      // tx = await MO.withdraw(bill, true, {
+      //   value: largeAmountInWei // 245
+      // })
+      // await tx.wait()
     } catch (error) {
       console.error("Error in withdraw QD:", error)
     }
@@ -311,30 +311,30 @@ async function main() { // run some tests on our contracts...
     console.log('capitalisation...', cap.toString())
     
     // simulate a price drop, so that we can claim 
-    tx = await MO.set_price_eth(false, false) 
-    await tx.wait()
+    // tx = await MO.set_price_eth(false, false) 
+    // await tx.wait()
 
-    console.log("calling fold")
-    // simulate a price drop, so that we can claim 
-    tx = await MO.fold(beneficiary, amountInWei, false) 
-    await tx.wait() // this seems to work!
- 
-    // try fold with sell
+    // console.log("calling fold")
     // // simulate a price drop, so that we can claim 
-    // tx = await MO.fold(beneficiary, amountInWei, true) 
-    // await tx.wait() // this seems to work    
+    // tx = await MO.fold(beneficiary, amountInWei, false) 
+    // await tx.wait() // this seems to work!
+ 
+    // // try fold with sell
+    // // // simulate a price drop, so that we can claim 
+    // // tx = await MO.fold(beneficiary, amountInWei, true) 
+    // // await tx.wait() // this seems to work    
 
-    tx = await MO.get_more_info(beneficiary)
-    console.log("get_more_info(beneficiary)", tx.toString());
+    // tx = await MO.get_more_info(beneficiary)
+    // console.log("get_more_info(beneficiary)", tx.toString());
     
-    tx = await MO.get_info(beneficiary)
-    console.log("get_info(beneficiary):", tx.toString());
+    // tx = await MO.get_info(beneficiary)
+    // console.log("get_info(beneficiary):", tx.toString());
 
-    tx = await MO.get_more_info(addresses.Moulinette)
-    console.log("get_more_info(MO) of MO:", tx.toString());
+    // tx = await MO.get_more_info(addresses.Moulinette)
+    // console.log("get_more_info(MO) of MO:", tx.toString());
 
-    tx = await MO.get_info(addresses.Moulinette)
-    console.log("get_info(MO):", tx.toString());
+    // tx = await MO.get_info(addresses.Moulinette)
+    // console.log("get_info(MO):", tx.toString());
 
     // TODO final
     // before we redeem, add another user,
