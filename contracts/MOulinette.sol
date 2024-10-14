@@ -763,7 +763,7 @@ contract MO is Ownable {
                 emit FoldRepayLiquidate(state.repay);
             } else { // for using claimed coverage to payoff debt
                 state.delta = state.collat - pledge.work.credit;
-                if (state.collat / 10 > state.delta) { 
+                if (state.collat / 10 > state.delta) {
                     state.repay = (state.collat / 10) - state.delta;
                 }
                 emit FoldRepayNoLiquidate(state.repay);
@@ -840,24 +840,24 @@ contract MO is Ownable {
         // you away...when you're...amount: the state repayment...
         if (state.liquidate && ( // the one that I've kept closest"
             QUID.blocktimestamp() - pledge.last/*.credit*/ > 1 hours)) {  
-            amount = _min(dollar_amt_to_QD_amt(state.cap, state.repay),
-            QUID.balanceOf(beneficiary)); 
-            QUID.burn(beneficiary, amount);
+            state.cap = capitalisation(state.repay, true);
+            amount = _min(dollar_amt_to_QD_amt(cap, state.repay), 
+                QUID.balanceOf(beneficiary)
+            );  QUID.burn(beneficiary, amount);
+            amount = (state.cap * amount) / 100;
             // subtract the $ value of QD
             pledge.work.credit -= amount;
             emit FoldSalve(amount); 
             // "lightnin' strikes and the court lights...
             if (pledge.work.credit > state.collat) { // get dim"
-                if (pledge.work.credit > DIME) { // TODO make pledge.last a Pod, 
-                    // so we can track the last amount pledge credit deducted,
-                    // (decreasing amplitude by frequency of the deductions).
-                    // assumes that subsidisd liquidation bot will not skip 
-                    // opportunities to call the function often as possible
+                if (pledge.work.credit > DIME) { // assumes that 
+                // liquidation bot will not skip opportunities...
                     amount = pledge.work.debit / 727; 
                     pledge.work.debit -= amount; 
                     pledges[address(this)].weth.debit += amount; 
-                    amount = FullMath.mulDiv(state.price, 
-                                              amount, WAD);
+                    amount = _min(pledge.work.credit, 
+                        FullMath.mulDiv(state.price, 
+                                        amount, WAD));
                     emit FoldLiquidate(amount);
                     // "It's like inch by inch, step by step,
                     // I'm closin' in on your position and 
@@ -876,6 +876,7 @@ contract MO is Ownable {
             }
         }   pledges[beneficiary] = pledge;
     }
+
     // fold(...) doesn't _repackNFT...only withdraw or deposit;
     // "to improve is to change, to perfect is to change often,"
     // we want to make sure that all of the WETH deposited to 
