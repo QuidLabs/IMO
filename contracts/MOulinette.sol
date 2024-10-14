@@ -814,9 +814,7 @@ contract MO is Ownable {
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_QD_amt(state.cap, state.minting);
                     emit FoldMinted(state.minting);
-                    QUID.mint(state.minting / 100, 
-                        beneficiary, address(QUID)
-                    );
+                    QUID.mint(state.mintin, beneficiary, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
                 } else { state.deductible = 0; } // no mint = no charge  
                 pledges[address(this)].weth.credit -= amount;
