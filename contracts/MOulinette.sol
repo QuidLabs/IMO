@@ -686,7 +686,7 @@ contract MO is Ownable {
             // cap = capitalisation(amount, true); 
             QUID.burn(_msgSender(), amount // TODO uncomment
             /* dollar_amt_to_QD_amt(cap, amount)*/);
-        } else 
+        } else {
             if (amount > 0) { amount = _minAmount(
                 _msgSender(), WETH, amount); 
                 TransferHelper.safeTransferFrom(WETH, 

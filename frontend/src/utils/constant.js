@@ -1,11 +1,11 @@
 
 // TODO replace address
-export const addressQD = '0xCb73e6D38a52C2912799992544F6c4349b5f751E';
-export const addressMO = '0x731873aa4dD30149E552168226b409a4C49b4010'
-export const addressUSDE = '0x9f2F2c08df0D5Be3fC180b00D818089C27caeCb3';
-export const addressSUSDE = '0xE3420263fA073F32533dff66d4Ab1510645D0732';
+export const addressQD = '0xe81C53B7E0e6F6F7eaf94Ac7C04a149842291E1F';
+export const addressMO = '0xd825E3788c53df1d2F42164947F79db815E2aadA'
+export const addressUSDE = '0x0aBe0Ca0CEfD2d987BaD46cCC6c714616992F1Bc';
+export const addressSUSDE = '0x489A24380B9ae5b99f764038DdB5Dae46B11D8BB';
 
-export const QUID = [{
+export const QUID = [  {
   "inputs": [
     {
       "internalType": "address",
@@ -83,19 +83,6 @@ export const QUID = [{
     }
   ],
   "name": "Transfer",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "amount",
-      "type": "uint256"
-    }
-  ],
-  "name": "TransferHelper",
   "type": "event"
 },
 {
@@ -779,7 +766,7 @@ export const QUID = [{
   "type": "function"
 }];
 
-export const MO = [{
+export const MO = [ {
   "inputs": [
     {
       "internalType": "address",
@@ -794,63 +781,6 @@ export const MO = [{
   ],
   "stateMutability": "nonpayable",
   "type": "constructor"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "credit",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "address",
-      "name": "who",
-      "type": "address"
-    }
-  ],
-  "name": "CreditHelper",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "roi",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "address",
-      "name": "who",
-      "type": "address"
-    }
-  ],
-  "name": "CreditHelperROI",
-  "type": "event"
-},
-{
-  "anonymous": false,
-  "inputs": [
-    {
-      "indexed": false,
-      "internalType": "uint256",
-      "name": "share",
-      "type": "uint256"
-    },
-    {
-      "indexed": false,
-      "internalType": "address",
-      "name": "who",
-      "type": "address"
-    }
-  ],
-  "name": "CreditHelperShare",
-  "type": "event"
 },
 {
   "anonymous": false,
@@ -876,12 +806,252 @@ export const MO = [{
   "inputs": [
     {
       "indexed": false,
+      "internalType": "int24",
+      "name": "upper",
+      "type": "int24"
+    },
+    {
+      "indexed": false,
+      "internalType": "int24",
+      "name": "lower",
+      "type": "int24"
+    },
+    {
+      "indexed": false,
       "internalType": "uint256",
-      "name": "ratio",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
       "type": "uint256"
     }
   ],
-  "name": "TransferHelperEvent",
+  "name": "RepackMintingNFT",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
+      "type": "uint256"
+    }
+  ],
+  "name": "RepackNFTamountsAfterCollect",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
+      "type": "uint256"
+    }
+  ],
+  "name": "RepackNFTamountsAfterCollectInBurn",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
+      "type": "uint256"
+    }
+  ],
+  "name": "RepackNFTamountsAfterSwap",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
+      "type": "uint256"
+    }
+  ],
+  "name": "RepackNFTamountsBefore",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "int24",
+      "name": "twap",
+      "type": "int24"
+    },
+    {
+      "indexed": false,
+      "internalType": "int24",
+      "name": "twapUpper",
+      "type": "int24"
+    },
+    {
+      "indexed": false,
+      "internalType": "int24",
+      "name": "twapLower",
+      "type": "int24"
+    }
+  ],
+  "name": "RepackNFTtwap",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
+      "type": "uint256"
+    }
+  ],
+  "name": "SwapAmountsForLiquidity",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "delta0",
+      "type": "uint256"
+    }
+  ],
+  "name": "SwapDelta0",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "priceX96",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "sqrtPriceX96Lower",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "sqrtPriceX96Upper",
+      "type": "uint256"
+    }
+  ],
+  "name": "SwapPrices",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
+      "type": "uint256"
+    }
+  ],
+  "name": "SwapSell0",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "numerator",
+      "type": "uint256"
+    }
+  ],
+  "name": "SwapSell0numerator",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount0",
+      "type": "uint256"
+    },
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "amount1",
+      "type": "uint256"
+    }
+  ],
+  "name": "SwapSell1",
+  "type": "event"
+},
+{
+  "anonymous": false,
+  "inputs": [
+    {
+      "indexed": false,
+      "internalType": "uint256",
+      "name": "numerator",
+      "type": "uint256"
+    }
+  ],
+  "name": "SwapSell1numerator",
   "type": "event"
 },
 {
@@ -1136,6 +1306,19 @@ export const MO = [{
 },
 {
   "inputs": [],
+  "name": "liquidityUnderManagement",
+  "outputs": [
+    {
+      "internalType": "uint256",
+      "name": "",
+      "type": "uint256"
+    }
+  ],
+  "stateMutability": "view",
+  "type": "function"
+},
+{
+  "inputs": [],
   "name": "owner",
   "outputs": [
     {
@@ -1145,25 +1328,6 @@ export const MO = [{
     }
   ],
   "stateMutability": "view",
-  "type": "function"
-},
-{
-  "inputs": [
-    {
-      "internalType": "uint256",
-      "name": "amount",
-      "type": "uint256"
-    }
-  ],
-  "name": "redeem",
-  "outputs": [
-    {
-      "internalType": "uint256",
-      "name": "absorb",
-      "type": "uint256"
-    }
-  ],
-  "stateMutability": "nonpayable",
   "type": "function"
 },
 {
