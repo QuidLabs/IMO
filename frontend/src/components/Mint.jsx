@@ -14,8 +14,8 @@ import "./Styles/Mint.scss"
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { 
-    getTotalInfo, getUserInfo, getTotalSupply, 
+  const {
+    getTotalInfo, getUserInfo, getTotalSupply,
     addressQD, addressUSDE, account, connected, currentPrice, quid, usde, addressMO, mo} = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
@@ -74,9 +74,9 @@ export const Mint = () => {
 
     if(!notifications && local){
       const not =JSON.parse(local)
-      
+
       setNotifications(not)
-    } 
+    }
 
     if (quid) updateTotalSupply()
 
@@ -86,7 +86,7 @@ export const Mint = () => {
       localStorage.setItem("consoleNotifications", JSON.stringify(notifications))
       setStartMsg('Terminal started. Mint is available!')
     } else localStorage.setItem("consoleNotifications", JSON.stringify(''))
-  
+
     if(notifications[0] && !connected) setTimeout(() => setNotifications([]), 1000)
 
   }, [updateTotalSupply, account, connected, quid, notifications, isProcessing])
@@ -185,14 +185,12 @@ export const Mint = () => {
         { severity: "info", message: `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(usdeString, 18)}` }
       ])
 
-      if (parseInt(formatUnits(allowanceBigNumberBN, 18)) !== 0) {
-        setState("decreaseAllowance")
-        await usde.methods.decreaseAllowance(address, allowanceBigNumberBN).send({ from: account })
-      }
+      // if (parseInt(formatUnits(allowanceBigNumberBN, 18)) !== 0) {
+      //   setState("decreaseAllowance")
+      //   await usde.methods.decreaseAllowance(address, allowanceBigNumberBN).send({ from: account })
+      // } // this was needed for Tether
 
       setState("approving")
-
-      // TODO approve the QD erc20 not Moulinette
 
       if (account) await usde.methods.approve(addressQD.toString(), usdeAmount.toString()).send({ from: account })
 

@@ -39,7 +39,7 @@ absorbing liabilties upon
 maturity, when any holder  
 may `redeem` 1 QD for $1.  
 Voting is incentivised by  
-8 x 54k QD, distributed  
+8 x 55k QD, distributed  
 16x `onERC721Received`.  
 Power is the `work` done  
 per unit of time: 1 QuiD  
@@ -51,7 +51,7 @@ per unit of time: 1 QuiD
   `deposit` ΞTH if nervous about its price,  
   or USDe to maximise your time value of $
 
-- `repackNFT`:  fuel management system;  
+- `repackNFT`: fuel management system...  
    most of the functionality is internal (send  
     wei gas to cylinders, combined with air)
     - controlled by the electrical system,  
