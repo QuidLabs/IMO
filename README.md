@@ -58,7 +58,7 @@ per unit of time: 1 QuiD
   (TWAP) and air density (tick range)
 - `redeem` engine has a cooling system for absorbing  
   ~~liabilities~~ breaks, ~~clutch~~ CDP hydraulic `withdraw` 
-  - can't withdraw without steering (`vote`),  
+  - cannot withdraw without steering (`vote`)...  
   and suspension is related: determines your  
   ride quality (`fold` suspension/liquidation)
 
@@ -80,7 +80,7 @@ THIS DOCUMENT IS PROVIDED "AS IS," &
 OR WARRANTIES, EXPRESS, IMPLIED, INCLUDING,   
 NOT LIMITED TO, MERCHANTABILITY WARRANTIES    
 OF FITNESS FOR A PARTICULAR PURPOSE OR TITLE  
-NOR CONTENTS OF DOCUMENTS ARE SUITABLE FOR  
+OR CONTENTS OF DOCUMENTS ARE SUITABLE FOR  
 ANY PURPOSE; NOR THAT THE IMPLEMENTATION OF  
 
 SUCH CONTENTS WILL NOT INFRINGE ANY THIRD  

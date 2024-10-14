@@ -17,7 +17,7 @@ interface IWETH is IERC20 {
     function deposit() 
     external payable;
 }   import "./QD.sol";
-contract MO is Ownable {
+contract MO is Ownable {    
 // essentially 4626, but we
 // save on contract size by
 // not inheriting interface
@@ -140,7 +140,7 @@ contract MO is Ownable {
     // in the future...our case is bilateral...
     // promise for a promise, aka quid pro quo...
     struct Offer { Pod weth; Pod carry; Pod work;
-    // Pod last; } // timestamp of last liquidate and
+    // Pod last; } // timestamp of last liquidate &
     // % that's been liquidated (smaller over time)
     uint last; } // TODO (after testing finished)
     // work is like a checking account (credit can
