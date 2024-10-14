@@ -140,7 +140,7 @@ contract MO is Ownable {
     // in the future...our case is bilateral...
     // promise for a promise, aka quid pro quo...
     struct Offer { Pod weth; Pod carry; Pod work;
-    // Pod last; } // timestamp of last liquidate &
+    // Pod last; } // timestamp of last liquidate & 
     // % that's been liquidated (smaller over time)
     uint last; } // TODO (after testing finished)
     // work is like a checking account (credit can

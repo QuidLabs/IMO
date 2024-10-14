@@ -1,21 +1,21 @@
 
-## iM ~~Opinion~~ [Offer](https://hackmd.io/@quid/mint)
+## iM ~~Opinion~~ [Offer](https://hackmd.io/@quid/mint) 
 
 Hedging is achieveable  
 by selling futures; QD is  
 a non-custodial future $:  
 insurers `mint` **Q**ui**D** for  
 inversion verse; 16 bars   
-`USDe` over a  year there  
- are 16 chances  to `mint`:  
+`USDe`. Over a  year there  
+are 16 chances  to `mint`:  
 8 per year times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
- today's," 46% `AVG_ROI`  
+today's," 46% `AVG_ROI`  
 (before `redeem`); [when]()   
-actual the receivables are  
+actualized receivables are  
 equal to payables for future  
-cash flow from ΞTH  getting  
-deployed into UniV3  over...  
+cash flow from ΞTH getting  
+deployed into UniV3 over...  
 time like Diet Coke 46mg of  
 fizzy caffeine fees retained  
 to capitalise QD, as well as  
@@ -50,12 +50,14 @@ per unit of time: 1 QuiD
 - electric ignition system (nervous system):  
   `deposit` ΞTH if nervous about its price,  
   or USDe to maximise your time value of $
+
 - `repackNFT`:  fuel management system;  
    most of the functionality is internal (send  
     wei gas to cylinders, combined with air)
     - controlled by the electrical system,  
   as are its sensors, observing temp.  
   (TWAP) and air density (tick range)
+
 - `redeem` engine has a cooling system for absorbing  
   ~~liabilities~~ breaks, ~~clutch~~ CDP hydraulic `withdraw` 
   - cannot withdraw without steering (`vote`)...  
@@ -64,7 +66,7 @@ per unit of time: 1 QuiD
 
 Speaking of cars, another decent  
 analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** *lux*  
- (let there be light); regarding lime,  
+(let there be light); regarding lime,  
 note how [70/30](https://www.instagram.com/p/DAgKU2dxtUq/) here  corresponds  
 to the initial capitalisation of QD...  
 Earth's surface is also 70% liquid.     
@@ -73,27 +75,22 @@ Over time QD reach [💯%]() backed...
 All Rights Reserved: rico@quid.io  
 
 This software `README` includes material   
-of Quid Labs, quid.io owned by QU!D LTD  
+of Quid Labs; quid.io owned by QU!D LTD  
 THIS DOCUMENT IS PROVIDED "AS IS," &  
 © HOLDERS MAKE NO REPRESENTATIONS  
 
 OR WARRANTIES, EXPRESS OR IMPLIED, INCLUDING,   
 NOT LIMITED TO, MERCHANTABILITY WARRANTIES    
-OF FITNESS FOR A PARTICULAR PURPOSE OR TITLE  
+OF FITNESS FOR A PARTICULAR PURPOSE OR TITLE.  
 
 THE CONTENTS OF `README` ARE SUITABLE FOR  
-IMPLEMENTATION WITHOUT NFRINGING ANY THIRD  
-PARTY PATENTS, COPYRIGHTS, TRADEMARKS OR  
+IMPLEMENTATION WITHOUT INFRINGING ANY 3RD  
+PARTY PATENTS, COPYRIGHTS, OR TRADEMARKS.   
 COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR  
 DIRECT, INDIRECT, [UNUSUAL]() CONSEQUENTIAL  
-DAMAGES ARISING OUT OF PERFORMANCE  ANY   
-USE OF CONTENTS OR THEIR IMPLEMENTATION  
+DAMAGES ARISING OUT OF [PERFORMANCE](https://x.com/lex_node/status/1845182121553559770): ANY   
+USE OF CONTENTS OR THEIR IMPLEMENTATION.  
 
-The name and trademarks of copyright holders  
-be used in advertising or publicity pertaining to  
-this document or its contents without specific,  
-written prior permission. Title to copyright in  
-this document will at all times remain with...  
 ### Launch instructions
 `npm install` from the root directory, followed by:  
 `SHOULD_DEPLOY=true npx hardhat run --network sepolia scripts/deploy.js`  

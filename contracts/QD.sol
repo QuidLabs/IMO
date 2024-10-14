@@ -44,7 +44,6 @@ contract Quid is ERC20,
     // when a token-holder votes for a fee, their
     // QD balance is applied to the total weights
     // for that fee (weights are the balances)...
-    // weights are also carried over transfers...
     // index 0 is the largest possible vote = 9%
     // index 89 represents the smallest one = 1%
     uint public deployed; uint internal K = 17;
@@ -138,7 +137,7 @@ contract Quid is ERC20,
     function burn(address from, uint value) public
         onlyGenerators { _transferHelper(from, address(0), value); 
         MO(Moulinette).transferHelper(from, address(0), value); 
-        // burn shouldn't affect carry.debit values of `from` or `to`
+        // burn shouldn't affect carry.debit values `from` or `to`
     }
     function transfer(address to, uint value) 
         public override(ERC20) returns (bool) {

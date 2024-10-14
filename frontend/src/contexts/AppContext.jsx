@@ -5,7 +5,7 @@ import { BigNumber } from "@ethersproject/bignumber"
 
 import Web3 from "web3"
 
-import { QUID, MO, USDE, usde, mo, addressMO, addressQD, addressUSDE } from "../utils/constant"
+import { QUID, MO, USDE, addressMO, addressQD, addressUSDE } from "../utils/constant"
 
 const contextState = {
   account: "",
@@ -44,7 +44,6 @@ export const AppContextProvider = ({ children }) => {
   const [currentPrice, setPrice] = useState(null)
 
   const [currentTimestamp, setAccountTimestamp] = useState(0)
-
 
   const SECONDS_IN_DAY = 86400
 
@@ -222,9 +221,9 @@ export const AppContextProvider = ({ children }) => {
           setMO(moContract)
           setQuid(quidContract)
           setUsde(usdeContract)
-          
+
         }
-      } 
+      }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
@@ -242,8 +241,8 @@ export const AppContextProvider = ({ children }) => {
         getSales,
         getTotalSupply,
         setAllInfo,
-        getUsdeBalance, 
-        getQDbalance, 
+        getUsdeBalance,
+        getQDbalance,
         setAllInfo,
         connected,
         connecting,
