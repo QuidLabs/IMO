@@ -14,7 +14,9 @@ import "./Styles/Mint.scss"
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalInfo, getUserInfo, getTotalSupply, addressQD, addressUSDE, account, connected, currentPrice, quid, usde } = useAppContext()
+  const { 
+    getTotalInfo, getUserInfo, getTotalSupply, 
+    addressQD, addressUSDE, account, connected, currentPrice, quid, usde, addressMO, mo} = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
   const [usdeValue, setUsdeValue] = useState(0)
@@ -23,7 +25,7 @@ export const Mint = () => {
   const [isSameBeneficiary, setIsSameBeneficiary] = useState(true)
   const [beneficiary, setBeneficiary] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [notifications, setNotifications] = useState(JSON.parse(localStorage.getItem("consoleNotifications")) || [])
+  const [notifications, setNotifications] = useState([])
   const [isProcessing, setIsProcessing] = useState(false)
   const [startMsg, setStartMsg] = useState('')
 
@@ -68,6 +70,14 @@ export const Mint = () => {
   }, [getTotalSupply, quid])
 
   useEffect(() => {
+    const local = localStorage.getItem("consoleNotifications")
+
+    if(!notifications && local){
+      const not =JSON.parse(local)
+      
+      setNotifications(not)
+    } 
+
     if (quid) updateTotalSupply()
 
     if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight
