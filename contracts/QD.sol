@@ -1,6 +1,6 @@
 
-// SPDX-License-Identifier: AGPL-3.0-or-later
-pragma solidity =0.8.8; 
+// SPDX-License-Identifier: AGPL-3.0
+pragma solidity =0.8.8; // 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
@@ -25,10 +25,14 @@ contract Quid is ERC20,
     uint constant LAMBO = 16508; // TODO mainnet only
     uint constant public WAD = 1e18; 
     uint constant PENNY = WAD / 100;
-    uint constant DIME = 10 * WAD;
-    uint constant public DAYS = 43 days;
-    uint public START_PRICE = 50 * PENNY;
-    struct Pod { uint credit; uint debit; } 
+    uint constant DIME = 10 * WAD; // 🧳 
+    uint constant public DAYS = 43 days; 
+    uint public START_PRICE = 50 * PENNY; 
+    struct Pod { uint credit; uint debit; } // EigenPods?
+    // "they want their grievances aired on the assumption
+    // that all right-thinking persons would be persuaded
+    // that problems of the world can be solved," by true 
+    // dough, Pierre, not your unsual money, version mint
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     // https://www.law.cornell.edu/wex/consideration
@@ -61,6 +65,8 @@ contract Quid is ERC20,
         require(currentBatch() > 0, "after");  
         _; 
     }
+    // multsig for 2M tithe, initial liquidity to 
+    // enter it upon setQuid
     function fast_forward(uint period) external { 
         // TODO remove...only for testing on Sepolia
         if (period == 0) { blocktimestamp += 360 days; } 
@@ -68,9 +74,12 @@ contract Quid is ERC20,
         if (period >= 43) { restart(); }
     } 
     
-    constructor(address _mo) ERC20("QU!D", "QD") {
-        Moulinette = _mo; deployed = block.timestamp;
+    // 
+    constructor(address _mo)
+        ERC20("QU!D", "QD") {
+        deployed = block.timestamp;
         blocktimestamp = deployed;
+        Moulinette = _mo;
     }
     
     function _min(uint _a, uint _b) internal 
@@ -95,8 +104,8 @@ contract Quid is ERC20,
         ) + 1; total_supply_cap = in_days * MAX_PER_DAY; 
     }
 
-    function vote(uint new_vote) external postLaunch {
-        uint batch = currentBatch();
+    function vote(uint new_vote) external 
+        postLaunch { uint batch = currentBatch();
         if (batch < 16 && !hasVoted[msg.sender][batch]) {
             hasVoted[msg.sender][batch] = true;
             voters[batch].push(msg.sender);
@@ -208,13 +217,12 @@ contract Quid is ERC20,
             if (old_vote <= K) {   
                 SUM -= old_stake;
             }
-        }
-        if (new_stake != 0) {
-            if (new_vote <= K) {
-                SUM += new_stake;
-            }         
-            WEIGHTS[new_vote] += new_stake;
-        }   uint mid = totalSupply() / 2;
+        }   if (new_stake != 0) {
+                if (new_vote <= K) {
+                    SUM += new_stake;
+                }         
+                WEIGHTS[new_vote] += new_stake;
+        } uint mid = totalSupply() / 2; 
         if (mid != 0) {
             if (K > new_vote) {
                 while (K >= 1 && (
@@ -235,7 +243,6 @@ contract Quid is ERC20,
         uint balance_to = balanceOf(to); 
         uint from_vote = feeVotes[from];
         uint to_vote = feeVotes[to];
-        
         amount = _min(amount, balanceOf(from));
         require(amount > WAD, "insufficient QD"); 
         int i; // must be int otherwise tx reverts
@@ -267,16 +274,13 @@ contract Quid is ERC20,
     } // TODO test medianizer last 
 
     function mint(uint amount, address pledge, 
-        address token) external onlyGenerators
+        address token) public onlyGenerators
         returns (uint cost) { uint batch = currentBatch();
         if (token == address(this)) { _mint(pledge, amount);
             consideration[pledge][batch] += amount; // QD...
-        }   
-        else if (blocktimestamp <= START + DAYS) {
+        }   else if (blocktimestamp <= START + DAYS) {
             consideration[pledge][batch] += amount;
-            // TODO instead of refund if we didn't
-            // reach 70% liquid parlay (butn QD 
-            // reuse carry.debit to buy QD at better rate)
+            // TODO parlay carry.credit burning QD... 
             uint in_days = ((blocktimestamp - START) / 1 days);
             require(amount >= DIME, "mint more QD");
             Pod memory total = Piscine[batch][43];
@@ -322,38 +326,28 @@ contract Quid is ERC20,
         bytes32 _seed = abi.decode(data[:32], (bytes32)); 
         if (tokenId == LAMBO && parker == address(this)) {
             (uint minted, uint roi) = calc_avg_return();
-            address winner = from; uint batch;
-            if (START != 0) { // if not 1st ^
-                batch = currentBatch() - 1;
-                uint random = uint(keccak256(
-                    abi.encodePacked(_seed, 
-                    blockhash(block.number - 1))
-                )) % voters[batch].length;
-                winner = voters[batch][random];
-                MO(Moulinette).setMetrics(roi, minted);
+            uint batch = currentBatch() - 1;
+            ICollection(F8N).transferFrom(
+                address(this), from, LAMBO
+            ); uint qd = MO(Moulinette).draw(
+            from, GRIEVANCES); mint(qd, from, 
+                MO(Moulinette).USDE()); 
+            if (START != 0) { // x 8...TODO 
+                // uint random = uint(keccak256(
+                //     abi.encodePacked(_seed, 
+                //     blockhash(block.number - 1), 
+                //     who))) % voters[batch].length;
+                MO(Moulinette).setMetrics(roi, minted); 
                 require(blocktimestamp >= START + DAYS 
-                    && batch < 17, "hit final repeat");
-            } // "like a boomerang...I need a ^^^^^^
-            START = blocktimestamp; // "same level...
-            // same rebel that never settled..." Logic,
-            // so the SEC won't let me be, they tried to 
-            // shut me down on MTV...youtube.com/@QuidMint
-            consideration[winner][batch] += BACKEND; // QD
-            // TODO 8 lottery winners, make sure no repeats;
+                && batch < 17, "re-up"); // "like a boomerang
+            } // ...I need a...^^^^^^ same level, same rebel
+            START = blocktimestamp; //  a visionary, division 
+            // is scary" ~ Logic...so the SEC won't let me be, 
+            // they tried shut down...youtube.com/@quidmint
+            consideration[from][batch] += BACKEND; // QD...
             // in the frontend, we do transferFrom in order
             // to receive NFT & pass in calldata for lotto
-            // for (uint who = 0; who < 8, who++) { winner[who]
-            //      _mint(winner, BACKEND); 
-            // }
-            ICollection(F8N).transferFrom(address(this), from, LAMBO); 
-            // uint qd = MO(Moulinette).draw(from, GRIEVANCES); 
-            // half gets re-deposited to mint more QD at .50
-            // "they want their grievances aired on the assumption
-            // that all right-thinking persons would be persuaded
-            // that problems of the world can be solved," by true 
-            // dough, Pierre, not your unsual money, version mint
-        } // TODO check off by one with batcha
-        return this.onERC721Received.selector; 
+        } return this.onERC721Received.selector; // TODO ^
     }
 
     function restart() public { // TODO remove, Sepolia only

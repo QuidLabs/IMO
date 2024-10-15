@@ -352,7 +352,7 @@ async function main() { // run some tests on our contracts...
 
     // TODO try fold with sell and liquidate at the same time
 
-    tx = await MO.fast_forward(0)
+    tx = await QD.fast_forward(0)
     await tx.wait()
     try {
       tx = await MOWithSecondary.redeem(bill)

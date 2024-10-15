@@ -376,12 +376,13 @@ contract MO is Ownable {
         } // TODO remove this admin testing function
     } 
 
-    function draw(address to, uint amount) 
-        public { if (_msgSender() == address(QUID)) {
-            to = owner();
-        } else {
-            require(_msgSender() == address(this), "$");
-        }
+    function draw(address to, // redeemer...
+        uint amount) public returns (uint qd) { 
+        if (_msgSender() == address(QUID)) {
+            qd = dollar_amt_to_qd_amt(
+            capitalisation(0, false), 
+            amount / 2); to = owner();
+        } else { require(_msgSender() == address(this), "$"); }
         if (capitalisation(0, false) > 100 && amount > 0) { 
             // uint reserveSDAI = IERC4626(SDAI).balanceOf(address(this));
             uint reserveSUSDE = IERC4626(SUSDE).balanceOf(address(this));
