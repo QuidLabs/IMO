@@ -588,7 +588,7 @@ contract MO is Ownable {
             }   
             pledges[address(this)].carry.credit -= absorb; 
             if (amount0 > 0 || amount1 > 0) 
-            _repackNFT(amount0, amount1); 
+            { repackNFT(amount0, amount1); }
         } 
         else {
             emit WeirdRedeem(absorb, amount);
@@ -663,7 +663,7 @@ contract MO is Ownable {
             }     
         }   pledges[_msgSender()] = pledge;
         if (amount0 > 0 || amount1 > 0) 
-        { _repackNFT(amount0, amount1); }
+        { repackNFT(amount0, amount1); }
     }
 
     // allowing deposits on behalf of a benecifiary
@@ -736,25 +736,25 @@ contract MO is Ownable {
                 );  require(pledges[address(this)].carry.debit
                             > in_dollars, "insuring too much"); 
                 pledges[beneficiary] = pledge; // save changes
-            }   _repackNFT(0, amount); // 0 represents USDC
+            }   repackNFT(0, amount); // 0 represents USDC
         } // TODO consider that half the ETH is converted ^
         // so this affects the risk the protocol is holding
         // and edge case (there may not be enough liquidity
         // to convert that USDC half to necessary ETH amt)
+        // this is relevant for withdraw, fold, redeem...
     }
 
     // "Entropy" comes from a Greek word for transformation; 
     // Clausius interpreted as the magnitude of the degree 
-    // to which Pods are separated from each other so close
-    // no matter how far, "rage be in it like you couldn’t
-    // believe," or work like I could've scarcely imagined.
+    // to which Pods be separate from each other: "so close
+    // no matter how far...rage be in it like you couldn’t
+    // believe, or work like I could've scarcely imagined;
     // if one isn’t satisfied, indulge the latter, ‘neath 
     // the halo of a street-lamp, I turn my straddle to
-    // the cold and damp..."know when to hold 'em...know 
+    // the cold and damp...know when to hold 'em...know 
     // when to..." 
      function fold(address beneficiary, // amount is...
         uint amount, bool sell) external { // in ETH
-        // sell may be enabled as a setting in frontend...
         FoldState memory state; state.price = _getPrice();
         // call in collateral that's insured, or liquidate;
         // if there is an insured event, QD may be minted,
@@ -859,7 +859,7 @@ contract MO is Ownable {
             // subtract the $ value of QD
             pledge.work.credit -= amount;
             emit FoldSalve(amount); 
-            // "lightnin' strikes and the court lights...
+            // "lightnin' ⚡️ strikes and the 🏀 court lights...
             if (pledge.work.credit > state.collat) { // get dim"
                 if (pledge.work.credit > DIME) { // assumes that 
                 // liquidation bot will not skip opportunities...
@@ -870,9 +870,9 @@ contract MO is Ownable {
                         FullMath.mulDiv(state.price, 
                                         amount, WAD));
                     emit FoldLiquidate(amount);
-                    // "It's like inch by inch, step by step,
-                    // I'm closin' in on your position and 
-                    // [eviction] is my mission..."
+                    // "It's like inch by inch, and step by 
+                    // step, I'm closin' in on your position
+                    // and [eviction] is my mission..."
                     // Euler’s disk 💿 erasure code
                     pledge.work.credit -= amount; 
                     pledge.last/*.credit*/ = QUID.blocktimestamp();
@@ -888,11 +888,11 @@ contract MO is Ownable {
         }   pledges[beneficiary] = pledge;
     }
 
-    // fold() doesn't _repackNFT (only withdraw, deposit, redeem)
+    // fold() doesn't repackNFT (only withdraw, deposit, redeem)
     // "to improve is to change, to perfect is to change often,"
     // we want to make sure that all of the WETH deposited to 
     // this contract is always in range (collecting), since 
-    // _repackNFT is relatively costly in terms of gas, we 
+    // repackNFT is relatively costly in terms of gas, we 
     // want to call it rarely...so as a rule of thumb, the  
     // range is roughly 14% total, 7% below and above TWAP,
     // we check for a delta of this size over last 8 hours;
@@ -900,7 +900,7 @@ contract MO is Ownable {
     // voltage regulators watch the currents and control the 
     // relay (which turns on & off the alternator, if below 
     // or above 14 volts, respectively, re-charging battery)
-    function _repackNFT(uint amount0, uint amount1) internal {
+    function repackNFT(uint amount0, uint amount1) public {
         uint128 liquidity; int24 twap = _getTWAP(true); 
         // emit RepackNFTamountsBefore(amount0, amount1);
         if (LAST_TWAP_TICK != 0) { // not first _repack call
@@ -943,5 +943,5 @@ contract MO is Ownable {
                 )
             );
         }
-    } function repackNFT() external { _repackNFT(0,0); }
+    }
 }

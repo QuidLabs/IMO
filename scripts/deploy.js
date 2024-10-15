@@ -326,14 +326,18 @@ async function main() { // run some tests on our contracts...
 
     console.log("calling fold")
     // simulate a price drop, so that we can claim 
-    tx = await MO.fold(beneficiary, amountInWei, false) 
-    await tx.wait() // this seems to work!
- 
-    // try fold with sell
-    // // simulate a price drop, so that we can claim 
-    // tx = await MO.fold(beneficiary, amountInWei, true) 
-    // await tx.wait() // this seems to work    
-
+    try {
+      tx = await MO.fold(beneficiary, amountInWei, false) 
+      await tx.wait() 
+      // try fold with sell
+      // // simulate a price drop, so that we can claim 
+      // tx = await MO.fold(beneficiary, amountInWei, true) 
+      // await tx.wait() // this seems to work    
+    }
+    catch (error) {
+      console.error("Error in fold:", error)
+    }
+    
     tx = await MO.get_more_info(beneficiary)
     console.log("get_more_info(beneficiary)", tx.toString());
     

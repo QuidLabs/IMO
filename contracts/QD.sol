@@ -135,9 +135,10 @@ contract Quid is ERC20,
     }
 
     function burn(address from, uint value) public
-        onlyGenerators { _transferHelper(from, address(0), value); 
-        MO(Moulinette).transferHelper(from, address(0), value); 
-        // burn shouldn't affect carry.debit values `from` or `to`
+        onlyGenerators { MO(Moulinette).transferHelper(
+            from, address(0), value); _transferHelper(
+            from, address(0), value); // burn shouldn't 
+            // affect carry.debit values of `from` or `to`
     }
     function transfer(address to, uint value) 
         public override(ERC20) returns (bool) {
