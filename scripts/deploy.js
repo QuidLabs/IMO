@@ -346,11 +346,29 @@ async function main() { // run some tests on our contracts...
     tx = await MO.get_info(addresses.Moulinette)
     console.log("get_info(MO):", tx.toString());
 
-    // TODO final
-    // before we redeem, add another user,
-    // add their coverage burden, and liquidation
-    // we must do, finally, a fastForward by a year
-    // then call redeem and see expected balances 
+    // TODO try fold with sell and liquidate at the same time
+
+    tx = await MO.fast_forward(0)
+    await tx.wait()
+    try {
+      tx = await MOWithSecondary.redeem(bill)
+      await tx.wait()
+    }
+    catch (error) {
+      console.error("Error in redeem QD:", error)
+    }
+
+    tx = await MO.get_more_info(secondary)
+    console.log("get_more_info(secondary)", tx.toString());
+    
+    tx = await MO.get_info(secondary)
+    console.log("get_info(secondary):", tx.toString());
+
+    tx = await MO.get_more_info(addresses.Moulinette)
+    console.log("get_more_info(MO) of MO:", tx.toString());
+
+    tx = await MO.get_info(addresses.Moulinette)
+    console.log("get_info(MO):", tx.toString());
 }  
 
 // We recommend this pattern to be able to 

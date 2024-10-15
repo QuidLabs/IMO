@@ -77,7 +77,7 @@ contract MO is Ownable {
     
     event Fold(uint price, uint value, uint cover);
     event FoldDelta(uint delta);
-    event FoldMinted(uint minted);
+    event FoldMinted(uint minted, uint delta);
     event FoldSalve(uint amount); 
     event FoldLiquidate(uint amount);
     event FoldDeductible(uint amount, uint deductible);
@@ -85,21 +85,21 @@ contract MO is Ownable {
     event FoldRepayLiquidate(uint amount);
 
     // TODO test redeem after all others 
-    // event USDCinRedeem(uint usdc);
-    // event QuidUSDCinRedeemBefore(uint usdc);
-    // event QuidUSDCinRedeemAfter(uint usdc);
-    // event WeirdRedeem(uint absorb, uint amount);
-    // event ThirdInRedeem(uint third);
-    // event AbsorbInRedeem(uint absorb);
+    event AbsorbAmount(uint amount);
+    event USDCinRedeem(uint usdc);
+    event WeirdRedeem(uint absorb, uint amount);
+    event ThirdInRedeem(uint third);
+    event AbsorbInRedeem(uint absorb);
+    event SellInRedeem(uint amount);
     
-    event WithDrawing(uint amount);
-    event SwapDelta0(uint delta0);
-    event SwapSell0(uint amount0, uint amount1);
-    event SwapSell1(uint amount0, uint amount1);
-    event SwapSell0numerator(uint numerator);
-    event SwapSell1numerator(uint numerator);
-    event SwapAmountsForLiquidity(uint amount0, uint amount1);
-    event SwapPrices(uint priceX96, uint sqrtPriceX96Lower, uint sqrtPriceX96Upper);
+    // event WithDrawing(uint amount);
+    // event SwapDelta0(uint delta0);
+    // event SwapSell0(uint amount0, uint amount1);
+    // event SwapSell1(uint amount0, uint amount1);
+    // event SwapSell0numerator(uint numerator);
+    // event SwapSell1numerator(uint numerator);
+    // event SwapAmountsForLiquidity(uint amount0, uint amount1);
+    // event SwapPrices(uint priceX96, uint sqrtPriceX96Lower, uint sqrtPriceX96Upper);
 
     // event RepackNFTamountsAfterCollectInBurn(uint amount0, uint amount1);
     // event RepackNFTtwap(int24 twap, int24 twapUpper, int24 twapLower);
@@ -192,10 +192,17 @@ contract MO is Ownable {
     function _isDollar(address dollar) internal view returns 
         (bool) { return dollar == SUSDE || dollar == USDE; } 
 
-    function dollar_amt_to_QD_amt(uint cap, uint amt) 
+    function dollar_amt_to_qd_amt(uint cap, uint amt) 
         public view returns (uint) { return (cap < 100) ? 
         FullMath.mulDiv(amt, 100 + (100 - cap), 100) : amt; 
     } 
+
+    // different from eponymous function in ERC20...
+    function qd_amt_to_dollar_amt(uint cap, uint amt) 
+        public view returns (uint) { return (cap < 100) ? 
+        FullMath.mulDiv(amt, cap, 100) : amt;
+    }
+
     constructor(address _usde, address _susde) { 
         USDE = _usde; SUSDE = _susde; // TODO remove (for Sepolia only)
                                          // as well as from constructor...
@@ -236,9 +243,11 @@ contract MO is Ownable {
         return FullMath.mulDiv(100, assets, total); 
     } // TODO compound sUSDe and sDAI fees?
 
+    // helpers allow treating QD balances
+    // uniquely without needing ERC721...
     function transferHelper(address from, 
         address to, uint amount) onlyQuid public {
-            if (to != address(0)) { // not burn
+            if (to != address(0)) { // not burning
                 // percentage of carry.debit gets 
                 // transferred over in proportion 
                 // to amount's % of total balance
@@ -273,13 +282,12 @@ contract MO is Ownable {
             uint debit = pledges[who].carry.debit;
             uint share = FullMath.mulDiv(WAD, 
                 balance, QUID.totalSupply());
-            /// emit CreditHelperShare(share, who);
+            // emit CreditHelperShare(share, who);
             credit = share;
             if (debit > 0) { // share is product
                 // projected ROI if QD is $1...
                 uint roi = FullMath.mulDiv(WAD, 
-                    balance - debit, debit);
-                
+                        balance - debit, debit);
                 // calculate individual ROI over total 
                 roi = FullMath.mulDiv(WAD, roi, AVG_ROI);
                 credit = FullMath.mulDiv(roi, share, WAD);
@@ -358,7 +366,6 @@ contract MO is Ownable {
         //                         uint256(sqrtPriceX96), Q96);
         return QUID.getPrice(); 
     }
-
     function set_price_eth(bool up,
         bool refresh) external { 
         if (refresh) { _ETH_PRICE = 0;
@@ -369,15 +376,13 @@ contract MO is Ownable {
         } // TODO remove this admin testing function
     } 
 
-    // TODO uncomment when testing redeem
-    /*
     function draw(address to, uint amount) 
         public { if (_msgSender() == address(QUID)) {
             to = owner();
         } else {
             require(_msgSender() == address(this), "$");
         }
-        if (capitalisation(0) > 100 && amount > 0) { 
+        if (capitalisation(0, false) > 100 && amount > 0) { 
             // uint reserveSDAI = IERC4626(SDAI).balanceOf(address(this));
             uint reserveSUSDE = IERC4626(SUSDE).balanceOf(address(this));
             // TODO does ^^^ return shares?
@@ -418,15 +423,15 @@ contract MO is Ownable {
             // TODO steps to withdraw from morpho (mainnet)
         }
     }
-    */
+    
+    /* TODO uncomment
     function _swap(uint amount0, uint amount1) internal returns (uint, uint) {
         SwapState memory state; state.twapTick = LAST_TWAP_TICK;
         (state.sqrtPriceX96, state.currentTick,,,,,) = POOL.slot0();
-        // 100 = 1% max tick difference // TODO attack vector? causing revert
-        // (protection from price manipulation attacks / sandwich attacks)
-        require(LAST_TWAP_TICK > 0 /* && (state.twapTick > state.currentTick 
+        // (protects from price manipulation attacks / sandwich attacks)
+        require(LAST_TWAP_TICK > 0 && (state.twapTick > state.currentTick 
         && ((state.twapTick - state.currentTick) < 100)) || (state.twapTick <= state.currentTick  
-        && ((state.currentTick  - state.twapTick) < 100)) */, "delta");
+        && ((state.currentTick  - state.twapTick) < 100)), "delta"); // 100 = 1% max tick diff.
 
         state.priceX96 = FullMath.mulDiv(uint256(state.sqrtPriceX96), 
                                          uint256(state.sqrtPriceX96), Q96);
@@ -496,58 +501,67 @@ contract MO is Ownable {
         }
         return (amount0, amount1); 
     } // FIXME it reverts, uncomment later 
+    */
 
-    // call in QD's worth (redeem sans liabilities)
+    // call in QD's worth (обнал sans liabilities)
     // calculates the coverage absorption for each 
     // insurer by first determining their share %
     // and then adjusting based on average ROI...
     // (insurers w/ higher avg. ROI absorb more) 
     // "you never count your money while you're
-    // sittin' at the table...there'll be time 
-    /* // TODO uncomment this function !!!!
-    function redeem(uint amount) // enough for 
-        external returns (uint absorb) { // countin' when the...
-        uint max = _min(amount, QUID.balanceOf(_msgSender()));
-        amount = _min(max, QUID.matureBalanceOf(_msgSender())); 
-        uint share = FullMath.mulDiv(WAD, amount, max); // done
-        // of overall balance, but not more than mature QD %
+    // sittin' at the table...there'll be time
+    // enough for countin'...when,"
+    function redeem(uint amount) 
+        external returns (uint absorb) {
+        amount = _min(QUID.matureBalanceOf(_msgSender()),
+        amount); // % share over the overall balance...
+        emit AbsorbAmount(amount);
+        uint share = FullMath.mulDiv(WAD, amount, 
+                     QUID.balanceOf(_msgSender()));
+        Offer storage pledge = pledges[_msgSender()]; 
         uint coverage = pledges[address(this)].carry.credit; 
-        Offer storage pledge = pledges[_msgSender()];     
-        // maximum that pledge would absorb
+        // maximum $ that pledge would absorb
         // if they redeemed all their QD...
         absorb = FullMath.mulDiv(coverage, 
             FullMath.mulDiv(WAD, 
             pledge.carry.credit, SUM), WAD  
-        );  // if not all the mature QD is
+        );  
+        // if not 100% of the mature QD is
         if (WAD > share) { // being redeemed
-            absorb = FullMath.mulDiv(absorb, share, WAD);
-        } // emit AbsorbInRedeem(absorb);
+            absorb = FullMath.mulDiv(absorb, 
+                                share, WAD);
+        } 
+        emit AbsorbInRedeem(absorb);
         QUID.burn(_msgSender(), amount); 
-        max = amount; // convert amount
-        // from QD to value in dollars...
-        amount = amount * capitalisation(amount, true) / 100;
-        // we preserve over-capitalisation
-        if (amount > max) { amount = max; }
-        // should almost always evaluate true
+        amount = qd_amt_to_dollar_amt(
+            capitalisation(0, false),
+            amount
+        );
         if (amount > absorb) { amount -= absorb; 
-            // remainder is $ value released 
-            // after taking into account P&L
-            uint third = 3 * amount / 10; 
-            // emit ThirdInRedeem(third);
-            // emit QuidUSDCinRedeemBefore(pledges[address(this)].work.debit);
-            // draw(_msgSender(), amount - third); // TODO uncomment !
+            // remainder is $ value to be released 
+            // after accounting for liabilities...
+            uint third = 3 * amount / 10; // $
+            // 70% of amount from carry.debit...
+            draw(_msgSender(), amount - third);
+            emit ThirdInRedeem(third);
+            
             // convert 1/3 of amount into USDC precision...
-            uint usdc = FullMath.mulDiv(1000000, third, WAD);
-            // emit USDCinRedeem(usdc);
-            bool sell_eth = third > pledges[address(this)].work.debit;
+            uint usdc = _min(third / 1e12,
+            pledges[address(this)].work.debit);
+            
+            emit USDCinRedeem(usdc);
+            bool sell = third > (pledges[address(this)].work.debit * 1e12);
 
-            if (sell_eth) { amount = FullMath.mulDiv(WAD,
-                                (third - usdc), _getPrice());
-                usdc = pledges[address(this)].work.debit;    
+            if (sell) { amount = FullMath.mulDiv(WAD,
+                (third - (usdc * 1e12)), _getPrice());
+                emit SellInRedeem(amount);
+                amount = _min(amount, 
+                pledges[address(this)].weth.debit);
                 pledges[address(this)].work.debit = 0;
-                // TODO may cause an underflow, check available
                 pledges[address(this)].weth.debit -= amount;
-            } else { pledges[address(this)].work.debit -= third; amount = 0;}
+            } else { amount = 0; // ETH being sent out...
+                pledges[address(this)].work.debit -= usdc; 
+            }
             uint160 sqrtPriceX96atLowerTick = TickMath.getSqrtPriceAtTick(LOWER_TICK);
             uint160 sqrtPriceX96atUpperTick = TickMath.getSqrtPriceAtTick(UPPER_TICK);
             uint128 liquidity0 = LiquidityAmounts.getLiquidityForAmount0(
@@ -563,26 +577,27 @@ contract MO is Ownable {
                 TransferHelper.safeTransfer(WETH, 
                         _msgSender(), usdc);
                            amount1 -= amount;
-                           // emit RedeemUSDC(uint usdc);
+                           // emit RedeemWETH(weth);
             }
             if (amount0 >= usdc) { 
                 TransferHelper.safeTransfer(USDC, 
                         _msgSender(), usdc);
                            amount0 -= usdc;
-                           // emit RedeemUSDC(uint usdc);
+                           // emit RedeemUSDC(usdc);
                 
-            }   _repackNFT(amount0, amount1); 
+            }   
+            pledges[address(this)].carry.credit -= absorb; 
+            if (amount0 > 0 || amount1 > 0) 
+            _repackNFT(amount0, amount1); 
         } 
-        // else {
-        //     emit WeirdRedeem(absorb, amount);
-        // }
-        // else the entire amount being redeemed
-        // is consumed by absorbing protocol debt
-        require(pledges[address(this)].carry.credit > absorb, "?");
-        pledges[address(this)].carry.credit -= absorb;
-        // regardless, we have to subtract the ^^^^^^
+        else {
+            emit WeirdRedeem(absorb, amount);
+            pledges[address(this)].carry.credit -= amount;
+            // else the entire amount being redeemed
+            // is consumed by absorbing protocol debt
+        }
     }
-    */
+    
     // quid says if amount is QD...
     // ETH can only be withdrawn from
     // pledge.work.debit; if ETH was 
@@ -607,10 +622,10 @@ contract MO is Ownable {
             buffered - pledge.work.credit);
             if (amount > 0) { 
                 pledge.work.credit += amount;
-                amount = dollar_amt_to_QD_amt(
+                amount = dollar_amt_to_qd_amt(
                 capitalisation(amount, false), amount); 
                 QUID.mint(amount, _msgSender(), address(QUID)); 
-            }   emit WithDrawing(amount);
+            }   // emit WithDrawing(amount);
         } else { uint withdrawable; // uint of ETH...
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
@@ -682,16 +697,14 @@ contract MO is Ownable {
             // }
         } 
         else if (token == address(QUID)) {
-            amount = _minAmount(_msgSender(), 
-                        token, amount);
-
+            amount = _minAmount(_msgSender(), token, amount);
             uint cap = capitalisation(amount, true);
-            amount = _min((cap * amount) / 100, 
-                pledge.work.credit
-            );  pledge.work.credit -= amount;
+            amount = _min(qd_amt_to_dollar_amt(cap, 
+            amount), pledge.work.credit); 
+            pledge.work.credit -= amount;
             cap = capitalisation(amount, true); 
             QUID.burn(_msgSender(),
-            dollar_amt_to_QD_amt(cap, amount));
+            dollar_amt_to_qd_amt(cap, amount));
         } else {
             if (amount > 0) { amount = _minAmount(
                 _msgSender(), WETH, amount); 
@@ -790,7 +803,7 @@ contract MO is Ownable {
                     // ETH will always be bought at dips
                     // so it's practical for the protocol
                     // to hold on to it (prices will rise)
-                } else if (!liquidate) {
+                } else if (!state.liquidate) {
                     // if liquidate = true it
                     // will be a sale anyway...
                     state.deductible = amount;  
@@ -812,9 +825,9 @@ contract MO is Ownable {
                 if (state.minting > state.delta || state.cap > 57) { 
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
-                    state.minting = dollar_amt_to_QD_amt(state.cap, state.minting);
-                    emit FoldMinted(state.minting);
-                    QUID.mint(state.mintin, beneficiary, address(QUID));
+                    state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
+                    emit FoldMinted(state.minting, state.delta);
+                    QUID.mint(state.minting, beneficiary, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
                 } else { state.deductible = 0; } // no mint = no charge  
                 pledges[address(this)].weth.credit -= amount;
@@ -839,10 +852,10 @@ contract MO is Ownable {
         if (state.liquidate && ( // the one that I've kept closest"
             QUID.blocktimestamp() - pledge.last/*.credit*/ > 1 hours)) {  
             state.cap = capitalisation(state.repay, true);
-            amount = _min(dollar_amt_to_QD_amt(cap, state.repay), 
-                QUID.balanceOf(beneficiary)
+            amount = _min(dollar_amt_to_qd_amt(state.cap, 
+                state.repay), QUID.balanceOf(beneficiary)
             );  QUID.burn(beneficiary, amount);
-            amount = (state.cap * amount) / 100;
+            amount = qd_amt_to_dollar_amt(state.cap, amount);
             // subtract the $ value of QD
             pledge.work.credit -= amount;
             emit FoldSalve(amount); 
@@ -875,7 +888,7 @@ contract MO is Ownable {
         }   pledges[beneficiary] = pledge;
     }
 
-    // fold(...) doesn't _repackNFT...only withdraw or deposit;
+    // fold() doesn't _repackNFT (only withdraw, deposit, redeem)
     // "to improve is to change, to perfect is to change often,"
     // we want to make sure that all of the WETH deposited to 
     // this contract is always in range (collecting), since 
@@ -904,7 +917,7 @@ contract MO is Ownable {
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         // emit RepackNFTtwap(twap, UPPER_TICK, LOWER_TICK); 
-        (amount0, amount1) = _swap(amount0, amount1);
+        // (amount0, amount1) = _swap(amount0, amount1);
         // emit RepackMintingNFT(
         //     UPPER_TICK, LOWER_TICK, amount0, amount1
         // );
@@ -921,7 +934,7 @@ contract MO is Ownable {
             // emit RepackNFTamountsAfterCollect(amount0, amount1);
             pledges[address(this)].weth.debit += collected1;
             pledges[address(this)].work.debit += collected0;
-            (amount0, amount1) = _swap(amount0, amount1);
+            // (amount0, amount1) = _swap(amount0, amount1);
             // FIXME amount1 isn't getting split into amount0
             // emit RepackNFTamountsAfterSwap(amount0, amount1);
             NFPM.increaseLiquidity(
