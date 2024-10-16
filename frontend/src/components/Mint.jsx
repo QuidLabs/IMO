@@ -15,7 +15,7 @@ export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
   const { getTotalInfo, getUserInfo, getTotalSupply, changeButton, setStorage, getStorage,
-    addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai, mo } = useAppContext()
+    addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
   const [sdaiValue, setSdaiValue] = useState(0)
@@ -187,21 +187,21 @@ export const Mint = () => {
 
       const allowanceBigNumber = await sdai.methods.allowance(account, addressQD).call()
       const allowanceBigNumberBN = allowanceBigNumber ? allowanceBigNumber.toString() : 0
-      const addresQDBN = addressQD ? addressQD.toString() : 0
+      //const addresQDBN = addressQD ? addressQD.toString() : 0
 
       setStorage(prevNotifications => [
         ...prevNotifications,
         { severity: "info", message: `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}` }
       ])
 
-      if (parseInt(formatUnits(allowanceBigNumberBN, 18)) !== 0) {
-        setState("decreaseAllowance")
-        await sdai.methods.decreaseAllowance(addresQDBN, allowanceBigNumberBN).send({ from: account })
-      }
+      //if (parseInt(formatUnits(allowanceBigNumberBN, 18)) !== 0) {
+      //  setState("decreaseAllowance")
+      //  await sdai.methods.decreaseAllowance(addresQDBN, allowanceBigNumberBN).send({ from: account })
+      //}
 
       setState("approving")
 
-      if (account) await sdai.methods.approve(addressQD.toString(), sdaiAmount.toString()).send({ from: account })
+      if (account) await sdai.methods.approve(addressMO.toString(), sdaiAmount.toString()).send({ from: account })
 
       setStorage(prevNotifications => [
         ...prevNotifications,
@@ -225,7 +225,7 @@ export const Mint = () => {
       if (account) await mo.methods.deposit(
         beneficiaryAccount.toString(),
         qdAmount.toString(),
-        addressSDAI.toString()).send({ from: account }
+        addressSDAI.toString(), false).send({ from: account }
         )
 
       await getTotalInfo()
