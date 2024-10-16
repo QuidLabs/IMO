@@ -10,7 +10,6 @@ interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
 }   import "./MOulinette.sol";
-// 
 contract Quid is ERC20, 
     IERC721Receiver {
     uint public START;  
@@ -249,20 +248,20 @@ contract Quid is ERC20,
         // when we go below 0 in the while loop...
         if (to == address(0)) {
             i = int(matureBatches()); 
-            _burn(msg.sender, amount);
+            _burn(from, amount);
             // no _calculateMedian `to`
         } else { 
             i = int(currentBatch()); 
-            _transfer(msg.sender, to, amount);
+            _transfer(from, to, amount);
             // _calculateMedian(balance_to, to_vote, 
             //            balanceOf(to), to_vote);
         }   // loop from newest to oldest batch
         // until requested amount fulfilled...
         while (amount > 0 && i >= 0) { uint k = uint(i);    
-            uint amt = consideration[msg.sender][k];
+            uint amt = consideration[from][k];
             // emit TransferHelper(amt);
             if (amt > 0) { amt = _min(amount, amt);
-                consideration[msg.sender][k] -= amt;
+                consideration[from][k] -= amt;
                 // `to` may be address(0) but it's 
                 // irrelevant, wastes a bit of gas
                 consideration[to][k] += amt; 
@@ -332,11 +331,10 @@ contract Quid is ERC20,
             ); uint qd = MO(Moulinette).draw(
             from, GRIEVANCES); mint(qd, from, 
                 MO(Moulinette).USDE()); 
-            if (START != 0) { // x 8...TODO 
+            if (START != 0) { // x 8...TODO... 
                 // uint random = uint(keccak256(
                 //     abi.encodePacked(_seed, 
-                //     blockhash(block.number - 1), 
-                //     who))) % voters[batch].length;
+                //     block.prevrandao))) % voters[batch].length;
                 MO(Moulinette).setMetrics(roi, minted); 
                 require(blocktimestamp >= START + DAYS 
                 && batch < 17, "re-up"); // "like a boomerang

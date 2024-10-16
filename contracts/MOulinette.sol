@@ -1,5 +1,5 @@
 
-// SPDX-License-Identifier: AGPL-3.0-or-later
+// SPDX-License-Identifier: AGPL-3.0
 
 pragma solidity =0.8.8; 
 import {TransferHelper} from "./interfaces/TransferHelper.sol";
