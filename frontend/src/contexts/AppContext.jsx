@@ -87,7 +87,7 @@ export const AppContextProvider = ({ children }) => {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
       return null
     }
-  }, [account, usde, quid])
+  }, [account, mo, usde, quid])
 
   const getTotalInfo = useCallback(async () => {
     try {

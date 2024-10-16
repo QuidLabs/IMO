@@ -16,7 +16,7 @@ export const Mint = () => {
 
   const {
     getTotalInfo, getUserInfo, getTotalSupply,
-    addressQD, addressUSDE, account, connected, currentPrice, quid, usde, addressMO, mo} = useAppContext()
+    addressQD, addressUSDE, account, connected, currentPrice, quid, usde, mo} = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
   const [usdeValue, setUsdeValue] = useState(0)
@@ -178,7 +178,7 @@ export const Mint = () => {
 
       const allowanceBigNumber = await usde.methods.allowance(account, addressQD).call()
       const allowanceBigNumberBN = allowanceBigNumber ? allowanceBigNumber.toString() : 0
-      const address = addressMO ? addressMO.toString() : 0
+      //const address = addressMO ? addressMO.toString() : 0
 
       setNotifications(prevNotifications => [
         ...prevNotifications,
