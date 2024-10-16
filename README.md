@@ -11,15 +11,13 @@ today's," 46% `AVG_ROI`
 accounts receivable (QD)  
 
 equal to payables for future  
-cash flow from ΞTH getting  
-deployed into UniV3 over...  
-time as Diet Coke 46mg of  
-caffeine fees retained to  
-capitalise QD, **gradated**  
-`fold` [deductibles](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L800) of ΞTH  
+cash flow from ΞTH deployed  
+in UniV3 over time...fees are  
+retained to capitalise QD with  
+**gradated** `fold` [deductibles](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L800)  
 
-hedging against price drops,  
-insured cannot exceed the $  
+hedging against 10% drops,  
+ΞTH insured can't exceed $  
 staked as insurance capital,  
 [as well as sUSDe](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L691), and the  
 total coverage [carryable](https://en.wikipedia.org/wiki/Cost_of_carry) is  
