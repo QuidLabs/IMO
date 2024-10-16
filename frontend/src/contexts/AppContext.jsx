@@ -39,6 +39,8 @@ export const AppContextProvider = ({ children }) => {
   const [QDbalance, setQdBalance] = useState(null)
   const [SDAIbalance, setSdaiBalance] = useState(null)
 
+  const [mo, setMO] = useState(null)
+
   const [UsdBalance, setUsdBalance] = useState(null)
   const [localMinted, setLocalMinted] = useState(null)
 
@@ -108,7 +110,7 @@ export const AppContextProvider = ({ children }) => {
 
   const getSales = useCallback(async () => {
     try {
-      if (account && quid && sdai && addressQD) {
+      if (account && quid && sdai && addressQD && mo && addressMO) {
         const days = await quid.methods.DAYS().call()
         const startDate = await quid.methods.START_DATE().call()
 
@@ -124,7 +126,7 @@ export const AppContextProvider = ({ children }) => {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
       return null
     }
-  }, [account, sdai, quid])
+  }, [account, sdai, quid, mo])
 
   const getTotalInfo = useCallback(async () => {
     try {
@@ -250,10 +252,12 @@ export const AppContextProvider = ({ children }) => {
         if (accounts && provider) {
           const web3Instance = new Web3(provider)
           const quidContract = new web3Instance.eth.Contract(QUID, addressQD)
-          const sdaiContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
-
+          const moContract = new web3Instance.eth.Contract(MO, addressMO)
+          const usdeContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
+          setMO(moContract)
           setQuid(quidContract)
-          setSdai(sdaiContract)
+          setSdai(usdeContract)
+
         }
       } 
     } catch (error) {
@@ -278,6 +282,7 @@ export const AppContextProvider = ({ children }) => {
         setNotifications,
         setStorage,
         getStorage,
+        setMO,
         account,
         connected,
         connecting,
@@ -296,6 +301,7 @@ export const AppContextProvider = ({ children }) => {
         totalDeposite,
         totalMint,
         notifications,
+        mo,
         SECONDS_IN_DAY
       }}
     >
