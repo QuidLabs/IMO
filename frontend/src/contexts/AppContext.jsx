@@ -112,7 +112,7 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (account && quid && sdai && addressQD && mo && addressMO) {
         const days = await quid.methods.DAYS().call()
-        const startDate = await quid.methods.START_DATE().call()
+        const startDate = await quid.methods.START().call()
 
         const salesInfo = {
           mintPeriodDays: String(Number(days) / SECONDS_IN_DAY),
@@ -174,7 +174,7 @@ export const AppContextProvider = ({ children }) => {
 
         const bigNumber = BigNumber.from(Math.floor(value).toString())
 
-        const info = await quid.methods.get_info(account).call()
+        const info = await mo.methods.get_info(account).call()
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
 
@@ -188,7 +188,7 @@ export const AppContextProvider = ({ children }) => {
       console.warn(`Failed to get account info:`, error)
       return null
     }
-  }, [quid, account, currentTimestamp, connected])
+  }, [quid, account, currentTimestamp, connected, mo])
 
   const getSdai = useCallback(async () => {
     try {
