@@ -93,13 +93,13 @@ contract Quid is ERC20,
 
     function qd_amt_to_dollar_amt(uint qd_amt,  // used in frontend
         uint block_timestamp) public view returns (uint amount) {
-        uint in_days = ((block_timestamp - START) / 1 days); 
+        uint in_days = ((blocktimestamp - START) / 1 days); 
         amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
     }
     function get_total_supply_cap(uint block_timestamp) 
         public view returns (uint total_supply_cap) {
         uint in_days = ( // used in frontend only...
-            (block_timestamp - START) / 1 days
+            (blocktimestamp - START) / 1 days
         ) + 1; total_supply_cap = in_days * MAX_PER_DAY; 
     }
 
@@ -250,8 +250,7 @@ contract Quid is ERC20,
             i = int(matureBatches()); 
             _burn(from, amount);
             // no _calculateMedian `to`
-        } else { 
-            i = int(currentBatch()); 
+        } else { i = int(currentBatch()); 
             _transfer(from, to, amount);
             // _calculateMedian(balance_to, to_vote, 
             //            balanceOf(to), to_vote);
