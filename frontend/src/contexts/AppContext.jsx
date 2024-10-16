@@ -284,6 +284,7 @@ export const AppContextProvider = ({ children }) => {
         getStorage,
         setMO,
         account,
+        addressMO,
         connected,
         connecting,
         currentTimestamp,
