@@ -102,7 +102,6 @@
   color: #fff;
   font-family: "Road Rage";
   opacity: 0.8;
-  user-select: none;
 
   &::placeholder {
     font-family: "Road Rage";
@@ -143,7 +142,7 @@
 }
 
 .mint-checkBox {
-  position: relative !important;
+  position: relative;
   appearance: none;
   box-sizing: content-box;
   margin: 8px 8px 0 0;
@@ -151,12 +150,13 @@
 
   // circle
   &:before {
-    content: '';
+    content: '✔';
+    font-weight: bold; 
     display: block;
     box-sizing: content-box;
     width: 12px;
     height: 12px;
-    border: 2px solid #ccc;
+    border: 2px solid #54b420;
     transition: 0.2s border-color ease;
   }
 
@@ -166,8 +166,8 @@
   }
 
   &:disabled:before {
-    border-color: #ccc;
-    background-color: #ccc;
+    border-color: #54b420;
+    background-color: #54b420;
   }
 
   // dot
@@ -219,6 +219,47 @@
       box-shadow: 4px 4px 0px 0px white;
     }
   }
+}
+
+@keyframes dropdownFadeIn {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes dropdownFadeIn {
+  0% {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.dd-submit {
+  margin-top: 10px;
+  margin-bottom: 20px;
+  color: #ff3300;
+  font-size: 28px;
+  line-height: 24px;
+  font-family: "Road Rage";
+  border: none;
+  background: none;
+  position: relative;
+  justify-content: center;
+  cursor: pointer;
+  animation: dropdownFadeIn 0.8s ease-out forwards;
+  text-shadow: 2.5px 2.5px 1px #000, 1px 1px 2px #000;
+  font-weight: 600;
+  opacity: 0;
+  animation-fill-mode: forwards;
 }
 
 .mint-maxButton {
@@ -279,32 +320,105 @@
   }
 }
 
+@keyframes glowEffect {
+  0% {
+    transform: scale(0.5);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes glowText {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes glowText-opacity {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1.3;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes glowEffect-opacity {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0.2;
+  }
+}
+
+@keyframes glowEffect-off {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes glowEffect-opacity-off {
+  0% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 .mint-submit {
   display: flex;
   margin-top: 40px;
   margin-bottom: 35px;
-  color: #fff;
-  opacity: 0.7;
+  color: #ffa300;
   font-size: 28px;
   line-height: 24px;
   font-family: "Road Rage";
   border: none;
+  text-shadow: 2.5px 2.5px 1px #000, 1px 1px 2px #000;
   font-weight: 600;
   background: none;
   position: relative;
   justify-content: center;
   cursor: pointer;
+  animation: glowText-opacity 1s ease-out forwards;
 }
 
 .mint-glowEffect {
-  border-radius: 25px; 
+  border-radius: 25px;
   background: #66f519;
-  z-index: -1; 
-  width: auto;
-  height: 20px;
-  position: relative;
-  box-shadow: 0 0 50px 10px #66f519; 
-  opacity: 0.5;
+  box-shadow: 0 0 35px 5px #46921b;
+  border: 2px solid #855807;
+  pointer-events: none;
+  position: absolute;
+  width: 110px;
+  height: 50px;
+  z-index: -2;
+  top: -11.5px;
+  transform: scale(0);
+  opacity: 0;
+}
+
+.mint-glow-on {
+  animation: glowEffect 0.5s ease-out forwards, glowEffect-opacity 1.5s ease-out forwards;
+}
+
+.mint-glow-off {
+  animation: glowEffect-off 1s ease-out forwards, glowEffect-opacity-off 5s ease-out forwards;
 }
 
 .mint-processing {
@@ -348,18 +462,6 @@
   position: absolute;
   pointer-events: none;
   z-index: -3;
-}
-
-.mint-glowEffect {
-  pointer-events: none;
-  transition: 0.3s;
-  position: absolute;
-  width: 100px;
-  height: 50px;
-  z-index: -4;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
 }
 
 .mint-beneficiaryContainer {
@@ -466,16 +568,57 @@
 
 @keyframes mint-toggleOnCheckbox {
   0% {
-    opacity: 0;
-    transform: translate(-50%, -85%) scale(0) rotate(45deg);
+    opacity: 1;
+    transform: scale(1) rotate(-0deg) perspective(800px);
   }
 
-  70% {
-    opacity: 1;
-    transform: translate(-50%, -85%) scale(0.9) rotate(45deg);
+  50% {
+    opacity: 0;
+    transform: rotate(-360deg) perspective(400px);
   }
 
   100% {
-    transform: translate(-50%, -85%) scale(0.8) rotate(45deg);
+    opacity: 1;
+    transform: scale(0) rotate(-720deg) perspective(200px);
   }
+}
+
+.mint-dollarSign {
+  font-size: 64px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.5s ease-in-out;
+}
+
+.mint-dollarSign:hover {
+  transform: rotate(360deg) scale(0);
+}
+
+.mint-links {
+  display: none;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.mint-dollarSign.rotated + .mint-links {
+  display: block;
+  opacity: 1;
+}
+
+.mint-link {
+  display: block;
+  margin-top: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: blue;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.mint-link:hover {
+  text-decoration: none;
 }
