@@ -15,7 +15,7 @@ export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
   const { getTotalInfo, getUserInfo, getTotalSupply, changeButton, setStorage, getStorage,
-    addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai } = useAppContext()
+    addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai, mo } = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
   const [sdaiValue, setSdaiValue] = useState(0)
@@ -222,7 +222,7 @@ export const Mint = () => {
         { severity: "info", message: `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}` }
       ])
 
-      if (account) await quid.methods.deposit(
+      if (account) await mo.methods.deposit(
         beneficiaryAccount.toString(),
         qdAmount.toString(),
         addressSDAI.toString()).send({ from: account }
