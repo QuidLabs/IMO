@@ -31,12 +31,9 @@ export const Summary = () => {
   const updatingInfo = useCallback(async () => {
     try {
       if (quid && sdai && addressQD) {
+        const updatedInfo = await getUserInfo()
+        const updatedSales = await getSales()
         
-        const [updatedInfo, updatedSales] = await Promise.all([
-          getUserInfo(),
-          getSales()
-        ])
-
         const days = await calculateDays()
 
         if (updatedInfo) {
