@@ -2,7 +2,7 @@
 // TODO replace address
 export const addressQD = '0xe81C53B7E0e6F6F7eaf94Ac7C04a149842291E1F';
 export const addressMO = '0xd825E3788c53df1d2F42164947F79db815E2aadA'
-export const addressUSDE = '0x0aBe0Ca0CEfD2d987BaD46cCC6c714616992F1Bc';
+export const addressSDAI = '0x0aBe0Ca0CEfD2d987BaD46cCC6c714616992F1Bc';
 export const addressSUSDE = '0x489A24380B9ae5b99f764038DdB5Dae46B11D8BB';
 
 export const QUID = [  {
@@ -1461,7 +1461,7 @@ export const MO = [ {
   "type": "function"
 }];
 
-export const USDE = [ {
+export const SDAI = [ {
   "inputs": [],
   "stateMutability": "nonpayable",
   "type": "constructor"
