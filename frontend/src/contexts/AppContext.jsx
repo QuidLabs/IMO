@@ -110,8 +110,11 @@ export const AppContextProvider = ({ children }) => {
 
   const getSales = useCallback(async () => {
     try {
+      
       if (account && quid && sdai && addressQD && mo && addressMO) {
+
         const days = await quid.methods.DAYS().call()
+
         const startDate = await quid.methods.START().call()
 
         const salesInfo = {
@@ -253,7 +256,7 @@ export const AppContextProvider = ({ children }) => {
           setSdai(usdeContract)
 
         }
-      } 
+      }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
@@ -270,8 +273,8 @@ export const AppContextProvider = ({ children }) => {
         getSales,
         getTotalSupply,
         setAllInfo,
-        getSdaiBalance, 
-        getQdBalance, 
+        getSdaiBalance,
+        getQdBalance,
         changeButton,
         setNotifications,
         setStorage,
