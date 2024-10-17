@@ -132,42 +132,34 @@ export const AppContextProvider = ({ children }) => {
 
   const getTotalInfo = useCallback(async () => {
     try {
-      setAccountTimestamp((Date.now() / 1000).toFixed(0))
-
       if (connected && account && quid && sdai && addressQD) {
-        const qdAmount = parseUnits("1", 18).toBigInt()
-
-        const data = await quid.methods.qd_amt_to_dollar_amt(qdAmount, currentTimestamp).call()
-
-        const value = Number(formatUnits(data, 18) * 100)
-
-        const bigNumber = BigNumber.from(Math.floor(value).toString())
-
         const totalSupply = await quid.methods.totalSupply().call()
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
-
-        if (totalMint !== formattedTotalMinted) setTotalMinted(formattedTotalMinted)
 
         const balance = await sdai.methods.balanceOf(addressQD).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
+        if (totalMint !== formattedTotalMinted) setTotalMinted(formattedTotalMinted)
+
         if (totalDeposite !== formattedTotalDeposited) setTotalDeposited(formattedTotalDeposited)
 
-        if (formattedTotalDeposited && formattedTotalMinted && bigNumber) {
-          return { total_dep: formattedTotalDeposited, total_mint: formattedTotalMinted, price: bigNumber.toString() }
+        const totalInfo = {
+          total_dep: formattedTotalDeposited,
+          total_mint: formattedTotalMinted
         }
+
+        if (formattedTotalDeposited && formattedTotalMinted) return totalInfo
       }
     } catch (error) {
       console.error("Error in updateInfo: ", error)
     }
-  }, [account, connected, quid, sdai, currentTimestamp, totalMint, totalDeposite])
+  }, [account, connected, quid, sdai, totalMint, totalDeposite])
 
   const getUserInfo = useCallback(async () => {
     try {
       setAccountTimestamp((Date.now() / 1000).toFixed(0))
 
       if (connected && account && quid) {
-
         const qdAmount = parseUnits("1", 18).toBigInt()
 
         const data = await quid.methods.qd_amt_to_dollar_amt(qdAmount, currentTimestamp).call()
@@ -180,17 +172,20 @@ export const AppContextProvider = ({ children }) => {
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
 
-        setPrice(bigNumber.toString())
+        setPrice(bigNumber)
         setUsdBalance(actualUsd)
         setLocalMinted(actualQD)
 
-        return { actualUsd: actualUsd, actualQD: actualQD, price: bigNumber.toString(), info: info }
+        const userInfo = {
+          actualUsd: actualUsd, actualQD: actualQD, price: currentPrice, info: info
+        }
+
+        return userInfo
       }
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
-      return null
     }
-  }, [quid, account, currentTimestamp, connected, mo])
+  }, [quid, account, connected, currentTimestamp, currentPrice, mo])
 
   const getSdai = useCallback(async () => {
     try {
