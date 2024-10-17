@@ -50,7 +50,8 @@ export const Mint = () => {
   }
 
   const qdAmountToSdaiAmt = async (qdAmount, delay = 0) => {
-    const currentTimestamp = (await quid.methods.blocktimestamp()).toFixed(0)
+    const tx = await quid.methods.blocktimestamp().call()
+    const currentTimestamp = Number(tx.toString())
     const currentTimestampBN = currentTimestamp.toString()
     const qdAmountBN = qdAmount ? qdAmount.toString() : 0
 

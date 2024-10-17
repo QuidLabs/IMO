@@ -354,13 +354,13 @@ async function main() { // run some tests on our contracts...
 
     tx = await QD.fast_forward(0)
     await tx.wait()
-    try {
-      tx = await MOWithSecondary.redeem(bill)
-      await tx.wait()
-    }
-    catch (error) {
-      console.error("Error in redeem QD:", error)
-    }
+    // try {
+    //   tx = await MOWithSecondary.redeem(bill)
+    //   await tx.wait()
+    // }
+    // catch (error) {
+    //   console.error("Error in redeem QD:", error)
+    // }
 
     tx = await MO.get_more_info(secondary)
     console.log("get_more_info(secondary)", tx.toString());

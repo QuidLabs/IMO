@@ -73,7 +73,6 @@ contract Quid is ERC20,
         if (period == 0 || period >= 43) { restart(); }
     } 
     
-    // 
     constructor(address _mo)
         ERC20("QU!D", "QD") {
         deployed = block.timestamp;
@@ -102,11 +101,6 @@ contract Quid is ERC20,
             (blocktimestamp - START) / 1 days
         ) + 1; total_supply_cap = in_days * MAX_PER_DAY; 
     }
-
-    function get_time() external {
-        return blocktimestamp;
-    }
-
     function vote(uint new_vote) external 
         postLaunch { uint batch = currentBatch();
         if (batch < 16 && !hasVoted[msg.sender][batch]) {

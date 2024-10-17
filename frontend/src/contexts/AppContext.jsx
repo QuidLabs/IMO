@@ -89,9 +89,9 @@ export const AppContextProvider = ({ children }) => {
 
   const getTotalSupply = useCallback(async () => {
     try {
-      setAccountTimestamp((Date.now() / 1000).toFixed(0))
-
       if (account && connected && quid && currentTimestamp) {
+        const timestamp = await quid.methods.blocktimestamp().call()
+        setAccountTimestamp(Number(timestamp))
         const currentTimestampBN = currentTimestamp.toString()
 
         const [totalSupplyCap] = await Promise.all([
@@ -158,9 +158,11 @@ export const AppContextProvider = ({ children }) => {
 
   const getUserInfo = useCallback(async () => {
     try {
-      setAccountTimestamp((Date.now() / 1000).toFixed(0))
+      
 
       if (connected && account && quid) {
+        const timestamp = await quid.methods.blocktimestamp().call()
+        setAccountTimestamp(Number(timestamp.toString()))
         const qdAmount = parseUnits("1", 18).toBigInt()
 
         const data = await quid.methods.qd_amt_to_dollar_amt(qdAmount, currentTimestamp).call()
