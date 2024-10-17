@@ -1,6 +1,4 @@
-
 ## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
-
 insurers `mint` **Q**ui**D** for  
 `USDe`xUSDS...Over 2yr  
 are 16 chances  to `mint`:  
@@ -68,9 +66,9 @@ All Rights Reserved rico@quid.io
 This software `README` includes material   
 of Quid Labs; quid.io owned by QU!D LTD  
 THIS `README` IS PROVIDED "AS IS," AND  
-© HOLDERS MAKE NO REPRESENTATIONS  
+© HOLDERS MAKE NO REPRESENTATIONSv OR  
 
-OR WARRANTIES, EXPRESS OR IMPLIED, INCLUDING,   
+WARRANTIES, EXPRESS OR IMPLIED, INCLUDING,   
 NOT LIMITED TO, MERCHANTABILITY WARRANTIES    
 OF FITNESS FOR A PARTICULAR PURPOSE OR TITLE.  
 
@@ -83,7 +81,10 @@ DAMAGES ARISING OUT OF [PERFORMANCE](https://x.com/lex_node/status/1845182121553
 USE OF CONTENTS OR THEIR IMPLEMENTATION.  
 
 ### Launch instructions
-
 `npm install` from the root directory, followed by:  
-`SHOULD_DEPLOY=true npx hardhat run --network sepolia scripts/deploy.js`  
-`cd ./frontend && npm install && npm run dev`
+`SHOULD_DEPLOY=true npx hardhat run`  
+`--network sepolia scripts/`[deploy.js](https://github.com/QuidLabs/IMO/blob/main/scripts/deploy.js)  
+`cd ./frontend && npm install && npm run dev`  
+if you run it again with `DEPLOY=false` make sure  
+to comment out the `fast_forward()` line which  
+2 years expends; `currentBatch` 17 is the last.  

@@ -362,6 +362,9 @@ async function main() { // run some tests on our contracts...
     //   console.error("Error in redeem QD:", error)
     // }
 
+    let batch = await QD.currentBatch() 
+    console.log('batch', batch.toString())
+
     tx = await MO.get_more_info(secondary)
     console.log("get_more_info(secondary)", tx.toString());
     

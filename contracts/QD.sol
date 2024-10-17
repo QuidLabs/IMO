@@ -17,23 +17,20 @@ contract Quid is ERC20,
     // kitchen, found a 
     // [Pod] to [Piscine]" ~ tune chi
     Pod[44][16] Piscine; // 16 batches
-    // 44th day stores batch's total...
-    event Medianizer(uint k, uint sum_w_k); // TODO test
-    // event TransferHelper(uint amount);
-    uint public blocktimestamp; // TODO remove (Sepolia)
-    uint constant LAMBO = 16508; // TODO mainnet only
-    uint constant public WAD = 1e18; 
-    uint constant PENNY = WAD / 100;
+    // 44th day stores batch's total
+    uint constant PENNY = 1e16;
+    uint constant LAMBO = 16508;
+    uint constant public WAD = 1e18;
     uint constant DIME = 10 * WAD; // 🧳 
     uint constant public DAYS = 43 days; 
     uint public START_PRICE = 50 * PENNY; 
-    struct Pod { uint credit; uint debit; } // EigenPods?
+    struct Pod { uint credit; uint debit; }
     // "they want their grievances aired on the assumption
     // that all right-thinking persons would be persuaded
     // that problems of the world can be solved," by true 
     // dough, Pierre, not your unsual money, version mint
-    uint constant GRIEVANCES = 134420 * WAD; // in USDe
-    uint constant BACKEND = 444477 * WAD; // x 16 (QD)
+    uint constant GRIEVANCES = 134420 * 1e18; // in USDe
+    uint constant BACKEND = 444477 * 1e18; // x 16 (QD)
     // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
@@ -41,7 +38,7 @@ contract Quid is ERC20,
     // Moulinette gives an equitable remedy, and whose 
     // performance is recognised as reasonable duty or
     // tender (an unconditional offer to perform)...
-    uint constant public MAX_PER_DAY = 777_777 * WAD;
+    uint constant public MAX_PER_DAY = 777_777 * 1e18;
     uint[90] public WEIGHTS; // sum of weights... 
     mapping (address => bool[16]) public hasVoted;
     // when a token-holder votes for a fee, their
@@ -64,22 +61,21 @@ contract Quid is ERC20,
         require(currentBatch() > 0, "after");  
         _; 
     }
-    // multsig for 2M tithe, initial liquidity to 
-    // enter it upon setQuid
+    event Medianizer(uint k, uint sum_w_k); // TODO test
+    // event TransferHelper(uint amount);
+    uint public blocktimestamp; // TODO remove (Sepolia)
     function fast_forward(uint period) external { 
         // TODO remove...only for testing on Sepolia
         if (period == 0) { blocktimestamp += 360 days; } 
         else { blocktimestamp += 1 days * period; }   
         if (period == 0 || period >= 43) { restart(); }
     } 
-    
     constructor(address _mo)
         ERC20("QU!D", "QD") {
         deployed = block.timestamp;
         blocktimestamp = deployed;
         Moulinette = _mo;
     }
-    
     function _min(uint _a, uint _b) internal 
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
@@ -119,13 +115,13 @@ contract Quid is ERC20,
     function currentBatch() public view returns (uint batch) {
         batch = (blocktimestamp - deployed) / DAYS;
         // for last 8 batches to be redeemable, batch reaches 24
-        require(batch < 24, "42"); 
+        require(batch < 25, "42"); 
     }
     function matureBatches() 
         public view returns (uint) {
         uint batch = currentBatch(); 
         if (batch < 8) { return 0; }
-        else if (batch < 24) {
+        else if (batch < 25) {
             return batch - 8;
         } else { return 16; }
         // over 16 would result

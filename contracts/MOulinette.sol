@@ -380,7 +380,7 @@ contract MO is Ownable {
         uint amount) public returns (uint qd) { 
         if (_msgSender() == address(QUID)) {
             qd = dollar_amt_to_qd_amt(
-            capitalisation(0, false), 
+                capitalisation(0, false), 
             amount / 2); to = owner();
         } else { require(_msgSender() == address(this), "$"); }
         if (capitalisation(0, false) > 100 && amount > 0) { 
@@ -531,14 +531,13 @@ contract MO is Ownable {
         if (WAD > share) { // being redeemed
             absorb = FullMath.mulDiv(absorb, 
                                 share, WAD);
-        } 
-        emit AbsorbInRedeem(absorb);
-        QUID.burn(_msgSender(), amount); 
+        }   emit AbsorbInRedeem(absorb);
+        // QUID.burn(_msgSender(), amount); 
         amount = qd_amt_to_dollar_amt(
             capitalisation(0, false),
             amount
-        );
-        if (amount > absorb) { amount -= absorb; 
+        );  emit AbsorbAmount(amount);
+        if (amount > absorb) { /* amount -= absorb; 
             // remainder is $ value to be released 
             // after accounting for liabilities...
             uint third = 3 * amount / 10; // $
@@ -596,6 +595,8 @@ contract MO is Ownable {
             pledges[address(this)].carry.credit -= amount;
             // else the entire amount being redeemed
             // is consumed by absorbing protocol debt
+        }
+        */
         }
     }
     
