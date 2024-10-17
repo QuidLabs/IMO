@@ -81,7 +81,7 @@ DAMAGES ARISING OUT OF [PERFORMANCE](https://x.com/lex_node/status/1845182121553
 USE OF CONTENTS OR THEIR IMPLEMENTATION.  
 
 ### Launch instructions
-`npm install` from the root directory, followed by:  
+`npm install` from the root directory,   
 `SHOULD_DEPLOY=true npx hardhat run`  
 `--network sepolia scripts/`[deploy.js](https://github.com/QuidLabs/IMO/blob/main/scripts/deploy.js)  
 `cd ./frontend && npm install && npm run dev`  

@@ -12,6 +12,7 @@ interface ICollection is IERC721 {
 }   import "./MOulinette.sol";
 contract Quid is ERC20, 
     IERC721Receiver {
+    uint public AVG_ROI;
     uint public START;  
     // "Walked in the 
     // kitchen, found a 
@@ -20,8 +21,6 @@ contract Quid is ERC20,
     // 44th day stores batch's total
     uint constant PENNY = 1e16;
     uint constant LAMBO = 16508;
-    uint constant public WAD = 1e18;
-    uint constant DIME = 10 * WAD; // 🧳 
     uint constant public DAYS = 43 days; 
     uint public START_PRICE = 50 * PENNY; 
     struct Pod { uint credit; uint debit; }
@@ -62,6 +61,7 @@ contract Quid is ERC20,
         _; 
     }
     event Medianizer(uint k, uint sum_w_k); // TODO test
+    event Restart(uint batch);
     // event TransferHelper(uint amount);
     uint public blocktimestamp; // TODO remove (Sepolia)
     function fast_forward(uint period) external { 
@@ -89,7 +89,7 @@ contract Quid is ERC20,
     function qd_amt_to_dollar_amt(uint qd_amt,  // used in frontend
         uint block_timestamp) public view returns (uint amount) {
         uint in_days = ((blocktimestamp - START) / 1 days); 
-        amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
+        amount = (in_days * PENNY + START_PRICE) * qd_amt / 1e18;
     }
     function get_total_supply_cap(uint block_timestamp) 
         public view returns (uint total_supply_cap) {
@@ -177,23 +177,6 @@ contract Quid is ERC20,
         if (answerDigits > 18) { price /= 10 ** (answerDigits - 18); }
         else if (answerDigits < 18) { price *= 10 ** (18 - answerDigits); } 
     }
-    function calc_avg_return() public view returns 
-        (uint minted, uint avg_roi) { uint x = 0;
-        uint batch = currentBatch(); 
-        uint num_days = DAYS / 1 days;
-        batch = (batch > 16) ? 16 : batch;
-        uint total = num_days * (batch + 1);
-        while (x <= batch) { uint so_far = 0; 
-            for (uint y = 0; y < num_days; y++) {
-                Pod memory day = Piscine[x][y]; 
-                if (day.credit > 0 && day.debit > 0) {
-                    avg_roi += FullMath.mulDiv(WAD, 
-                    day.credit - day.debit, day.debit);  
-                    so_far += day.credit;
-                } else { total -= 1; }
-            }   minted += so_far; x++;
-        }   avg_roi /= total; 
-    }
 
     /** https://x.com/QuidMint/status/1833820062714601782
      *  Find value of k in range(0, len(Weights)) such that 
@@ -237,7 +220,7 @@ contract Quid is ERC20,
         uint from_vote = feeVotes[from];
         uint to_vote = feeVotes[to];
         amount = _min(amount, balanceOf(from));
-        require(amount > WAD, "insufficient QD"); 
+        require(amount > 1e18, "insufficient QD"); 
         int i; // must be int otherwise tx reverts
         // when we go below 0 in the while loop...
         if (to == address(0)) {
@@ -274,7 +257,7 @@ contract Quid is ERC20,
             consideration[pledge][batch] += amount;
             // TODO parlay carry.credit burning QD... 
             uint in_days = ((blocktimestamp - START) / 1 days);
-            require(amount >= DIME, "mint more QD");
+            require(amount >= 10 * 1e18, "mint more QD");
             Pod memory total = Piscine[batch][43];
             Pod memory day = Piscine[batch][in_days]; 
             uint supply_cap = (in_days + 1) * MAX_PER_DAY; 
@@ -282,11 +265,11 @@ contract Quid is ERC20,
             // Yesterday's price is NOT today's price,
             // and when I think I'm running low, you're 
             uint price = in_days * PENNY + START_PRICE;
-            cost = _minAmount(pledge, token, // USDe
-                FullMath.mulDiv(price, amount, WAD)
+            cost = _minAmount(pledge, token, // USDe...
+                FullMath.mulDiv(price, amount, 1e18)
             ); // _minAmount returns less than expected
             // we calculate amount twice because maybe
-            amount = FullMath.mulDiv(WAD, cost, price); 
+            amount = FullMath.mulDiv(1e18, cost, price); 
             consideration[pledge][batch] += amount;
             _mint(pledge, amount); // totalSupply++
             day.credit += amount; day.debit += cost;
@@ -317,7 +300,6 @@ contract Quid is ERC20,
         require(data.length >= 32, "Insufficient data");
         bytes32 _seed = abi.decode(data[:32], (bytes32)); 
         if (tokenId == LAMBO && parker == address(this)) {
-            (uint minted, uint roi) = calc_avg_return();
             uint batch = currentBatch() - 1;
             ICollection(F8N).transferFrom(
                 address(this), from, LAMBO
@@ -327,8 +309,9 @@ contract Quid is ERC20,
             if (START != 0) { // x 8...TODO... 
                 // uint random = uint(keccak256(
                 //     abi.encodePacked(_seed, 
-                //     block.prevrandao))) % voters[batch].length;
-                MO(Moulinette).setMetrics(roi, minted); 
+                //     block.prevrandao))) 
+                // % voters[batch].length;
+                MO(Moulinette).setMetrics(AVG_ROI); 
                 require(blocktimestamp >= START + DAYS 
                 && batch < 17, "re-up"); // "like a boomerang
             } // ...I need a...^^^^^^ same level, same rebel
@@ -341,13 +324,19 @@ contract Quid is ERC20,
         } return this.onERC721Received.selector; // TODO ^
     }
 
-    function restart() public { // TODO remove, Sepolia only
-        if (START != 0) {
-            (uint minted, uint roi) = calc_avg_return();
-            MO(Moulinette).setMetrics(roi, minted);
-            require(blocktimestamp > START + DAYS &&
+    // TODO remove, Sepolia only
+    function restart() public { 
+        START = blocktimestamp; 
+        if (START != 0) { 
+            uint batch = currentBatch();
+            emit Restart(batch);
+            Pod memory day = Piscine[batch - 1][43];  
+            AVG_ROI += FullMath.mulDiv(1e18, 
+            day.credit - day.debit, day.debit);
+            MO(Moulinette).setMetrics(AVG_ROI / 
+                (DAYS / 1 days) * batch
+            );  require(blocktimestamp > START + DAYS &&
                     currentBatch() < 17, "can't restart");
-        }  
-        START = blocktimestamp;      
+        }              
     }
 }

@@ -129,9 +129,9 @@ async function main() { // run some tests on our contracts...
     const filterMO = { address: addresses.Moulinette, 
         fromBlock: fromBlock, toBlock: toBlock 
     };
-    // const filterQD = { address: addresses.Quid, 
-    //   fromBlock: fromBlock, toBlock: toBlock 
-    // };
+    const filterQD = { address: addresses.Quid, 
+      fromBlock: fromBlock, toBlock: toBlock 
+    };
     // Query logs based on the filter
     const logsMO = await provider.getLogs(filterMO)
     logsMO.forEach((log) => {
@@ -159,25 +159,25 @@ async function main() { // run some tests on our contracts...
     //     fromBlock: fromBlock, toBlock: toBlock 
     // };
     // // Query logs based on the filter
-    // const logsQD = await provider.getLogs(filterQD)
-    // // TODO test medianiser
-    // logsQD.forEach((log) => {
-    //     try {
-    //         // Decode the log using the contract's interface
-    //         const parsedLog = QD.interface.parseLog(log)
-    //         // Custom handling of BigInt serialization
-    //         const argsWithBigIntConverted = JSON.stringify(parsedLog.args, (key, value) =>
-    //           typeof value === 'bigint' ? value.toString() : value
-    //         );
-    //         console.log(`Event: ${parsedLog.name}`)
-    //         console.log(`Args: ${argsWithBigIntConverted}`)
-    //     } catch (error) {
-    //         console.error("Error decoding log:", error)
-    //     }
-    //     console.log(`Block Number: ${log.blockNumber}`)
-    //     console.log(`Transaction Hash: ${log.transactionHash}`)
-    //     console.log('----------------------------------------')
-    // })
+    const logsQD = await provider.getLogs(filterQD)
+    // TODO test medianiser
+    logsQD.forEach((log) => {
+        try {
+            // Decode the log using the contract's interface
+            const parsedLog = QD.interface.parseLog(log)
+            // Custom handling of BigInt serialization
+            const argsWithBigIntConverted = JSON.stringify(parsedLog.args, (key, value) =>
+              typeof value === 'bigint' ? value.toString() : value
+            );
+            console.log(`Event: ${parsedLog.name}`)
+            console.log(`Args: ${argsWithBigIntConverted}`)
+        } catch (error) {
+            console.error("Error decoding log:", error)
+        }
+        console.log(`Block Number: ${log.blockNumber}`)
+        console.log(`Transaction Hash: ${log.transactionHash}`)
+        console.log('----------------------------------------')
+    })
     var balance
     var tx; var receipt
     const threeWeeks = '22' // in seconds
@@ -324,19 +324,19 @@ async function main() { // run some tests on our contracts...
     tx = await MO.set_price_eth(false, false) 
     await tx.wait()
 
-    console.log("calling fold")
-    // simulate a price drop, so that we can claim 
-    try {
-      tx = await MO.fold(beneficiary, amountInWei, false) 
-      await tx.wait() 
-      // try fold with sell
-      // // simulate a price drop, so that we can claim 
-      // tx = await MO.fold(beneficiary, amountInWei, true) 
-      // await tx.wait() // this seems to work    
-    }
-    catch (error) {
-      console.error("Error in fold:", error)
-    }
+    // console.log("calling fold")
+    // // simulate a price drop, so that we can claim 
+    // try {
+    //   tx = await MO.fold(beneficiary, amountInWei, false) 
+    //   await tx.wait() 
+    //   // try fold with sell
+    //   // // simulate a price drop, so that we can claim 
+    //   // tx = await MO.fold(beneficiary, amountInWei, true) 
+    //   // await tx.wait() // this seems to work    
+    // }
+    // catch (error) {
+    //   console.error("Error in fold:", error)
+    // }
     
     tx = await MO.get_more_info(beneficiary)
     console.log("get_more_info(beneficiary)", tx.toString());
@@ -351,7 +351,8 @@ async function main() { // run some tests on our contracts...
     console.log("get_info(MO):", tx.toString());
 
     // TODO try fold with sell and liquidate at the same time
-
+    var batch = await QD.currentBatch() 
+    console.log('batch', batch.toString())
     tx = await QD.fast_forward(0)
     await tx.wait()
     // try {
@@ -362,7 +363,7 @@ async function main() { // run some tests on our contracts...
     //   console.error("Error in redeem QD:", error)
     // }
 
-    let batch = await QD.currentBatch() 
+    batch = await QD.currentBatch() 
     console.log('batch', batch.toString())
 
     tx = await MO.get_more_info(secondary)
