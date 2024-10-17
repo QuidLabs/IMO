@@ -33,10 +33,7 @@ export const Summary = () => {
   const updatingInfo = useCallback(async () => {
     try {
       if (quid && sdai && addressQD) {
-        const updatedInfo = await getUserInfo()
-        const updatedSales = await getSales()
-
-        const days = await calculateDays()
+        const [updatedInfo, updatedSales, days] = await Promise.all([getUserInfo(),getSales(), calculateDays()])
 
         if (updatedInfo) {
           setTotalDeposited(updatedInfo.actualUsd)
