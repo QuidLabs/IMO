@@ -35,18 +35,16 @@ export const Summary = () => {
       if (quid && sdai && addressQD) {
         const [updatedInfo, updatedSales, days] = await Promise.all([getUserInfo(),getSales(), calculateDays()])
 
-        if (updatedInfo) {
+        if (updatedInfo && updatedSales && days) {
           setTotalDeposited(updatedInfo.actualUsd)
           setTotalMinted(updatedInfo.actualQD)
           setPrice(updatedInfo.price)
 
           setDays(days.left)
+
+          setMintPeriodDays(updatedSales.mintPeriodDays)
+          setSmartContractStartTimestamp(updatedSales.smartContractStartTimestamp)
         }
-
-        setMintPeriodDays(updatedSales.mintPeriodDays)
-        setSmartContractStartTimestamp(updatedSales.smartContractStartTimestamp)
-
-
       }
     } catch (error) {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
