@@ -22,6 +22,7 @@ export const Summary = () => {
   const calculateDays = useCallback(async () => {
     try {
       const actualDays = Number(mintPeriodDays) - (Number(currentTimestamp) - Number(smartContractStartTimestamp)) / SECONDS_IN_DAY
+      console.log('actualDays', actualDays)
       const frmtdDays = Math.max(Math.ceil(actualDays), 0)
 
       return { left: frmtdDays }

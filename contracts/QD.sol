@@ -70,7 +70,7 @@ contract Quid is ERC20,
         // TODO remove...only for testing on Sepolia
         if (period == 0) { blocktimestamp += 360 days; } 
         else { blocktimestamp += 1 days * period; }   
-        if (period >= 43) { restart(); }
+        if (period == 0 || period >= 43) { restart(); }
     } 
     
     // 
@@ -101,6 +101,10 @@ contract Quid is ERC20,
         uint in_days = ( // used in frontend only...
             (blocktimestamp - START) / 1 days
         ) + 1; total_supply_cap = in_days * MAX_PER_DAY; 
+    }
+
+    function get_time() external {
+        return blocktimestamp;
     }
 
     function vote(uint new_vote) external 

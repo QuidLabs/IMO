@@ -501,7 +501,7 @@ contract MO is Ownable {
             }
         }
         return (amount0, amount1); 
-    } // FIXME it reverts, uncomment later 
+    }   
     */
 
     // call in QD's worth (обнал sans liabilities)
