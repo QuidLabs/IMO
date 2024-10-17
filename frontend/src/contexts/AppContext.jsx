@@ -5,7 +5,7 @@ import { BigNumber } from "@ethersproject/bignumber"
 
 import Web3 from "web3"
 
-import { QUID, SDAI, addressQD, addressSDAI, addressMO, MO } from "../utils/constant"
+import { QUID, SDAI,  MO, SUSDE, addressQD, addressSDAI, addressSUSDE, addressMO } from "../utils/constant"
 
 const contextState = {
   account: "",
@@ -40,6 +40,7 @@ export const AppContextProvider = ({ children }) => {
   const [SDAIbalance, setSdaiBalance] = useState(null)
 
   const [mo, setMO] = useState(null)
+  const [susde, setSusde] = useState(null)
 
   const [UsdBalance, setUsdBalance] = useState(null)
   const [localMinted, setLocalMinted] = useState(null)
@@ -110,7 +111,7 @@ export const AppContextProvider = ({ children }) => {
 
   const getSales = useCallback(async () => {
     try {
-      
+
       if (account && quid && sdai && addressQD && mo && addressMO) {
 
         const days = await quid.methods.DAYS().call()
@@ -136,7 +137,7 @@ export const AppContextProvider = ({ children }) => {
         const totalSupply = await quid.methods.totalSupply().call()
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
 
-        const balance = await sdai.methods.balanceOf(addressQD).call()
+        const balance = await susde.methods.balanceOf(addressMO).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
         if (totalMint !== formattedTotalMinted) setTotalMinted(formattedTotalMinted)
@@ -251,10 +252,11 @@ export const AppContextProvider = ({ children }) => {
           const quidContract = new web3Instance.eth.Contract(QUID, addressQD)
           const moContract = new web3Instance.eth.Contract(MO, addressMO)
           const usdeContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
+          const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
           setMO(moContract)
           setQuid(quidContract)
           setSdai(usdeContract)
-
+          setSusde(susdeContract)
         }
       }
     } catch (error) {
