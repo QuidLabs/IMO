@@ -17,3 +17,6 @@
 [submodule "foundry/lib/permit2"]
 	path = foundry/lib/permit2
 	url = https://github.com/uniswap/permit2
+[submodule "foundry/lib/solidity-bytes-utils"]
+	path = foundry/lib/solidity-bytes-utils
+	url = https://github.com/gnsps/solidity-bytes-utils
