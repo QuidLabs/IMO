@@ -14,3 +14,6 @@
 	path = foundry/lib/balancer-v3-monorepo
 	url = https://github.com/balancer/balancer-v3-monorepo
 
+[submodule "foundry/lib/permit2"]
+	path = foundry/lib/permit2
+	url = https://github.com/uniswap/permit2
