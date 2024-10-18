@@ -2,14 +2,15 @@
 	path = foundry/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
 [submodule "lib/solmate"]
-	path = lib/solmate
+	path = foundry/lib/solmate
 	url = https://github.com/Rari-Capital/solmate
 [submodule "lib/v3-periphery"]
-	path = lib/v3-periphery
+	path = foundry/lib/v3-periphery
 	url = https://github.com/uniswap/v3-periphery
 [submodule "lib/v3-core"]
-	path = lib/v3-core
+	path = foundry/lib/v3-core
 	url = https://github.com/uniswap/v3-core
 [submodule "foundry/lib/balancer-v3-monorepo"]
 	path = foundry/lib/balancer-v3-monorepo
 	url = https://github.com/balancer/balancer-v3-monorepo
+
