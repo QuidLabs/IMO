@@ -20,3 +20,6 @@
 [submodule "foundry/lib/solidity-bytes-utils"]
 	path = foundry/lib/solidity-bytes-utils
 	url = https://github.com/gnsps/solidity-bytes-utils
+[submodule "foundry/lib/foundry-devops"]
+	path = foundry/lib/foundry-devops
+	url = https://github.com/Cyfrin/foundry-devops
