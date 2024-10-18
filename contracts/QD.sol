@@ -21,6 +21,7 @@ contract Quid is ERC20,
     // 44th day stores batch's total
     uint constant PENNY = 1e16;
     uint constant LAMBO = 16508;
+    uint constant WAD = 1e18;
     uint constant public DAYS = 43 days; 
     uint public START_PRICE = 50 * PENNY; 
     struct Pod { uint credit; uint debit; }
@@ -28,8 +29,8 @@ contract Quid is ERC20,
     // that all right-thinking persons would be persuaded
     // that problems of the world can be solved," by true 
     // dough, Pierre, not your unsual money, version mint
-    uint constant GRIEVANCES = 134420 * 1e18; // in USDe
-    uint constant BACKEND = 444477 * 1e18; // x 16 (QD)
+    uint constant GRIEVANCES = 134420 * WAD; // in USDe
+    uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
@@ -37,7 +38,7 @@ contract Quid is ERC20,
     // Moulinette gives an equitable remedy, and whose 
     // performance is recognised as reasonable duty or
     // tender (an unconditional offer to perform)...
-    uint constant public MAX_PER_DAY = 777_777 * 1e18;
+    uint constant public MAX_PER_DAY = 777_777 * WAD;
     uint[90] public WEIGHTS; // sum of weights... 
     mapping (address => bool[16]) public hasVoted;
     // when a token-holder votes for a fee, their
@@ -89,7 +90,7 @@ contract Quid is ERC20,
     function qd_amt_to_dollar_amt(uint qd_amt,  // used in frontend
         uint block_timestamp) public view returns (uint amount) {
         uint in_days = ((blocktimestamp - START) / 1 days); 
-        amount = (in_days * PENNY + START_PRICE) * qd_amt / 1e18;
+        amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
     }
     function get_total_supply_cap(uint block_timestamp) 
         public view returns (uint total_supply_cap) {
@@ -220,7 +221,7 @@ contract Quid is ERC20,
         uint from_vote = feeVotes[from];
         uint to_vote = feeVotes[to];
         amount = _min(amount, balanceOf(from));
-        require(amount > 1e18, "insufficient QD"); 
+        require(amount > WAD, "insufficient QD"); 
         int i; // must be int otherwise tx reverts
         // when we go below 0 in the while loop...
         if (to == address(0)) {
@@ -257,7 +258,7 @@ contract Quid is ERC20,
             consideration[pledge][batch] += amount;
             // TODO parlay carry.credit burning QD... 
             uint in_days = ((blocktimestamp - START) / 1 days);
-            require(amount >= 10 * 1e18, "mint more QD");
+            require(amount >= 10 * WAD, "mint more QD");
             Pod memory total = Piscine[batch][43];
             Pod memory day = Piscine[batch][in_days]; 
             uint supply_cap = (in_days + 1) * MAX_PER_DAY; 
@@ -266,10 +267,10 @@ contract Quid is ERC20,
             // and when I think I'm running low, you're 
             uint price = in_days * PENNY + START_PRICE;
             cost = _minAmount(pledge, token, // USDe...
-                FullMath.mulDiv(price, amount, 1e18)
+                FullMath.mulDiv(price, amount, WAD)
             ); // _minAmount returns less than expected
             // we calculate amount twice because maybe
-            amount = FullMath.mulDiv(1e18, cost, price); 
+            amount = FullMath.mulDiv(WAD, cost, price); 
             consideration[pledge][batch] += amount;
             _mint(pledge, amount); // totalSupply++
             day.credit += amount; day.debit += cost;
@@ -329,7 +330,7 @@ contract Quid is ERC20,
         if (START != 0) { 
             uint batch = currentBatch();
             Pod memory day = Piscine[batch - 1][43];  
-            AVG_ROI += FullMath.mulDiv(1e18, 
+            AVG_ROI += FullMath.mulDiv(WAD, 
             day.credit - day.debit, day.debit);
             emit Restart(batch, AVG_ROI);
             MO(Moulinette).setMetrics(AVG_ROI / 

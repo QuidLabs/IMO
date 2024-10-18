@@ -67,14 +67,8 @@ async function deployAndInitializeContracts() {
       Quid: QDaddress
     }
     saveAddresses(addresses)
-    try { 
-      console.log("setting Quid")
-      var tx = await mo.setQuid(QDaddress)
-      await tx.wait()
-    } 
-    catch (error) {
-      console.error("Error in setQuid", error)
-    }
+    var tx = await mo.setQuid(QDaddress)
+
     try {  
       console.log("START");
       tx = await qd.restart()
