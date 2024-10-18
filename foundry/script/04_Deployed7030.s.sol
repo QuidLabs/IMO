@@ -2,6 +2,7 @@
 pragma solidity =0.8.8;
 
 // import {Script, console} from "forge-std/Script.sol";
+/*
 import { ScaffoldHelpers, console } from "./ScaffoldHelpers.sol";
 
 
@@ -16,10 +17,7 @@ import { InputHelpers } from "@balancer-labs/v3-solidity-utils/contracts/helpers
 
 import { PoolHelpers, CustomPoolConfig, InitializationConfig } from "./PoolHelpers.sol";
 // TODO hook and factory
-/**
- * @title Deploy Constant Sum Pool
- * @notice Deploys, registers, and initializes a constant sum pool that uses a swap fee discount hook
- */
+
 contract DeployConstantSumPool is PoolHelpers, ScaffoldHelpers {
 
     function setUp() public {}
@@ -29,3 +27,4 @@ contract DeployConstantSumPool is PoolHelpers, ScaffoldHelpers {
     }
 
 }
+*/
