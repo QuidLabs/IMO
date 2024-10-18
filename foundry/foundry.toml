@@ -15,6 +15,7 @@ solmate = { git = "https://github.com/Rari-Capital/solmate" }
 v3-periphery = { git = "https://github.com/Uniswap/v3-periphery" }
 v3-core = { git = "https://github.com/Uniswap/v3-core" }
 balancer-v3-monorepo = { git = "https://github.com/balancer/balancer-v3-monorepo" }
+permit2 = { git = "https://github.com/uniswap/permit2" }
 
 optimizer = true
 optimizer_runs = 10_000_000
