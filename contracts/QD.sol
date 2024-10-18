@@ -61,7 +61,7 @@ contract Quid is ERC20,
         _; 
     }
     event Medianizer(uint k, uint sum_w_k); // TODO test
-    event Restart(uint batch);
+    event Restart(uint batch, uint roi);
     // event TransferHelper(uint amount);
     uint public blocktimestamp; // TODO remove (Sepolia)
     function fast_forward(uint period) external { 
@@ -326,17 +326,17 @@ contract Quid is ERC20,
 
     // TODO remove, Sepolia only
     function restart() public { 
-        START = blocktimestamp; 
         if (START != 0) { 
             uint batch = currentBatch();
-            emit Restart(batch);
             Pod memory day = Piscine[batch - 1][43];  
             AVG_ROI += FullMath.mulDiv(1e18, 
             day.credit - day.debit, day.debit);
+            emit Restart(batch, AVG_ROI);
             MO(Moulinette).setMetrics(AVG_ROI / 
                 (DAYS / 1 days) * batch
             );  require(blocktimestamp > START + DAYS &&
                     currentBatch() < 17, "can't restart");
-        }              
+        }   
+        START = blocktimestamp;            
     }
 }
