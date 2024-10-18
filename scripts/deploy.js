@@ -154,7 +154,6 @@ async function main() { // run some tests on our contracts...
     // };
     // // Query logs based on the filter
     const logsQD = await provider.getLogs(filterQD)
-    // TODO test medianiser
     logsQD.forEach((log) => {
         try {
             // Decode the log using the contract's interface
@@ -204,10 +203,10 @@ async function main() { // run some tests on our contracts...
       await tx.wait()
   
       receipt = await USDE.allowance(beneficiary.address, addresses.Moulinette)
-      console.log('allowance', receipt)
+      // console.log('allowance', receipt)
       
       receipt = await USDEwithSecondary.allowance(secondary.address, addresses.Moulinette)
-      console.log('allowance', receipt)
+      // console.log('allowance', receipt)
     }
     try {
       tx = await MO.deposit(beneficiary.address, bill, addresses.USDe, false)
@@ -318,19 +317,19 @@ async function main() { // run some tests on our contracts...
     tx = await MO.set_price_eth(false, false) 
     await tx.wait()
 
-    // console.log("calling fold")
-    // // simulate a price drop, so that we can claim 
-    // try {
-    //   tx = await MO.fold(beneficiary, amountInWei, false) 
-    //   await tx.wait() 
-    //   // try fold with sell
-    //   // // simulate a price drop, so that we can claim 
-    //   // tx = await MO.fold(beneficiary, amountInWei, true) 
-    //   // await tx.wait() // this seems to work    
-    // }
-    // catch (error) {
-    //   console.error("Error in fold:", error)
-    // }
+    console.log("calling fold")
+    // simulate a price drop, so that we can claim 
+    try {
+      tx = await MO.fold(beneficiary, amountInWei, false) 
+      await tx.wait() 
+      // try fold with sell
+      // // simulate a price drop, so that we can claim 
+      // tx = await MO.fold(beneficiary, amountInWei, true) 
+      // await tx.wait() // this seems to work    
+    }
+    catch (error) {
+      console.error("Error in fold:", error)
+    }
     
     tx = await MO.get_more_info(beneficiary)
     console.log("get_more_info(beneficiary)", tx.toString());
@@ -349,13 +348,13 @@ async function main() { // run some tests on our contracts...
     console.log('batch', batch.toString())
     tx = await QD.fast_forward(0)
     await tx.wait()
-    // try {
-    //   tx = await MOWithSecondary.redeem(bill)
-    //   await tx.wait()
-    // }
-    // catch (error) {
-    //   console.error("Error in redeem QD:", error)
-    // }
+    try {
+      tx = await MOWithSecondary.redeem(bill)
+      await tx.wait()
+    }
+    catch (error) {
+      console.error("Error in redeem QD:", error)
+    }
 
     batch = await QD.currentBatch() 
     console.log('batch', batch.toString())

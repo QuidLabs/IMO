@@ -253,8 +253,8 @@ contract Quid is ERC20,
         address token) public onlyGenerators
         returns (uint cost) { uint batch = currentBatch();
         if (token == address(this)) { _mint(pledge, amount);
-            consideration[pledge][batch] += amount; // QD...
-        }   else if (blocktimestamp <= START + DAYS) {
+            consideration[pledge][batch] += amount; // in QD...
+        }   else if (blocktimestamp <= START + DAYS && batch < 16) {
             consideration[pledge][batch] += amount;
             // TODO parlay carry.credit burning QD... 
             uint in_days = ((blocktimestamp - START) / 1 days);
@@ -266,6 +266,7 @@ contract Quid is ERC20,
             // Yesterday's price is NOT today's price,
             // and when I think I'm running low, you're 
             uint price = in_days * PENNY + START_PRICE;
+            
             cost = _minAmount(pledge, token, // USDe...
                 FullMath.mulDiv(price, amount, WAD)
             ); // _minAmount returns less than expected
@@ -327,17 +328,17 @@ contract Quid is ERC20,
 
     // TODO remove, Sepolia only
     function restart() public { 
-        if (START != 0) { 
-            uint batch = currentBatch();
-            Pod memory day = Piscine[batch - 1][43];  
-            AVG_ROI += FullMath.mulDiv(WAD, 
-            day.credit - day.debit, day.debit);
-            emit Restart(batch, AVG_ROI);
-            MO(Moulinette).setMetrics(AVG_ROI / 
-                (DAYS / 1 days) * batch
-            );  require(blocktimestamp > START + DAYS &&
-                    currentBatch() < 17, "can't restart");
-        }   
+        // if (START != 0) { 
+        //     uint batch = currentBatch();
+        //     Pod memory day = Piscine[batch - 1][43];  
+        //     AVG_ROI += FullMath.mulDiv(WAD, 
+        //     day.credit - day.debit, day.debit);
+        //     emit Restart(batch, AVG_ROI);
+        //     MO(Moulinette).setMetrics(AVG_ROI / 
+        //         (DAYS / 1 days) * batch
+        //     );  require(blocktimestamp > START + DAYS &&
+        //             currentBatch() < 17, "can't restart");
+        // }   
         START = blocktimestamp;            
     }
 }

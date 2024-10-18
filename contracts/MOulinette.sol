@@ -33,7 +33,7 @@ contract MO is Ownable {
     uint internal _ETH_PRICE; // TODO delete when finished testing
     uint24 constant POOL_FEE = 500;
     
-    uint internal FEE;
+    uint internal FEE = WAD / 28; 
     uint constant WAD = 1e18;
     uint128 constant Q96 = 2**96; 
     uint constant DIME = 10 * WAD;
@@ -206,19 +206,16 @@ contract MO is Ownable {
 
     constructor(address _usde, address _susde) { 
         USDE = _usde; SUSDE = _susde; // TODO remove (for Sepolia only)
-                                         // as well as from constructor...
-        // TODO replace addresses (with ones below for mainnet deployment)
-        // POOL = IUniswapV3Pool(0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640);
-        // ROUTER = IV3SwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
-        // address nfpm = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88; 
+        address nfpm = 0x1238536071E1c677A632429e3655c799b22cDA52;
+        // 0xC36442b4a4522E871399CD717aBDD847Ab11FE88; TODO uncomment (L1)
         POOL = IUniswapV3Pool(0x3289680dD4d6C10bb19b899729cda5eEF58AEfF1);
+        // IUniswapV3Pool(0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640);
         ROUTER = IV3SwapRouter(0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E);
-        address nfpm = 0x1238536071E1c677A632429e3655c799b22cDA52; 
-        NFPM = INonfungiblePositionManager(nfpm); 
-        // "Le souffle des 4 vents décuple ma puissance...
-        // De longs mois de travail ont exacerbé mes sens
-        // Je crée un déséquilibre interne volontairement
-        FEE = WAD / 28; // Afin que le côté Yang soit le dominant"
+        // IV3SwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+        NFPM = INonfungiblePositionManager(nfpm); // Pod carry, weth; work; 
+        // last "Le souffle des 4 vents décuple ma puissance De longs ^^^^
+        // mois de travail ont exacerbé mes sens Je crée un déséquilibre 
+        // interne volontairement Afin que le côté Yang soit le dominant"
         TransferHelper.safeApprove(WETH, nfpm, type(uint256).max);
         TransferHelper.safeApprove(USDC, nfpm, type(uint256).max);
         TransferHelper.safeApprove(USDE, SUSDE, type(uint256).max);
