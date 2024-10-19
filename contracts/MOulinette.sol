@@ -76,36 +76,36 @@ contract MO is Ownable {
     // event DepositInDollars(uint in_dollars); 
     // TODO ^these seem right, double check later?
     
-    event Fold(uint price, uint value, uint cover);
-    event FoldDelta(uint delta);
-    event FoldMinted(uint minted, uint delta);
-    event FoldSalve(uint amount); 
-    event FoldLiquidate(uint amount);
-    event FoldDeductible(uint amount, uint deductible);
-    event FoldRepayNoLiquidate(uint amount);
-    event FoldRepayLiquidate(uint amount);
+    // event Fold(uint price, uint value, uint cover);
+    // event FoldDelta(uint delta);
+    // event FoldMinted(uint minted, uint delta);
+    // event FoldSalve(uint amount); 
+    // event FoldLiquidate(uint amount);
+    // event FoldDeductible(uint amount, uint deductible);
+    // event FoldRepayNoLiquidate(uint amount);
+    // event FoldRepayLiquidate(uint amount);
 
     // TODO test redeem after all others 
-    event AbsorbAmount(uint amount);
-    event USDCinRedeem(uint usdc);
-    event WeirdRedeem(uint absorb, uint amount);
-    event ThirdInRedeem(uint third);
-    event AbsorbInRedeem(uint absorb);
-    event SellInRedeem(uint amount);
+    // event AbsorbAmount(uint amount);
+    // event USDCinRedeem(uint usdc);
+    // event WeirdRedeem(uint absorb, uint amount);
+    // event ThirdInRedeem(uint third);
+    // event AbsorbInRedeem(uint absorb);
+    // event SellInRedeem(uint amount);
     
     // event WithDrawing(uint amount);
-    // event SwapDelta0(uint delta0);
-    // event SwapSell0(uint amount0, uint amount1);
-    // event SwapSell1(uint amount0, uint amount1);
-    // event SwapSell0numerator(uint numerator);
-    // event SwapSell1numerator(uint numerator);
-    // event SwapAmountsForLiquidity(uint amount0, uint amount1);
-    // event SwapPrices(uint priceX96, uint sqrtPriceX96Lower, uint sqrtPriceX96Upper);
+    event SwapDelta0(uint delta0);
+    event SwapSell0(uint amount0, uint amount1);
+    event SwapSell1(uint amount0, uint amount1);
+    event SwapSell0numerator(uint numerator);
+    event SwapSell1numerator(uint numerator);
+    event SwapAmountsForLiquidity(uint amount0, uint amount1);
+    event SwapPrices(uint priceX96, uint sqrtPriceX96Lower, uint sqrtPriceX96Upper);
 
-    // event RepackNFTamountsAfterCollectInBurn(uint amount0, uint amount1);
-    // event RepackNFTtwap(int24 twap, int24 twapUpper, int24 twapLower);
-    // event RepackNFTamountsBefore(uint amount0, uint amount1);
-    // event RepackNFTamountsAfterCollect(uint amount0, uint amount1);
+    event RepackNFTamountsAfterCollectInBurn(uint amount0, uint amount1);
+    event RepackNFTtwap(int24 twap, int24 twapUpper, int24 twapLower);
+    event RepackNFTamountsBefore(uint amount0, uint amount1);
+    event RepackNFTamountsAfterCollect(uint amount0, uint amount1);
     event RepackNFTamountsAfterSwap(uint amount0, uint amount1);
     event RepackMintingNFT(int24 upper, int24 lower, uint amount0, uint amount1);
         
@@ -427,8 +427,7 @@ contract MO is Ownable {
             // TODO steps to withdraw from morpho (mainnet)
         }
     }
-    
-    /* TODO uncomment
+
     function _swap(uint amount0, uint amount1) internal returns (uint, uint) {
         SwapState memory state; state.twapTick = LAST_TWAP_TICK;
         (state.sqrtPriceX96, state.currentTick,,,,,) = POOL.slot0();
@@ -505,7 +504,6 @@ contract MO is Ownable {
         }
         return (amount0, amount1); 
     }   
-    */
 
     // call in QD's worth (обнал sans liabilities)
     // calculates the coverage absorption for each 
@@ -515,6 +513,7 @@ contract MO is Ownable {
     // "you never count your money while you're
     // sittin' at the table...there'll be time
     // enough for countin'...when,"
+    /*
     function redeem(uint amount) 
         external returns (uint absorb) {
         amount = _min(QUID.matureBalanceOf(_msgSender()),
@@ -540,7 +539,7 @@ contract MO is Ownable {
             capitalisation(0, false),
             amount
         );  emit AbsorbAmount(amount);
-        if (amount > absorb) { /* amount -= absorb; 
+        if (amount > absorb) {  amount -= absorb; 
             // remainder is $ value to be released 
             // after accounting for liabilities...
             uint third = 3 * amount / 10; // $
@@ -599,9 +598,7 @@ contract MO is Ownable {
             // else the entire amount being redeemed
             // is consumed by absorbing protocol debt
         }
-        */
-        }
-    }
+    } */
     
     // quid says if amount is QD...
     // ETH can only be withdrawn from
@@ -778,13 +775,13 @@ contract MO is Ownable {
                 state.repay = pledge.work.credit - state.collat; 
                 state.repay += state.collat / 10;
                 state.liquidate = true; // not final
-                emit FoldRepayLiquidate(state.repay);
+                // emit FoldRepayLiquidate(state.repay);
             } else { // for using claimed coverage to payoff debt
                 state.delta = state.collat - pledge.work.credit;
                 if (state.collat / 10 > state.delta) {
                     state.repay = (state.collat / 10) - state.delta;
                 }
-                emit FoldRepayNoLiquidate(state.repay);
+                // emit FoldRepayNoLiquidate(state.repay);
             }   
         } if (amount > 0) { // claim ETH amount that's been insured
             state.collat = FullMath.mulDiv(amount, state.price, WAD);
@@ -794,11 +791,11 @@ contract MO is Ownable {
             state.average_value = FullMath.mulDiv( 
                 amount, state.average_price, WAD
             );  
-            emit Fold(state.average_price, state.average_value, FullMath.mulDiv(110, state.price, 100));
+            // emit Fold(state.average_price, state.average_value, FullMath.mulDiv(110, state.price, 100));
             // if price drop > 10% (average_value > 10% more than current value) 
             if (state.average_price >= FullMath.mulDiv(110, state.price, 100)) { 
                 state.delta = state.average_value - state.collat;
-                emit FoldDelta(state.delta);
+                // emit FoldDelta(state.delta);
                 
                 if (!sell) { state.minting = state.delta;  
                     state.deductible = FullMath.mulDiv(WAD, 
@@ -831,7 +828,7 @@ contract MO is Ownable {
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
-                    emit FoldMinted(state.minting, state.delta);
+                    // emit FoldMinted(state.minting, state.delta);
                     QUID.mint(state.minting, beneficiary, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
                 } else { state.deductible = 0; } // no mint = no charge  
@@ -842,7 +839,7 @@ contract MO is Ownable {
                 // if we were to deduct actual value instead
                 // that could be taken advantage of (increased
                 // payouts with each subsequent call to fold)... 
-                emit FoldDeductible(amount, state.deductible);
+                // emit FoldDeductible(amount, state.deductible);
                 pledge.work.debit += amount - state.deductible;
                 // if sell true, pledge doesn't get any ETH back
                 pledges[address(this)].work.credit -= state.deductible;
@@ -863,7 +860,7 @@ contract MO is Ownable {
             amount = qd_amt_to_dollar_amt(state.cap, amount);
             // subtract the $ value of QD
             pledge.work.credit -= amount;
-            emit FoldSalve(amount); 
+            // emit FoldSalve(amount); 
             // "lightnin' ⚡️ strikes and the 🏀 court lights...
             if (pledge.work.credit > state.collat) { // get dim"
                 if (pledge.work.credit > DIME) { // assumes that 
@@ -874,7 +871,7 @@ contract MO is Ownable {
                     amount = _min(pledge.work.credit, 
                         FullMath.mulDiv(state.price, 
                                         amount, WAD));
-                    emit FoldLiquidate(amount);
+                    // emit FoldLiquidate(amount);
                     // "It's like inch by inch, and step by 
                     // step, I'm closin' in on your position
                     // and [eviction] is my mission..."
@@ -907,25 +904,25 @@ contract MO is Ownable {
     // or above 14 volts, respectively, re-charging battery)
     function repackNFT(uint amount0, uint amount1) public {
         uint128 liquidity; int24 twap = _getTWAP(true); 
-        // emit RepackNFTamountsBefore(amount0, amount1);
+        emit RepackNFTamountsBefore(amount0, amount1);
         if (LAST_TWAP_TICK != 0) { // not first _repack call
             if (twap > UPPER_TICK || twap < LOWER_TICK) {
                 (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
                 (uint collected0, 
                  uint collected1) = _withdrawAndCollect(liquidity); 
                 amount0 += collected0; amount1 += collected1;
-                // emit RepackNFTamountsAfterCollectInBurn(amount0, amount1);
+                emit RepackNFTamountsAfterCollectInBurn(amount0, amount1);
                 pledges[address(this)].weth.debit += collected1;
                 pledges[address(this)].work.debit += collected0;
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
             }
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
-        // emit RepackNFTtwap(twap, UPPER_TICK, LOWER_TICK); 
-        // (amount0, amount1) = _swap(amount0, amount1);
-        // emit RepackMintingNFT(
-        //     UPPER_TICK, LOWER_TICK, amount0, amount1
-        // );
+        emit RepackNFTtwap(twap, UPPER_TICK, LOWER_TICK); 
+        (amount0, amount1) = _swap(amount0, amount1);
+        emit RepackMintingNFT(
+            UPPER_TICK, LOWER_TICK, amount0, amount1
+        );
         INonfungiblePositionManager.MintParams memory params =
             INonfungiblePositionManager.MintParams({token0: USDC, 
                 token1: WETH, fee: POOL_FEE, tickLower: LOWER_TICK, 
@@ -936,12 +933,12 @@ contract MO is Ownable {
         } // else no need to repack NFT, need to collect LP fees
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
-            // emit RepackNFTamountsAfterCollect(amount0, amount1);
+            emit RepackNFTamountsAfterCollect(amount0, amount1);
             pledges[address(this)].weth.debit += collected1;
             pledges[address(this)].work.debit += collected0;
-            // (amount0, amount1) = _swap(amount0, amount1);
+            (amount0, amount1) = _swap(amount0, amount1);
             // FIXME amount1 isn't getting split into amount0
-            // emit RepackNFTamountsAfterSwap(amount0, amount1);
+            emit RepackNFTamountsAfterSwap(amount0, amount1);
             NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp
