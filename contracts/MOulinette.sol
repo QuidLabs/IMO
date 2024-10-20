@@ -513,7 +513,6 @@ contract MO is Ownable {
     // "you never count your money while you're
     // sittin' at the table...there'll be time
     // enough for countin'...when,"
-    /*
     function redeem(uint amount) 
         external returns (uint absorb) {
         amount = _min(QUID.matureBalanceOf(_msgSender()),
@@ -529,12 +528,13 @@ contract MO is Ownable {
             FullMath.mulDiv(WAD, 
             pledge.carry.credit, SUM), WAD  
         );  
+        // TODO PLEDGE.CARRY.CREDIT--
         // if not 100% of the mature QD is
         if (WAD > share) { // being redeemed
             absorb = FullMath.mulDiv(absorb, 
                                 share, WAD);
         }   emit AbsorbInRedeem(absorb);
-        // QUID.burn(_msgSender(), amount); 
+        QUID.burn(_msgSender(), amount); 
         amount = qd_amt_to_dollar_amt(
             capitalisation(0, false),
             amount
@@ -598,7 +598,7 @@ contract MO is Ownable {
             // else the entire amount being redeemed
             // is consumed by absorbing protocol debt
         }
-    } */
+    }
     
     // quid says if amount is QD...
     // ETH can only be withdrawn from
