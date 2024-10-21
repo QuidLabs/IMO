@@ -1,5 +1,4 @@
-
-import { useEffect, useState, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useAppContext } from "../contexts/AppContext";
 import { numberWithCommas } from "../utils/number-with-commas"
 
@@ -11,21 +10,20 @@ export const Summary = () => {
 
   const [smartContractStartTimestamp, setSmartContractStartTimestamp] = useState("")
   const [mintPeriodDays, setMintPeriodDays] = useState("")
+
+  const [days, setDays] = useState("")
   const [totalDeposited, setTotalDeposited] = useState("")
   const [totalMinted, setTotalMinted] = useState("")
   const [price, setPrice] = useState("")
-
-  const [days, setDays] = useState("")
 
   const [glowClass, setGlowClass] = useState('')
 
   const calculateDays = useCallback(async () => {
     try {
       const actualDays = Number(mintPeriodDays) - (Number(currentTimestamp) - Number(smartContractStartTimestamp)) / SECONDS_IN_DAY
-      console.log('actualDays', actualDays)
       const frmtdDays = Math.max(Math.ceil(actualDays), 0)
 
-      return { left: frmtdDays }
+      return { days: frmtdDays }
     } catch (error) {
       console.error(error)
     }
@@ -33,43 +31,41 @@ export const Summary = () => {
 
   const updatingInfo = useCallback(async () => {
     try {
-      if (quid && sdai && addressQD) {
-        const [updatedInfo, updatedSales, days] = await Promise.all([getUserInfo(),getSales(), calculateDays()])
+      if (connected && quid && sdai && addressQD) {
+        await Promise.all([getUserInfo(), getSales(), calculateDays()])
+          .then(array => {
 
-        if (updatedInfo && updatedSales && days) {
-          setTotalDeposited(updatedInfo.actualUsd)
-          setTotalMinted(updatedInfo.actualQD)
-          setPrice(updatedInfo.price)
+            setTotalDeposited(array[0].actualUsd)
+            setTotalMinted(array[0].actualQD)
+            setPrice(array[0].price)
+            
+            setMintPeriodDays(array[1].mintPeriodDays)
+            setSmartContractStartTimestamp(array[1].smartContractStartTimestamp)
 
-          setDays(days.left)
+            setDays(array[2].days)
 
-          setMintPeriodDays(updatedSales.mintPeriodDays)
-          setSmartContractStartTimestamp(updatedSales.smartContractStartTimestamp)
-        }
+            console.log('actualDays', array[2].days)
+          })
+      } else {
+        setAllInfo(0, 0, 0, 0, 0, true)
       }
     } catch (error) {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
     }
-  }, [addressQD, sdai, quid, getSales, getUserInfo, calculateDays])
+  }, [calculateDays, getSales, getUserInfo, setAllInfo,
+    addressQD, connected, sdai, quid])
 
   useEffect(() => {
     try {
-      if (connected) updatingInfo()
-      else {
-        setAllInfo(0, 0, 0, 0, 0, true)
-
-        setTotalDeposited(0)
-        setTotalMinted(0)
-        setPrice(0)
-        setDays("⋈")
-      }
-
       const classState = changeButton(false, true)
+
       setGlowClass(classState)
+
+      updatingInfo()
     } catch (error) {
       console.error("Some problem with sale's start function: ", error)
     }
-  }, [updatingInfo, setAllInfo, setGlowClass, changeButton, connected])
+  }, [changeButton, updatingInfo])
 
   return (
     <div  className={`summary-root ${glowClass}`} >
