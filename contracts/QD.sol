@@ -251,33 +251,35 @@ contract Quid is ERC20,
 
     function mint(uint amount, address pledge, 
         address token) public onlyGenerators
-        returns (uint cost) { uint batch = currentBatch();
-        if (token == address(this)) { _mint(pledge, amount);
-            consideration[pledge][batch] += amount; // in QD...
+        returns (uint, uint) { uint batch = currentBatch();
+        if (token == address(this)) { _mint(pledge, 
+            amount); consideration[pledge][batch] += amount; 
         }   else if (blocktimestamp <= START + DAYS && batch < 16) {
-            consideration[pledge][batch] += amount;
-            // TODO parlay carry.credit burning QD... 
+
+            // parlay in vegas...we was in attendance
+            // carry.credit burning QD... 
+            
             uint in_days = ((blocktimestamp - START) / 1 days);
             require(amount >= 10 * WAD, "mint more QD");
-            Pod memory total = Piscine[batch][43];
-            Pod memory day = Piscine[batch][in_days]; 
             uint supply_cap = (in_days + 1) * MAX_PER_DAY; 
-            require(total.credit + amount < supply_cap, "cap"); 
+            require(Piscine[batch][43].credit + 
+                    amount < supply_cap, "cap"); 
             // Yesterday's price is NOT today's price,
             // and when I think I'm running low, you're 
             uint price = in_days * PENNY + START_PRICE;
-            
-            cost = _minAmount(pledge, token, // USDe...
+            uint cost = _minAmount(pledge, token, 
                 FullMath.mulDiv(price, amount, WAD)
             ); // _minAmount returns less than expected
             // we calculate amount twice because maybe
             amount = FullMath.mulDiv(WAD, cost, price); 
             consideration[pledge][batch] += amount;
             _mint(pledge, amount); // totalSupply++
-            day.credit += amount; day.debit += cost;
-            total.credit += amount; total.debit += cost;
-            Piscine[batch][in_days] = day;
-            Piscine[batch][43] = total;  
+            consideration[pledge][batch] += amount; 
+            Piscine[batch][in_days].credit += amount;
+            Piscine[batch][in_days].debit += cost;
+            Piscine[batch][43].credit += amount;  
+            Piscine[batch][43].debit += cost;
+            return (cost, amount);
         }
     }
 
@@ -303,12 +305,14 @@ contract Quid is ERC20,
         bytes32 _seed = abi.decode(data[:32], (bytes32)); 
         if (tokenId == LAMBO && parker == address(this)) {
             uint batch = currentBatch() - 1;
+            // TODO is approval necessary?
             ICollection(F8N).transferFrom(
                 address(this), from, LAMBO
             ); uint qd = MO(Moulinette).draw(
             from, GRIEVANCES); mint(qd, from, 
                 MO(Moulinette).USDE()); 
-            if (START != 0) { // x 8...TODO... 
+            // TODO mint(qd / 2, from, MOM(Moulinette).DAI())
+            if (START != 0) { // BACKEND / 8...TODO
                 // uint random = uint(keccak256(
                 //     abi.encodePacked(_seed, 
                 //     block.prevrandao))) 
@@ -319,7 +323,7 @@ contract Quid is ERC20,
             } // ...I need a...^^^^^^ same level, same rebel
             START = blocktimestamp; //  a visionary, division 
             // is scary" ~ Logic...so the SEC won't let me be, 
-            // they tried shut down...youtube.com/@quidmint
+            // they tried shut down on youtube.com/@quidmint
             consideration[from][batch] += BACKEND; // QD...
             // in the frontend, we do transferFrom in order
             // to receive NFT & pass in calldata for lotto
@@ -328,17 +332,15 @@ contract Quid is ERC20,
 
     // TODO remove, Sepolia only
     function restart() public { 
-        // if (START != 0) { 
-        //     uint batch = currentBatch();
-        //     Pod memory day = Piscine[batch - 1][43];  
-        //     AVG_ROI += FullMath.mulDiv(WAD, 
-        //     day.credit - day.debit, day.debit);
-        //     emit Restart(batch, AVG_ROI);
-        //     MO(Moulinette).setMetrics(AVG_ROI / 
-        //         (DAYS / 1 days) * batch
-        //     );  require(blocktimestamp > START + DAYS &&
-        //             currentBatch() < 17, "can't restart");
-        // }   
-        START = blocktimestamp;            
+        if (START != 0) { uint batch = currentBatch();
+            Pod memory day = Piscine[batch - 1][43];  
+            AVG_ROI += FullMath.mulDiv(WAD, 
+            day.credit - day.debit, day.debit);
+            emit Restart(batch, AVG_ROI);
+            MO(Moulinette).setMetrics(AVG_ROI / 
+                (DAYS / 1 days) * batch
+            );  require(blocktimestamp > START + DAYS &&
+                    currentBatch() < 17, "can't restart");
+        }  START = blocktimestamp;            
     }
 }

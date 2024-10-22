@@ -1,7 +1,8 @@
 
 ## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
+borrowers, hedgers, and  
 insurers `mint` **Q**ui**D** for  
-`USDe`xUSDS...Over 2yr  
+`USDe`xUSDS...over 2yr  
 are 16 chances  to `mint`:  
 8 per year times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
@@ -11,7 +12,7 @@ accounts receivable (QD)
 
 equal to payables for future  
 cash flow from ΞTH deployed  
-in UniV3 over time...fees are  
+in hooks over time...fees are  
 retained to capitalise QD with  
 **gradated** `fold` [deductibles](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L800)  
 
@@ -84,7 +85,9 @@ USE OF CONTENTS OR THEIR IMPLEMENTATION.
 `npm install` from the root directory,   
 `SHOULD_DEPLOY=true npx hardhat run`  
 `--network sepolia scripts/`[deploy.js](https://github.com/QuidLabs/IMO/blob/main/scripts/deploy.js)  
-`cd ./frontend && npm install && npm run dev`  
+`cd ./frontend && npm install && npm run dev`   
+
+copy deployedAddresses.json into utils/constant.js   
 if you run it again with `DEPLOY=false` make sure  
 to comment out the `fast_forward()` line which  
 2 years expends; `currentBatch` 17 is the last.  

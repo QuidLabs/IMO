@@ -449,9 +449,14 @@ contract MO is Ownable {
                                                     state.sqrtPriceX96, 
                                                     state.sqrtPriceX96Lower, 
                                                     state.sqrtPriceX96Upper, Q96);
+        // how much ETH and USDC in a position within 7% of last TWAP measure for last 8 hours
         emit SwapAmountsForLiquidity(state.positionAmount0, state.positionAmount1);
         // how much of the position needs to
         // be converted to the other token:
+        // if (amount0 > state.positionAmount0) { state.sell0 = true;
+        
+        // }
+        // state.delta0 = state.positionAmount -
         if (state.positionAmount0 == 0) { // FIXME delta0 
         // should be how much position 0 needs to change into 1?
             state.sell0 = true; state.delta0 = amount0; // FullMath.mulDiv(Q96, amount1, state.priceX96);
@@ -513,6 +518,7 @@ contract MO is Ownable {
     // "you never count your money while you're
     // sittin' at the table...there'll be time
     // enough for countin'...when,"
+    /*
     function redeem(uint amount) 
         external returns (uint absorb) {
         amount = _min(QUID.matureBalanceOf(_msgSender()),
@@ -587,18 +593,14 @@ contract MO is Ownable {
                            amount0 -= usdc;
                            // emit RedeemUSDC(usdc);
                 
-            }   
-            pledges[address(this)].carry.credit -= absorb; 
+            }   pledges[address(this)].carry.credit -= absorb; 
+            // pledge.carry.credit // TODO
             if (amount0 > 0 || amount1 > 0) 
             { repackNFT(amount0, amount1); }
         } 
-        else {
-            emit WeirdRedeem(absorb, amount);
-            pledges[address(this)].carry.credit -= amount;
-            // else the entire amount being redeemed
-            // is consumed by absorbing protocol debt
-        }
-    }
+        else { pledges[address(this)].carry.credit -= amount; }
+            // else the entire amount being redeemed is consumed 
+    } */
     
     // quid says if amount is QD...
     // ETH can only be withdrawn from
@@ -673,12 +675,14 @@ contract MO is Ownable {
     function deposit(address beneficiary, uint amount,
         address token, bool long) external payable { 
         Offer memory pledge = pledges[beneficiary];
-        if (_isDollar(token)) { // amount interpreted as QD to mint
-            uint cost = QUID.mint(amount, beneficiary, token);
+        if (_isDollar(token)) { // amount = QD to mint
+            (uint cost, uint minted) = QUID.mint(amount,
+                                    beneficiary, token);
             TransferHelper.safeTransferFrom(
                 token, beneficiary, address(this), cost
             );  pledges[address(this)].carry.debit += cost;
-            // ^needed for tracking total capitalisation
+            // ^needed for tracking total capitalisation...
+            pledge.carry.credit += minted; // max mintable
             pledge.carry.debit += cost; // contingent
             // variable for ROI as well as redemption,
             // carry.credit gets reset in _creditHelper
