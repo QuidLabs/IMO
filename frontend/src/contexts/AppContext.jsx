@@ -91,9 +91,10 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (account && connected && quid && currentTimestamp) {
         const timestamp = await quid.methods.blocktimestamp().call()
+        //
 
         setAccountTimestamp(Number(timestamp))
-        
+
         const currentTimestampBN = currentTimestamp.toString()
 
         const [totalSupplyCap] = await Promise.all([
@@ -162,7 +163,7 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (connected && account && quid) {
         const timestamp = await quid.methods.blocktimestamp().call()
-        
+
         setAccountTimestamp(Number(timestamp.toString()))
 
         const qdAmount = parseUnits("1", 18).toBigInt()
@@ -174,6 +175,10 @@ export const AppContextProvider = ({ children }) => {
         const price = BigNumber.from(Math.floor(value).toString())
 
         const info = await mo.methods.get_info(account).call()
+        const more_info = await mo.methods.get_more_info(account).call()
+        // TODO if 0
+        // const more_info = await mo.methods.get_more_info(addressMO).call()
+
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
 
@@ -190,7 +195,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
     }
-  }, [setPrice, setLocalMinted, setUsdBalance, 
+  }, [setPrice, setLocalMinted, setUsdBalance,
     quid, account, connected, currentTimestamp, mo, localMinted, UsdBalance])
 
   const getSdai = useCallback(async () => {
@@ -250,7 +255,7 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (!account) {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
-        
+
         setAccount(accounts[0])
 
         if (accounts && provider) {

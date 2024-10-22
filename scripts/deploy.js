@@ -348,6 +348,13 @@ async function main() { // run some tests on our contracts...
     console.log('batch', batch.toString())
     tx = await QD.fast_forward(0)
     await tx.wait()
+
+    // TODO original value of carry.credit
+    // to detect after delta, of equivalent
+    // % to the QD balance being burned...
+    // or less (up to maximum % leftover).
+    // 
+
     try {
       tx = await MOWithSecondary.redeem(bill)
       await tx.wait()
@@ -361,6 +368,8 @@ async function main() { // run some tests on our contracts...
 
     tx = await MO.get_more_info(secondary)
     console.log("get_more_info(secondary)", tx.toString());
+
+
     
     tx = await MO.get_info(secondary)
     console.log("get_info(secondary):", tx.toString());

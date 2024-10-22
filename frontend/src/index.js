@@ -7,6 +7,7 @@ import { AppContextProvider } from "./contexts/AppContext"
 const letsgo = ReactDOM.createRoot(document.getElementById('letsgo'))
 // Read the API key from the environment variables
 const infuraAPIKey = process.env.INFURA_API_KEY;
+const chainID = process.env.CHAIN_ID; // 0xAA36A7
 
 letsgo.render(
   <React.StrictMode>
@@ -16,7 +17,10 @@ letsgo.render(
           name: "QU!D",
           //url: window.location.href,
         },
-        infuraAPIKey: infuraAPIKey
+        injectProvider: {
+            chainId: chainID,
+            infuraAPIKey: infuraAPIKey
+        }
       }}>
       <AppContextProvider>
         <App />
@@ -24,4 +28,3 @@ letsgo.render(
     </MetamaskProvider>
   </React.StrictMode>
 )
-
