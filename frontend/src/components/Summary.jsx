@@ -1,5 +1,4 @@
-
-import { useEffect, useState, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useAppContext } from "../contexts/AppContext";
 import { numberWithCommas } from "../utils/number-with-commas"
 
@@ -11,21 +10,20 @@ export const Summary = () => {
 
   const [smartContractStartTimestamp, setSmartContractStartTimestamp] = useState("")
   const [mintPeriodDays, setMintPeriodDays] = useState("")
+
+  const [days, setDays] = useState("")
   const [totalDeposited, setTotalDeposited] = useState("")
   const [totalMinted, setTotalMinted] = useState("")
   const [price, setPrice] = useState("")
-
-  const [days, setDays] = useState("")
 
   const [glowClass, setGlowClass] = useState('')
 
   const calculateDays = useCallback(async () => {
     try {
       const actualDays = Number(mintPeriodDays) - (Number(currentTimestamp) - Number(smartContractStartTimestamp)) / SECONDS_IN_DAY
-      console.log('actualDays', actualDays)
       const frmtdDays = Math.max(Math.ceil(actualDays), 0)
 
-      return { left: frmtdDays }
+      return { days: frmtdDays }
     } catch (error) {
       console.error(error)
     }
@@ -33,67 +31,59 @@ export const Summary = () => {
 
   const updatingInfo = useCallback(async () => {
     try {
-      if (quid && sdai && addressQD) {
-        const [updatedInfo, updatedSales, days] = await Promise.all([getUserInfo(),getSales(), calculateDays()])
+      if (connected && quid && sdai && addressQD) {
+        await Promise.all([getUserInfo(), getSales(), calculateDays()])
+          .then(values => {
+            setTotalDeposited(values[0].actualUsd)
+            setTotalMinted(values[0].actualQD)
+            setPrice(values[0].price)
+            
+            setMintPeriodDays(values[1].mintPeriodDays)
+            setSmartContractStartTimestamp(values[1].smartContractStartTimestamp)
 
-        if (updatedInfo && updatedSales && days) {
-          setTotalDeposited(updatedInfo.actualUsd)
-          setTotalMinted(updatedInfo.actualQD)
-          setPrice(updatedInfo.price)
-
-          setDays(days.left)
-
-          setMintPeriodDays(updatedSales.mintPeriodDays)
-          setSmartContractStartTimestamp(updatedSales.smartContractStartTimestamp)
-        }
-      }
+            setDays(values[2].days)
+          })
+      } else setAllInfo(0, 0, 0, 0, 0, true)
     } catch (error) {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
     }
-  }, [addressQD, sdai, quid, getSales, getUserInfo, calculateDays])
+  }, [calculateDays, getSales, getUserInfo,setAllInfo,
+    addressQD, connected, sdai, quid])
 
   useEffect(() => {
     try {
-      if (connected) updatingInfo()
-      else {
-        setAllInfo(0, 0, 0, 0, 0, true)
-
-        setTotalDeposited(0)
-        setTotalMinted(0)
-        setPrice(0)
-        setDays("⋈")
-      }
-
       const classState = changeButton(false, true)
+
       setGlowClass(classState)
+      updatingInfo() 
     } catch (error) {
       console.error("Some problem with sale's start function: ", error)
     }
-  }, [updatingInfo, setAllInfo, setGlowClass, changeButton, connected])
+  }, [changeButton, setAllInfo, updatingInfo, connected])
 
   return (
     <div  className={`summary-root ${glowClass}`} >
       <div className="summary-section">
         <div className="summary-title">Days left</div>
-        <div className="summary-value">{days ? days : "⋈"}</div>
+        <div className="summary-value">{connected && days ? days : "⋈"}</div>
       </div>
       <div className="summary-section">
         <div className="summary-title">Current price</div>
         <div className="summary-value">
-          <span className="summary-value">{Number(price).toFixed(0)}</span>
+          <span className="summary-value">{connected ? Number(price).toFixed(0) : 0}</span>
           <span className="summary-cents"> Cents</span>
         </div>
       </div>
       <div className="summary-section">
         <div className="summary-title">sDAI Deposited</div>
         <div className="summary-value">
-          ${numberWithCommas(parseFloat(String(Number(totalDeposited))).toFixed())}
+          ${connected ? numberWithCommas(parseFloat(String(Number(totalDeposited))).toFixed()) : 0}
         </div>
       </div>
       <div className="summary-section">
         <div className="summary-title">Minted QD</div>
         <div className="summary-value">
-          {numberWithCommas(parseFloat(Number(totalMinted).toFixed(1)))}
+          {connected ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(1))) : 0}
         </div>
       </div>
     </div>

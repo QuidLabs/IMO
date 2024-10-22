@@ -8,7 +8,6 @@ import Web3 from "web3"
 import { QUID, SDAI,  MO, SUSDE, addressQD, addressSDAI, addressSUSDE, addressMO } from "../utils/constant"
 
 const contextState = {
-  account: "",
   connectToMetaMask: () => { },
   getSdai: () => { },
   getSales: () => { },
@@ -20,6 +19,7 @@ const contextState = {
   setNotifications: () => { },
   setStorage: () => { },
   getStorage: () => { },
+  account: "",
   connected: false,
   connecting: false,
   provider: {},
@@ -78,9 +78,9 @@ export const AppContextProvider = ({ children }) => {
   const changeButton = useCallback((isProcessing, state) => {
     try{
       if (state) {
-        return (isProcessing ? 'off' : 'on');
+        return (isProcessing ? 'off' : 'on')
       } else {
-        return ('off');
+        return ('off')
       }
     } catch ( error ){
       console.error(error)
@@ -91,7 +91,9 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (account && connected && quid && currentTimestamp) {
         const timestamp = await quid.methods.blocktimestamp().call()
+
         setAccountTimestamp(Number(timestamp))
+        
         const currentTimestampBN = currentTimestamp.toString()
 
         const [totalSupplyCap] = await Promise.all([
@@ -107,7 +109,7 @@ export const AppContextProvider = ({ children }) => {
       console.error("Some problem with getSupply: ", error)
       return null
     }
-  }, [account, connected, currentTimestamp, quid])
+  }, [setAccountTimestamp, account, connected, currentTimestamp, quid])
 
   const getSales = useCallback(async () => {
     try {
@@ -154,33 +156,33 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.error("Error in updateInfo: ", error)
     }
-  }, [account, connected, quid, sdai, totalMint, totalDeposite])
+  }, [setTotalMinted, setTotalDeposited, account, connected, quid, sdai, susde, totalMint, totalDeposite])
 
   const getUserInfo = useCallback(async () => {
     try {
-      
-
       if (connected && account && quid) {
         const timestamp = await quid.methods.blocktimestamp().call()
+        
         setAccountTimestamp(Number(timestamp.toString()))
+
         const qdAmount = parseUnits("1", 18).toBigInt()
 
         const data = await quid.methods.qd_amt_to_dollar_amt(qdAmount, currentTimestamp).call()
 
         const value = Number(formatUnits(data, 18) * 100)
 
-        const bigNumber = BigNumber.from(Math.floor(value).toString())
+        const price = BigNumber.from(Math.floor(value).toString())
 
         const info = await mo.methods.get_info(account).call()
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
 
-        setPrice(bigNumber)
-        setUsdBalance(actualUsd)
-        setLocalMinted(actualQD)
+        setPrice(price)
+        if (UsdBalance !== actualUsd) setUsdBalance(actualUsd)
+        if (localMinted !== actualQD) setLocalMinted(actualQD)
 
         const userInfo = {
-          actualUsd: actualUsd, actualQD: actualQD, price: currentPrice, info: info
+          actualUsd: actualUsd, actualQD: actualQD, price: price, info: info
         }
 
         return userInfo
@@ -188,7 +190,8 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
     }
-  }, [quid, account, connected, currentTimestamp, currentPrice, mo])
+  }, [setPrice, setLocalMinted, setUsdBalance, 
+    quid, account, connected, currentTimestamp, mo, localMinted, UsdBalance])
 
   const getSdai = useCallback(async () => {
     try {
@@ -214,7 +217,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [account, sdai])
+  }, [setSdaiBalance, account, sdai])
 
   const getQdBalance = useCallback(async () => {
     try {
@@ -226,7 +229,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [account, quid])
+  }, [setQdBalance, account, quid])
 
   const setAllInfo = useCallback(async (gUSD, gSDAI, lUsd, lSdai, price, reset = false) => {
     try {
@@ -241,12 +244,13 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to set all info:`, error)
     }
-  }, [])
+  }, [setLocalMinted, setTotalDeposited, setTotalMinted, setPrice, setUsdBalance])
 
   const connectToMetaMask = useCallback(async () => {
     try {
       if (!account) {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' })
+        
         setAccount(accounts[0])
 
         if (accounts && provider) {
@@ -255,6 +259,7 @@ export const AppContextProvider = ({ children }) => {
           const moContract = new web3Instance.eth.Contract(MO, addressMO)
           const usdeContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
           const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
+
           setMO(moContract)
           setQuid(quidContract)
           setSdai(usdeContract)
@@ -264,7 +269,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [account, provider])
+  }, [setAccount, setMO, setSdai, setSusde, setQuid, account, provider])
 
 
   return (
