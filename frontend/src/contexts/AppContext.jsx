@@ -143,6 +143,9 @@ export const AppContextProvider = ({ children }) => {
         const balance = await susde.methods.balanceOf(addressMO).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
+        const more_info = await mo.methods.get_more_info(addressMO).call()
+        console.log('more_info MO', more_info)
+
         if (totalMint !== formattedTotalMinted) setTotalMinted(formattedTotalMinted)
 
         if (totalDeposite !== formattedTotalDeposited) setTotalDeposited(formattedTotalDeposited)
@@ -175,9 +178,7 @@ export const AppContextProvider = ({ children }) => {
         const price = BigNumber.from(Math.floor(value).toString())
 
         const info = await mo.methods.get_info(account).call()
-        const more_info = await mo.methods.get_more_info(account).call()
-        // TODO if 0
-        // const more_info = await mo.methods.get_more_info(addressMO).call()
+        // const more_info = await mo.methods.get_more_info(account).call()
 
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
@@ -259,6 +260,7 @@ export const AppContextProvider = ({ children }) => {
         setAccount(accounts[0])
 
         if (accounts && provider) {
+
           const web3Instance = new Web3(provider)
           const quidContract = new web3Instance.eth.Contract(QUID, addressQD)
           const moContract = new web3Instance.eth.Contract(MO, addressMO)

@@ -37,7 +37,7 @@ export const Summary = () => {
             setTotalDeposited(values[0].actualUsd)
             setTotalMinted(values[0].actualQD)
             setPrice(values[0].price)
-            
+
             setMintPeriodDays(values[1].mintPeriodDays)
             setSmartContractStartTimestamp(values[1].smartContractStartTimestamp)
 
@@ -55,7 +55,7 @@ export const Summary = () => {
       const classState = changeButton(false, true)
 
       setGlowClass(classState)
-      updatingInfo() 
+      updatingInfo()
     } catch (error) {
       console.error("Some problem with sale's start function: ", error)
     }

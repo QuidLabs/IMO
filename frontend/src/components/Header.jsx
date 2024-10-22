@@ -6,9 +6,9 @@ import { useAppContext } from "../contexts/AppContext"
 import "./Styles/Header.scss"
 
 export const Header = () => {
-  const { 
+  const {
     connectToMetaMask, getTotalInfo, getUserInfo, getSdai,
-    account, connected 
+    account, connected, UsdBalance
   } = useAppContext()
 
   const [actualAmount, setAmount] = useState(0)
@@ -26,22 +26,22 @@ export const Header = () => {
 
   const updatedTotalInfo = useCallback(async () => {
     try {
-      const updatedInfo = await getTotalInfo() 
-  
+      const updatedInfo = await getTotalInfo()
+
       if (updatedInfo && updatedInfo.total_dep && updatedInfo.total_mint) {
         const costInUsd = updatedInfo.total_dep
         const qdAmount = updatedInfo.total_mint
-  
+
         setUsd(costInUsd)
         setAmount(qdAmount)
-  
-        setGrain(costInUsd !== 0 ? (qdAmount - costInUsd).toFixed(2) : 0)
+
+        setGrain(costInUsd !== 0 ? (qdAmount - UsdBalance).toFixed(2) : 0)
       }
     } catch (error) {
       console.warn(`Failed to get user info:`, error)
     }
-  }, [getTotalInfo])  
-  
+  }, [getTotalInfo, UsdBalance])
+
   useEffect(() => {
     if (connected) {
       connectToMetaMask()
