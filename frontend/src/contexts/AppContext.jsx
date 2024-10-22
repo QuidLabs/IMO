@@ -178,8 +178,8 @@ export const AppContextProvider = ({ children }) => {
         const actualQD = Number(info[1]) / 1e18
 
         setPrice(price)
-        setUsdBalance(actualUsd)
-        setLocalMinted(actualQD)
+        if (UsdBalance !== actualUsd) setUsdBalance(actualUsd)
+        if (localMinted !== actualQD) setLocalMinted(actualQD)
 
         const userInfo = {
           actualUsd: actualUsd, actualQD: actualQD, price: price, info: info
@@ -191,7 +191,7 @@ export const AppContextProvider = ({ children }) => {
       console.warn(`Failed to get account info:`, error)
     }
   }, [setPrice, setLocalMinted, setUsdBalance, 
-    quid, account, connected, currentTimestamp, mo])
+    quid, account, connected, currentTimestamp, mo, localMinted, UsdBalance])
 
   const getSdai = useCallback(async () => {
     try {

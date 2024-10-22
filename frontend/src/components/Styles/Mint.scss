@@ -96,7 +96,7 @@
   min-width: 600px;
   height: 112px;
   font-size: 108px;
-  background: transparent;
+  background: none;
   border: none;
   outline: none;
   color: #fff;
@@ -110,30 +110,26 @@
     font-size: 108px;
     color: #fff;
   }
-
-  input:-webkit-autofill {
-    -webkit-text-fill-color: transparent !important;
-  }
 }
 
 .mint-beneficiaryInput {
   width: 100%;
   height: 30px;
-  font-size: 28px;
+  font-size: 24px;
   background: transparent;
   border: none;
   outline: none;
-  color: #fff;
+  color: #ff3300;
   font-family: "Road Rage";
   opacity: 0.8;
   user-select: none;
 
   &::placeholder {
     font-family: "Road Rage";
-    opacity: 0.33;
-    line-height: 30px;
-    font-size: 28px;
-    color: #fff;
+    line-height: 14px;
+    font-size: 24px;
+    color: #ff6600;
+    opacity: 0.66;
   }
 
   input:-webkit-autofill {
@@ -150,7 +146,8 @@
 
   // circle
   &:before {
-    content: '✔';
+    content: '';
+    color: #54b420;
     font-weight: bold; 
     display: block;
     box-sizing: content-box;
@@ -163,61 +160,7 @@
   &:checked:before {
     border-color: #54b420;
     transition: 0.5s border-color ease;
-  }
-
-  &:disabled:before {
-    border-color: #54b420;
-    background-color: #54b420;
-  }
-
-  // dot
-  &:after {
-    content: '';
-    display: block;
-    position: absolute;
-    box-sizing: content-box;
-    top: 50%;
-    left: 50%;
-    transform-origin: 50% 50%;
-    background-color: #54b420;
-    width: 12px;
-    height: 12px;
-    border-radius: 100vh;
-    transform: translate(-50%, -50%) scale(0);
-  }
-
-  &[type="checkbox"] {
-    &:before {
-      border-radius: 12px / 4;
-    }
-
-    &:after {
-      width: 12px * 0.6;
-      height: 12px;
-      border-radius: 0;
-      transform: translate(-50%, -85%) scale(0) rotate(45deg);
-      background-color: transparent;
-      box-shadow: 4px 4px 0px 0px #54b420;
-    }
-
-    &:checked:after {
-      animation: mint-toggleOnCheckbox 0.2s ease forwards;
-    }
-  }
-
-  &[type="checkbox"].filled {
-    &:before {
-      border-radius: 12px / 4;
-      transition: 0.2s border-color ease, 0.2s background-color ease;
-    }
-
-    &:checked:not(:disabled):before {
-      background-color: #54b420;
-    }
-
-    &:not(:disabled):after {
-      box-shadow: 4px 4px 0px 0px white;
-    }
+    content: '✔';
   }
 }
 
@@ -613,7 +556,7 @@
   background: none;
   border: none;
   padding: 0;
-  color: blue;
+  color: #46921b;
   text-decoration: underline;
   cursor: pointer;
   font-size: 16px;

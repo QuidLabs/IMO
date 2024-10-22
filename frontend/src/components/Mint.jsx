@@ -14,7 +14,7 @@ import "./Styles/Mint.scss"
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalInfo, getUserInfo, getTotalSupply, changeButton, setStorage, getStorage,
+  const { changeButton, getTotalInfo, getUserInfo, getTotalSupply, getStorage, setAllInfo, setStorage,
     addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
@@ -77,29 +77,6 @@ export const Mint = () => {
       console.error(error)
     }
   }, [getTotalSupply, quid])
-
-  useEffect(() => {
-    if (quid) updateTotalSupply()
-
-    if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight
-
-    if (account && connected && quid) {
-      getStorage()
-      setStartMsg('Terminal started. Mint is available!')
-
-      const classState = changeButton(isProcessing, true)
-
-      setGlowClass(classState)
-    } else localStorage.setItem("consoleNotifications", JSON.stringify(''))
-
-    if (notifications[0] && !connected) setTimeout(() => {
-      setStorage([])
-
-      const classState = changeButton(isProcessing, false)
-
-      setGlowClass(classState)
-    }, 500)
-  }, [updateTotalSupply, changeButton, getStorage, setStorage, account, connected, quid, notifications, isProcessing])
 
   const handleChangeValue = (e) => {
     const regex = /^\d*(\.\d*)?$|^$/
@@ -188,17 +165,11 @@ export const Mint = () => {
 
       const allowanceBigNumber = await sdai.methods.allowance(account, addressQD).call()
       const allowanceBigNumberBN = allowanceBigNumber ? allowanceBigNumber.toString() : 0
-      //const addresQDBN = addressQD ? addressQD.toString() : 0
 
       setStorage(prevNotifications => [
         ...prevNotifications,
         { severity: "info", message: `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}` }
       ])
-
-      //if (parseInt(formatUnits(allowanceBigNumberBN, 18)) !== 0) {
-      //  setState("decreaseAllowance")
-      //  await sdai.methods.decreaseAllowance(addresQDBN, allowanceBigNumberBN).send({ from: account })
-      //}
 
       setState("approving")
 
@@ -229,8 +200,10 @@ export const Mint = () => {
         addressSDAI.toString(), false).send({ from: account }
         )
 
-      await getTotalInfo()
-      await getUserInfo()
+      await Promise.all([getUserInfo(), getTotalInfo()])
+      .then(array => {
+        setAllInfo(array[0], array[1])
+      })
 
       setStorage(prevNotifications => [
         ...prevNotifications,
@@ -255,6 +228,29 @@ export const Mint = () => {
     if (inputRef.current > totalSupplyCap) setMintValue(totalSupplyCap)
     else inputRef.current.focus()
   }
+
+  useEffect(() => {
+    if (quid) updateTotalSupply()
+
+    if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight
+
+    if (account && connected && quid) {
+      getStorage()
+      setStartMsg('Terminal started. Mint is available!')
+
+      const classState = changeButton(isProcessing, true)
+
+      setGlowClass(classState)
+    } else localStorage.setItem("consoleNotifications", JSON.stringify(''))
+
+    if (notifications[0] && !connected) setTimeout(() => {
+      setStorage([])
+
+      const classState = changeButton(isProcessing, false)
+
+      setGlowClass(classState)
+    }, 500)
+  }, [updateTotalSupply, changeButton, getStorage, setStorage, account, connected, quid, notifications, isProcessing])
 
   return (
     <>
@@ -313,9 +309,8 @@ export const Mint = () => {
             {isProcessing ? "Processing" : state !== "none" ? `${state}` : "MINT"}
             <div className={`mint-glowEffect mint-glow-${glowClass}`} />
           </button>
-          <button type="button" className="dd-submit">
-            DROP DOWN
-          </button>
+          {//<button type="button" className="dd-submit"> DROP DOWN 
+          /**</button>**/}
           <label style={{ position: "absolute", top: 165, right: -170 }}>
             <input
               name="isBeneficiary"
@@ -346,7 +341,7 @@ export const Mint = () => {
         </form>
         <div className="mint-console" ref={consoleRef}>
           <div className="mint-console-content">
-            {notifications && connected ? startMsg : "Connect your MetaMask..."}
+            {connected ? startMsg : "Connect your MetaMask..."}
             {notifications ? notifications.map((notification, index) => (
               <div
                 key={index}
