@@ -7,14 +7,13 @@ import "./Styles/Header.scss"
 
 export const Header = () => {
   const {
-    connectToMetaMask, getTotalInfo, getUserInfo, getSdai,
-    account, connected, UsdBalance
+    connectToMetaMask, getTotalInfo, getSdai, getSdaiBalance, getUserInfo, 
+    account, connected
   } = useAppContext()
 
   const [actualAmount, setAmount] = useState(0)
   const [actualUsd, setUsd] = useState(0)
-
-  const [grain, setGrain] = useState(0)
+  const [actualSdai, setSdai] = useState(0)
 
   const handleConnectClick = useCallback(async () => {
     try {
@@ -26,21 +25,28 @@ export const Header = () => {
 
   const updatedTotalInfo = useCallback(async () => {
     try {
-      const updatedInfo = await getTotalInfo()
+      await Promise.all([getTotalInfo(), getSdaiBalance()])
+      .then( info => {
+        if(info[0]){
+          setUsd(info[0].total_dep)
+          setAmount(info[0].total_mint)
 
-      if (updatedInfo && updatedInfo.total_dep && updatedInfo.total_mint) {
-        const costInUsd = updatedInfo.total_dep
-        const qdAmount = updatedInfo.total_mint
-
-        setUsd(costInUsd)
-        setAmount(qdAmount)
-
-        setGrain(costInUsd !== 0 ? (qdAmount - UsdBalance).toFixed(2) : 0)
-      }
+          setSdai(info[1])
+        }
+      })
     } catch (error) {
-      console.warn(`Failed to get user info:`, error)
+      console.warn(`Failed to get total info:`, error)
     }
-  }, [getTotalInfo, UsdBalance])
+  }, [getTotalInfo, getSdaiBalance])
+
+
+  const sdaiToWallet = useCallback(async () => {
+    try {
+      if (connected) await Promise.all([getSdai()]).then(() => updatedTotalInfo())
+    } catch (error) {
+      console.warn(`Failed to getting sdai on wallet:`, error)
+    }    
+  }, [getSdai, updatedTotalInfo, connected])
 
   useEffect(() => {
     if (connected) {
@@ -60,15 +66,9 @@ export const Header = () => {
         </div>
       </div>
       <div className="header-summaryEl">
-        <div className="header-summaryElTitle">My Future QD</div>
+        <div className="header-summaryElTitle">Minted QD</div>
         <div className="header-summaryElValue">
           {numberWithCommas(actualAmount)}
-        </div>
-      </div>
-      <div className="header-summaryEl">
-        <div className="header-summaryElTitle">Gain</div>
-        <div className="header-summaryElValue">
-          {numberWithCommas(grain)}
         </div>
       </div>
     </div>
@@ -78,7 +78,7 @@ export const Header = () => {
     <div className="header-summaryEl">
       <div className="header-summaryElTitle">sDAI balance</div>
       <div className="header-summaryElValue">
-        ${numberWithCommas(parseFloat(actualUsd))}
+        {numberWithCommas(parseFloat(actualSdai))}
       </div>
     </div>
   )
@@ -88,12 +88,12 @@ export const Header = () => {
       <div className="header-logoContainer">
         <a className="header-logo" href="/"> </a>
       </div>
-      {connected ? summary : null}
+      {connected && account ? summary : null}
       <div className="header-walletContainer">
-        {connected ? balanceBlock : null}
+        {connected && account ? balanceBlock : null}
         {connected ? (
           <div className="header-wallet">
-            <button className="header-wallet" onClick={() => getSdai()}>
+            <button className="header-wallet" onClick={() => sdaiToWallet()}>
               GET SDAI
             </button>
             <div className="header-metamaskIcon">

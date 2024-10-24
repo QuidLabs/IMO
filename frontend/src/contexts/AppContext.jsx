@@ -2,6 +2,7 @@ import { createContext, useState, useContext, useCallback } from "react"
 import { useSDK } from "@metamask/sdk-react"
 import { formatUnits, parseUnits } from "@ethersproject/units"
 import { BigNumber } from "@ethersproject/bignumber"
+import { Web3Provider } from "@ethersproject/providers"
 
 import Web3 from "web3"
 
@@ -55,8 +56,6 @@ export const AppContextProvider = ({ children }) => {
 
   const SECONDS_IN_DAY = 86400
 
-  //Get storage
-
   const getStorage = useCallback(() => {
     try {
       //realizations
@@ -77,11 +76,8 @@ export const AppContextProvider = ({ children }) => {
 
   const changeButton = useCallback((isProcessing, state) => {
     try{
-      if (state) {
-        return (isProcessing ? 'off' : 'on')
-      } else {
-        return ('off')
-      }
+      if (state) return (isProcessing ? 'off' : 'on')
+      else return ('off')
     } catch ( error ){
       console.error(error)
     }
@@ -91,7 +87,6 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (account && connected && quid && currentTimestamp) {
         const timestamp = await quid.methods.blocktimestamp().call()
-        //
 
         setAccountTimestamp(Number(timestamp))
 
@@ -114,11 +109,8 @@ export const AppContextProvider = ({ children }) => {
 
   const getSales = useCallback(async () => {
     try {
-
       if (account && quid && sdai && addressQD && mo && addressMO) {
-
         const days = await quid.methods.DAYS().call()
-
         const startDate = await quid.methods.START().call()
 
         const salesInfo = {
@@ -143,8 +135,15 @@ export const AppContextProvider = ({ children }) => {
         const balance = await susde.methods.balanceOf(addressMO).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
-        const more_info = await mo.methods.get_more_info(addressMO).call()
-        console.log('more_info MO', more_info)
+        //const more_info = await provider.getBalance(account)
+        //const fInfo1 = formatUnits(more_info[1], 18)
+        //const fInfo2 = formatUnits(more_info[2], 18)
+        //console.log(provider, account)
+
+        const ethersProvider = new Web3Provider(provider)
+        const mainBalance = await ethersProvider.getBalance(account)
+        const formatBalance = (parseFloat(mainBalance) / 1e18).toFixed(4) 
+        console.log('BALANCE EBUAT`: ', formatBalance)
 
         if (totalMint !== formattedTotalMinted) setTotalMinted(formattedTotalMinted)
 
@@ -160,7 +159,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.error("Error in updateInfo: ", error)
     }
-  }, [setTotalMinted, setTotalDeposited, account, connected, quid, sdai, susde, totalMint, totalDeposite])
+  }, [setTotalMinted, setTotalDeposited, account, connected, quid, provider,  sdai, susde, totalMint, totalDeposite])
 
   const getUserInfo = useCallback(async () => {
     try {
@@ -178,7 +177,6 @@ export const AppContextProvider = ({ children }) => {
         const price = BigNumber.from(Math.floor(value).toString())
 
         const info = await mo.methods.get_info(account).call()
-        // const more_info = await mo.methods.get_more_info(account).call()
 
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
@@ -201,13 +199,7 @@ export const AppContextProvider = ({ children }) => {
 
   const getSdai = useCallback(async () => {
     try {
-      console.log("Sdai 0")
-
-      if (account && sdai) {
-        await sdai.methods.mint(account).send({ from: account })
-
-        console.log("ACCOUNT: ", account)
-      }
+      if (account && sdai) await sdai.methods.mint(account).send({ from: account })
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
@@ -217,8 +209,11 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (sdai && account) {
         const balance = await sdai.methods.balanceOf(account).call()
+        const formattedBalance = (parseFloat(balance) / 1e18).toFixed(2) 
+        
+        setSdaiBalance(formattedBalance)
 
-        setSdaiBalance(parseFloat(balance) / 1e18)
+        return formattedBalance
       }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
@@ -247,6 +242,8 @@ export const AppContextProvider = ({ children }) => {
       setPrice(price)
 
       if (reset) setAccount("")
+        //Get storage
+      
     } catch (error) {
       console.warn(`Failed to set all info:`, error)
     }
