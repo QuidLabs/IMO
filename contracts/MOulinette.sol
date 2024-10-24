@@ -18,11 +18,20 @@ interface IWETH is IERC20 {
     external payable;
 }   import "./QD.sol";
 contract MO is Ownable {
-// essentially 4626, but we
-// save on contract size by
-// not inheriting interface
-    address public SUSDE; 
+// essentially erc4626
     address public USDE;
+    address public SUSDE;
+    uint internal _ETH_PRICE; // TODO delete when finished testing
+    uint constant WAD = 1e18;
+    uint internal FEE = WAD / 28; 
+    uint128 constant Q96 = 2**96; 
+    uint constant DIME = 10 * WAD;
+    uint24 constant POOL_FEE = 500;
+    INonfungiblePositionManager NFPM;
+    int24 internal LAST_TWAP_TICK;
+    int24 internal UPPER_TICK; 
+    int24 internal LOWER_TICK;
+
     address constant public WETH = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14; // token0 on mainnet, token1 on sepolia
     address constant public USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // token1 on mainnet, token0 on sepolia
     // TODO uncomment these for mainnet deployment, make sure to respect token0 and token1 order in _swap and NFPM.mint
@@ -30,39 +39,20 @@ contract MO is Ownable {
     // address constant public USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     // address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     // address constant public USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; 
-    uint internal _ETH_PRICE; // TODO delete when finished testing
-    uint24 constant POOL_FEE = 500;
-    
-    uint internal FEE = WAD / 28; 
-    uint constant WAD = 1e18;
-    uint128 constant Q96 = 2**96; 
-    uint constant DIME = 10 * WAD;
-    INonfungiblePositionManager NFPM;
-    int24 internal LAST_TWAP_TICK;
-    int24 internal UPPER_TICK; 
-    int24 internal LOWER_TICK;
     
     uint public ID; uint public MINTED; // QD
     IUniswapV3Pool POOL; IV3SwapRouter ROUTER; 
+    struct SwapState { uint priceX96; int24 tick;
+        uint targetAmount0; uint targetAmount1; 
+        uint160 sqrtPriceX96Lower; bool sell0;
+        uint160 sqrtPriceX96Upper; uint sell;
+        uint128 liq; uint160 sqrtPriceX96;
+    }
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
         bool liquidate; uint repay; uint collat; 
-    }
-    struct SwapState { 
-        uint256 positionAmount0;
-        uint256 positionAmount1;
-        int24 currentTick;
-        int24 twapTick;
-        uint160 sqrtPriceX96;
-        uint160 sqrtPriceX96Lower;
-        uint160 sqrtPriceX96Upper;
-        uint256 priceX96;
-        uint256 amountRatioX96;
-        uint256 delta0;
-        uint256 delta1;
-        bool sell0;
-    }   Quid QUID;
+    }   Quid QUID; // units of ^^ for ETH ^^^^^
     
     // event CreditHelperShare(uint share, address who); 
     // event CreditHelperROI(uint roi, address who);
@@ -92,15 +82,11 @@ contract MO is Ownable {
     // event ThirdInRedeem(uint third);
     // event AbsorbInRedeem(uint absorb);
     // event SellInRedeem(uint amount);
-    
     // event WithDrawing(uint amount);
-    event SwapDelta0(uint delta0);
+
+    event SwapAmountsForLiquidity(uint amount0, uint amount1);
     event SwapSell0(uint amount0, uint amount1);
     event SwapSell1(uint amount0, uint amount1);
-    event SwapSell0numerator(uint numerator);
-    event SwapSell1numerator(uint numerator);
-    event SwapAmountsForLiquidity(uint amount0, uint amount1);
-    event SwapPrices(uint priceX96, uint sqrtPriceX96Lower, uint sqrtPriceX96Upper);
 
     event RepackNFTamountsAfterCollectInBurn(uint amount0, uint amount1);
     event RepackNFTtwap(int24 twap, int24 twapUpper, int24 twapLower);
@@ -114,9 +100,10 @@ contract MO is Ownable {
         Offer memory pledge = pledges[who];
         return (pledge.carry.debit, QUID.balanceOf(who));
         // never need pledge.carry.credit in the frontend,
-        // this is more of an internal tracking variable...
-    }
-    function get_more_info(address who) view
+        // this is more of an internal tracking variable
+        // the dark place between the edge case 520 Omfeel
+        //
+    }   function get_more_info(address who) view
         external returns (uint, uint, uint, uint) { 
         Offer memory pledge = pledges[who];
         return (pledge.work.debit, pledge.work.credit, 
@@ -135,7 +122,7 @@ contract MO is Ownable {
     } /* quid.credit = contribution to weighted...
     ...SUM of (QD / total QD) x (ROI / avg ROI) */
     uint public SUM = 1; uint public AVG_ROI = 1; 
-    uint public liquidityUnderManagement; // UniV3...
+    // uint public liquidityUnderManagement; // UniV3
     // formal contracts require a specific method of 
     // formation to be enforaceable; one example is
     // negotiable instruments like promissory notes 
@@ -169,6 +156,10 @@ contract MO is Ownable {
         WAD / (index + 11); }
     //  recall 3rd Delphic maxim
     mapping (address => Offer) pledges;
+    function _absDiff(uint a, uint b) 
+        internal pure returns (uint) {
+        return a >= b ? a - b : b - a;
+    }
     function _max(uint128 _a, uint128 _b) 
         internal pure returns (uint128) {
         return (_a > _b) ? _a : _b;
@@ -177,33 +168,33 @@ contract MO is Ownable {
         internal pure returns (uint) {
         return (_a < _b) ? _a : _b;
     }
-    function _minAmount(address from, address token, 
-        uint amount) internal view returns (uint) {
-        amount = _min(amount, IERC20(token).balanceOf(from));
+    function _minAmount(address from, 
+        address token, uint amount) 
+        internal view returns (uint) {
+        amount = _min(amount, // spend
+        IERC20(token).balanceOf(from));
         require(amount > 0, "0 balance"); 
         if (token != address(QUID)) {
-            amount = _min(amount,IERC20(token).allowance(from, address(this)));
+            amount = _min(amount,
+            IERC20(token).allowance(from, 
+                            address(this)));
             require(amount > 0, "0 allowance"); 
-        }
-        return amount;
+        }   return amount; // maximum spendable
     }
     function setMetrics(uint avg_roi) public
         onlyQuid { AVG_ROI = avg_roi;
     }
     function _isDollar(address dollar) internal view returns 
         (bool) { return dollar == SUSDE || dollar == USDE; } 
-
     function dollar_amt_to_qd_amt(uint cap, uint amt) 
         public view returns (uint) { return (cap < 100) ? 
         FullMath.mulDiv(amt, 100 + (100 - cap), 100) : amt; 
     } 
-
     // different from eponymous function in ERC20...
     function qd_amt_to_dollar_amt(uint cap, uint amt) 
         public view returns (uint) { return (cap < 100) ? 
         FullMath.mulDiv(amt, cap, 100) : amt;
     }
-
     constructor(address _usde, address _susde) { 
         USDE = _usde; SUSDE = _susde; // TODO remove (for Sepolia only)
         address nfpm = 0x1238536071E1c677A632429e3655c799b22cDA52;
@@ -228,9 +219,9 @@ contract MO is Ownable {
         Offer memory pledge = pledges[address(this)];
         uint collateral = FullMath.mulDiv(price,
             pledge.work.credit, WAD // in $
-        ); // collected in deposit and fold...
-        uint deductibles = FullMath.mulDiv(price,
-            pledge.weth.debit, WAD // in $
+        ); // collected in deposit and fold
+        uint deductibles = FullMath.mulDiv(
+            price, pledge.weth.debit, WAD // $
         ); // composition of insurance capital:
         uint assets = collateral + deductibles + 
             // USDC (upscaled for precision)...
@@ -304,6 +295,37 @@ contract MO is Ownable {
         }
     }
 
+    function _optimise(uint position0, uint position1, 
+        uint amount0, uint amount1) public view returns 
+        (uint final0, uint256 final1, bool sell0, 
+        uint amountSold) { uint price = _getPrice();
+        uint amount0Scaled = amount0 * 1e12; // to 1e18
+        uint targetRatio = (position1 * 1e18) / position0;
+        uint total = amount0Scaled + (amount1 * price) / 1e18;
+        final0 = (total * 1e18) / (price + targetRatio);
+        final1 = (total * targetRatio) / (price + targetRatio);
+        // Determine which token is being sold, by how much
+        if (final0 <= amount0Scaled) { sell0 = true;
+            amountSold = amount0Scaled - final0;
+            amountSold = amountSold / 1e12; // to 1e6
+        } else { amountSold = amount1 - final1; }
+        final0 = final0 / 1e12;  // back to 1e6...
+        return (final0, final1, sell0, amountSold);
+    }
+    function _liquidity(uint amount0, uint amount1) 
+        internal returns (uint160, uint160, uint128) {
+        uint160 sqrtPriceX96atLowerTick = TickMath.getSqrtPriceAtTick(LOWER_TICK);
+        uint160 sqrtPriceX96atUpperTick = TickMath.getSqrtPriceAtTick(UPPER_TICK);
+        uint128 liquidity0 = LiquidityAmounts.getLiquidityForAmount0(
+            sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, amount0
+        );
+        uint128 liquidity1 = LiquidityAmounts.getLiquidityForAmount1(
+            sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, amount1
+        );
+        return (sqrtPriceX96atLowerTick, 
+                sqrtPriceX96atUpperTick,
+                _max(liquidity0, liquidity1));
+    }
     function _collect() internal returns 
         (uint amount0, uint amount1) {
         (amount0, amount1) = NFPM.collect( 
@@ -321,7 +343,6 @@ contract MO is Ownable {
         );  (amount0, // collect includes proceeds from the decrease... 
              amount1) = _collect(); // above + fees since last collect      
     }
-
     function _adjustToNearestIncrement(int24 input) 
         internal pure returns (int24 result) {
         int24 remainder = input % 10; // 10 
@@ -338,8 +359,7 @@ contract MO is Ownable {
         } else if (-887220 > result) { 
             return -887220;
         }   return result;
-    }
-    // adjust to the nearest multiple of our tick width...
+    } // adjust to the nearest multiple of our tick width
     function _adjustTicks(int24 twap) internal pure returns 
         (int24 adjustedIncrease, int24 adjustedDecrease) {
         uint wad = WAD;
@@ -428,86 +448,52 @@ contract MO is Ownable {
         }
     }
 
-    function _swap(uint amount0, uint amount1) internal returns (uint, uint) {
-        SwapState memory state; state.twapTick = LAST_TWAP_TICK;
-        (state.sqrtPriceX96, state.currentTick,,,,,) = POOL.slot0();
-        // (protects from price manipulation attacks / sandwich attacks)
-        require(LAST_TWAP_TICK > 0 && (state.twapTick > state.currentTick 
-        && ((state.twapTick - state.currentTick) < 100)) || (state.twapTick <= state.currentTick  
-        && ((state.currentTick  - state.twapTick) < 100)), "delta"); // 100 = 1% max tick diff.
-
-        state.priceX96 = FullMath.mulDiv(uint256(state.sqrtPriceX96), 
-                                         uint256(state.sqrtPriceX96), Q96);
+    function _swap(uint amount0,
+        uint amount1) internal
+        returns (uint, uint) {  SwapState memory state;
+        (state.sqrtPriceX96, state.tick,,,,,) = POOL.slot0(); 
+        require(LAST_TWAP_TICK > 0 && (LAST_TWAP_TICK > state.tick 
+        && ((LAST_TWAP_TICK - state.tick) < 100)) || (LAST_TWAP_TICK <= state.tick  
+        && ((state.tick  - LAST_TWAP_TICK) < 100)), "delta"); // 100 = 1% 
+        state.priceX96 = FullMath.mulDiv(state.sqrtPriceX96, 
+                                         state.sqrtPriceX96, Q96);
+        (state.sqrtPriceX96Lower, 
+         state.sqrtPriceX96Upper, state.liq) = _liquidity(amount0, amount1);
+        // sellingAmount0 = false implies we are selling Amount1. It's a binary situation
+        // we're always selling one to get more of the other to reach the target ratio...
+        (state.targetAmount0, // this represents target amounts for the liquidity deposit
+         state.targetAmount1) = LiquidityAmounts.getAmountsForLiquidity(state.sqrtPriceX96, 
+         state.sqrtPriceX96Lower, state.sqrtPriceX96Upper, state.liq);
         
-        state.sqrtPriceX96Lower = TickMath.getSqrtPriceAtTick(LOWER_TICK);
-        state.sqrtPriceX96Upper = TickMath.getSqrtPriceAtTick(UPPER_TICK);
-
-        emit SwapPrices(state.priceX96, state.sqrtPriceX96Lower, state.sqrtPriceX96Upper);
-
-        (state.positionAmount0, 
-         state.positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
-                                                    state.sqrtPriceX96, 
-                                                    state.sqrtPriceX96Lower, 
-                                                    state.sqrtPriceX96Upper, Q96);
-        // how much ETH and USDC in a position within 7% of last TWAP measure for last 8 hours
-        emit SwapAmountsForLiquidity(state.positionAmount0, state.positionAmount1);
-        // how much of the position needs to
-        // be converted to the other token:
-        // if (amount0 > state.positionAmount0) { state.sell0 = true;
+        // pledges[address(this)].last = 
+        emit SwapAmountsForLiquidity(state.targetAmount0,
+                                     state.targetAmount1);
+        (amount0, amount1, 
+            state.sell0, state.sell) = _optimise(state.targetAmount0,
+                state.targetAmount1, amount0, amount1);
         
-        // }
-        // state.delta0 = state.positionAmount -
-        if (state.positionAmount0 == 0) { // FIXME delta0 
-        // should be how much position 0 needs to change into 1?
-            state.sell0 = true; state.delta0 = amount0; // FullMath.mulDiv(Q96, amount1, state.priceX96);
-        } else if (state.positionAmount1 == 0) { state.sell0 = false;
-            state.delta0 = FullMath.mulDiv(Q96, amount0, state.priceX96);
-        } else {
-            state.amountRatioX96 = FullMath.mulDiv(Q96, state.positionAmount0, state.positionAmount1);
-            uint denominator = FullMath.mulDiv(state.amountRatioX96, state.priceX96, Q96) + Q96;
-            uint numerator; state.sell0 = (state.amountRatioX96 * amount1 < amount0 * Q96); 
-            if (state.sell0) {
-                numerator = (amount0 * Q96) - FullMath.mulDiv(state.amountRatioX96, amount1, 1);
-                emit SwapSell0numerator(numerator);
-            } else {    
-                numerator = FullMath.mulDiv(state.amountRatioX96, amount1, 1) - (amount0 * Q96);
-                emit SwapSell1numerator(numerator);
-            }
-            state.delta0 = numerator / denominator;
+        (amount0, amount1,
+            state.sell0, state.sell) = _optimise(state.targetAmount0, 
+                state.targetAmount1, amount0, amount1);
+
+        if (state.sell0 && state.sell > 0) { 
+            TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
+            uint amount = ROUTER.exactInput(
+                IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                    USDC, POOL_FEE, WETH), address(this), state.sell, 0)
+            ); TransferHelper.safeApprove(USDC, address(ROUTER), 0);
+            amount0 -= state.sell; amount1 += amount;
+            emit SwapSell0(amount0, amount1);
         }
-        emit SwapDelta0(state.delta0);
-        if (state.delta0 > 0) {
-            if (state.sell0) { 
-                TransferHelper.safeApprove(USDC, 
-                address(ROUTER), state.delta0);
-                uint256 amount = ROUTER.exactInput(
-                    IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                        USDC, POOL_FEE, WETH), address(this), state.delta0, 0)
-                ); 
-                TransferHelper.safeApprove(USDC, address(ROUTER), 0);
-                // IERC20(WETH).approve(address(ROUTER), 0);
-                amount0 = amount0 - state.delta0;
-                amount1 = amount1 + amount;
-                emit SwapSell0(amount0, amount1);
-            } 
-            else { // sell1
-                state.delta1 = FullMath.mulDiv(state.delta0, state.priceX96, Q96);
-                if (state.delta1 > 0) { // prevent possible rounding to 0 issue
-                    TransferHelper.safeApprove(WETH, 
-                    address(ROUTER), state.delta1);
-                    uint256 amount = ROUTER.exactInput(
-                        IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                            WETH, POOL_FEE, USDC), address(this), state.delta1, 0)
-                    ); 
-                    TransferHelper.safeApprove(WETH, address(ROUTER), 0);
-                    // IERC20(USDC).approve(address(ROUTER), 0);
-                    amount0 = amount0 + amount;
-                    amount1 = amount1 - state.delta1;
-                    emit SwapSell1(amount0, amount1);
-                }
-            }
-        }
-        return (amount0, amount1); 
+        else if (state.sell > 0) { 
+            TransferHelper.safeApprove(WETH, address(ROUTER), state.sell);
+            uint amount = ROUTER.exactInput(
+                IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                    WETH, POOL_FEE, USDC), address(this), state.sell, 0)
+            );  TransferHelper.safeApprove(WETH, address(ROUTER), 0);
+            amount1 -= state.sell; amount0 += amount;
+            emit SwapSell1(amount0, amount1);
+        }   return (amount0, amount1); 
     }   
 
     // call in QD's worth (обнал sans liabilities)
@@ -570,17 +556,10 @@ contract MO is Ownable {
             } else { amount = 0; // ETH being sent out...
                 pledges[address(this)].work.debit -= usdc; 
             }
-            uint160 sqrtPriceX96atLowerTick = TickMath.getSqrtPriceAtTick(LOWER_TICK);
-            uint160 sqrtPriceX96atUpperTick = TickMath.getSqrtPriceAtTick(UPPER_TICK);
-            uint128 liquidity0 = LiquidityAmounts.getLiquidityForAmount0(
-                sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, usdc
+            (uint amount0, 
+             uint amount1) = _withdrawAndCollect(
+                _liquidity(usdc,amount)
             );
-            uint128 liquidity1 = LiquidityAmounts.getLiquidityForAmount1(
-                sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, amount
-            );
-            uint128 liquidity = _max(liquidity0, liquidity1); // TODO update
-            // require(liquidity < liquidityUnderManagement, "overflow NFT");
-            (uint amount0, uint amount1) = _withdrawAndCollect(liquidity);
             if (amount1 >= amount) { 
                 TransferHelper.safeTransfer(WETH, 
                         _msgSender(), usdc);
@@ -629,7 +608,7 @@ contract MO is Ownable {
                 amount = dollar_amt_to_qd_amt(
                 capitalisation(amount, false), amount); 
                 QUID.mint(amount, _msgSender(), address(QUID)); 
-            }   // emit WithDrawing(amount);
+            }   // emit WithDrawing(amount); // in QD
         } else { uint withdrawable; // uint of ETH...
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
@@ -650,14 +629,8 @@ contract MO is Ownable {
             }   pledges[address(this)].work.credit -= transfer;
             // Procedure for unwrapping from Uniswap to transfer ETH:
             // determine liquidity needed to call decreaseLiquidity...
-            uint160 sqrtPriceX96atLowerTick = TickMath.getSqrtPriceAtTick(LOWER_TICK);
-            uint160 sqrtPriceX96atUpperTick = TickMath.getSqrtPriceAtTick(UPPER_TICK);
-            uint128 liquidity = LiquidityAmounts.getLiquidityForAmount1(
-                sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, transfer
-            );
-            // TODO check below total liquidityUnderManagement
-            (amount0,
-             amount1) = _withdrawAndCollect(liquidity);
+            (,, uint128 liquidity) = _liquidity(0, transfer);
+            (amount0, amount1) = _withdrawAndCollect(liquidity);
             // emit WithdrawingETH(transfer, amount0, amount1);
             if (amount1 >= transfer) { 
                 // address(this) balance should be >= amount1

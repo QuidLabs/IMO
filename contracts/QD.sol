@@ -1,6 +1,6 @@
 
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity =0.8.8; // 
+pragma solidity =0.8.8; // evm target: london
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
@@ -10,7 +10,8 @@ interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
 }   import "./MOulinette.sol";
-contract Quid is ERC20, 
+contract Quid is ERC20,
+// essentially erc777
     IERC721Receiver {
     uint public AVG_ROI;
     uint public START;  
@@ -18,10 +19,9 @@ contract Quid is ERC20,
     // kitchen, found a 
     // [Pod] to [Piscine]" ~ tune chi
     Pod[44][16] Piscine; // 16 batches
-    // 44th day stores batch's total
-    uint constant PENNY = 1e16;
+    uint constant PENNY = 1e16; 
     uint constant LAMBO = 16508;
-    uint constant WAD = 1e18;
+    // 44th day stores batch's total...
     uint constant public DAYS = 43 days; 
     uint public START_PRICE = 50 * PENNY; 
     struct Pod { uint credit; uint debit; }
@@ -51,7 +51,8 @@ contract Quid is ERC20,
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
     address public Moulinette; // windmill
-    modifier onlyGenerators { // top G...
+    uint constant WAD = 1e18; //
+    modifier onlyGenerators { //
         address sender = msg.sender;
         require(sender == Moulinette ||
                 sender == address(this), "!");
@@ -61,7 +62,8 @@ contract Quid is ERC20,
         require(currentBatch() > 0, "after");  
         _; 
     }
-    event Medianizer(uint k, uint sum_w_k); // TODO test
+    event MedianizerOne(uint k, uint sum_w_k, uint weight); 
+    event MedianizerTwo(uint k, uint sum_w_k, uint weight); 
     event Restart(uint batch, uint roi);
     // event TransferHelper(uint amount);
     uint public blocktimestamp; // TODO remove (Sepolia)
@@ -86,7 +88,6 @@ contract Quid is ERC20,
         amount = _min(amount, IERC20(token).balanceOf(from));
         require(amount > 0, "insufficient balance"); return amount;
     }
-
     function qd_amt_to_dollar_amt(uint qd_amt,  // used in frontend
         uint block_timestamp) public view returns (uint amount) {
         uint in_days = ((blocktimestamp - START) / 1 days); 
@@ -112,10 +113,11 @@ contract Quid is ERC20,
         _calculateMedian(stake, new_vote, 
                          stake, old_vote);
     }
-
-    function currentBatch() public view returns (uint batch) {
+    function currentBatch() 
+        public view returns (uint batch) {
         batch = (blocktimestamp - deployed) / DAYS;
-        // for last 8 batches to be redeemable, batch reaches 24
+        // for the last 8 batches to be 
+        // redeemable, batch reaches 24
         require(batch < 25, "42"); 
     }
     function matureBatches() 
@@ -188,7 +190,6 @@ contract Quid is ERC20,
      */ 
     function _calculateMedian(uint new_stake, uint new_vote, 
         uint old_stake, uint old_vote) internal postLaunch { 
-        // TODO emit some events to make sure this works properly
         if (old_vote != 17 && old_stake != 0) { 
             WEIGHTS[old_vote] -= old_stake;
             if (old_vote <= K) {   
@@ -204,11 +205,13 @@ contract Quid is ERC20,
             if (K > new_vote) {
                 while (K >= 1 && (
                     (SUM - WEIGHTS[K]) >= mid
-                )) { SUM -= WEIGHTS[K]; K -= 1; }
+                )) { SUM -= WEIGHTS[K]; K -= 1; 
+                    emit MedianizerOne(K, SUM, WEIGHTS[K]); 
+                }
             } else { 
                 while (SUM < mid) { 
                     K += 1; SUM += WEIGHTS[K];
-                    // TODO emit event
+                    emit MedianizerTwo(K, SUM, WEIGHTS[K]); 
                 }
             } MO(Moulinette).setFee(K);
         }  else { SUM = 0; } // reset
