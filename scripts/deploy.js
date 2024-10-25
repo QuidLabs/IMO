@@ -173,13 +173,13 @@ async function main() { // run some tests on our contracts...
     })
     var balance
     var tx; var receipt
-    const threeWeeks = '22' // in seconds
+    const threeWeeks = '22' // in days
     const sixWeeks = '44'
-                // 200000000000000000
+      
     const grant = '50000000000000000000'
     const bill = '100000000000000000000'
     const rack = '1000000000000000000000'
-    const rock = '500000000000000000000'
+    const half_a_rock = '500000000000000000000'
     if (shouldDeploy) { 
       console.log('minting 1k USDE to', beneficiary.address)
       tx = await USDE.mint()
@@ -284,7 +284,7 @@ async function main() { // run some tests on our contracts...
 
     var cap = await MO.capitalisation(0, false)
     console.log('capitalisation...', cap.toString())
-    
+    /*
     try {
       tx = await MO.withdraw(bill, true, {
         value: largeAmountInWei // 245
@@ -330,7 +330,7 @@ async function main() { // run some tests on our contracts...
     catch (error) {
       console.error("Error in fold:", error)
     }
-    
+    */
     tx = await MO.get_more_info(beneficiary)
     console.log("get_more_info(beneficiary)", tx.toString());
     
@@ -346,6 +346,8 @@ async function main() { // run some tests on our contracts...
     // TODO try fold with sell and liquidate at the same time
     var batch = await QD.currentBatch() 
     console.log('batch', batch.toString())
+    
+    /*
     tx = await QD.fast_forward(0)
     await tx.wait()
 
@@ -368,8 +370,6 @@ async function main() { // run some tests on our contracts...
 
     tx = await MO.get_more_info(secondary)
     console.log("get_more_info(secondary)", tx.toString());
-
-
     
     tx = await MO.get_info(secondary)
     console.log("get_info(secondary):", tx.toString());
@@ -379,6 +379,12 @@ async function main() { // run some tests on our contracts...
 
     tx = await MO.get_info(addresses.Moulinette)
     console.log("get_info(MO):", tx.toString());
+
+    */
+
+    // TODO log WEIGHTS before vote
+    // log WEIGHTS after vote
+
 }  
 
 // We recommend this pattern to be able to 

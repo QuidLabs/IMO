@@ -4,30 +4,27 @@ borrowers, hedgers, and
 insurers `mint` **Q**ui**D** for  
 `USDe`xUSDS...over 2yr  
 are 16 chances  to `mint`:  
+
 8 per year times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
-today's," 46% `AVG_ROI`  
-(before `redeem`); [when](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L355)   
-accounts receivable (QD)  
+today's," 46% `AVG_ROI`.  
 
-equal to payables for future  
-cash flow from ΞTH deployed  
-in hooks over time...fees are  
-retained to capitalise QD with  
-**gradated** `fold` [deductibles](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L800)  
+Over time, retained fees  
+from ΞTH deployed into  
+hooks capitalise QD, as  
+well as [deductibles](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L800) do. 
 
-hedging against 10% drops,  
+Hedged against 10% drops,  
 ΞTH insured can't exceed $  
-staked as insurance capital,  
-[as well as sUSDe](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L691), and the  
-total coverage [carryable](https://en.wikipedia.org/wiki/Cost_of_carry) is  
-capped by `carry.debit`.
+staked as insurance capital.  
 
 Levering long while buying  
 insurance (at the same time)  
-protects against liquidations.  
-Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
+protects against liquidations...  
+when not hedged against, they  
+are also gradated (less lethal).  
 
+Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
 APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygXEXJ_d9) relative to  
 one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
