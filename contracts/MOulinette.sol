@@ -42,11 +42,18 @@ contract MO is Ownable {
     
     uint public ID; uint public MINTED; // QD
     IUniswapV3Pool POOL; IV3SwapRouter ROUTER; 
-    struct SwapState { uint priceX96; int24 tick;
+    struct SwapOuter { uint priceX96; int24 tick;
         uint targetAmount0; uint targetAmount1; 
         uint160 sqrtPriceX96Lower; bool sell0;
         uint160 sqrtPriceX96Upper; uint sell;
         uint128 liq; uint160 sqrtPriceX96;
+    }
+    struct SwapInner { uint targetRatio; 
+        uint currentRatio; uint ratioDiff;
+        uint basePercentage; uint priceImpact;
+        uint tradePercentage; uint newRatio;
+        uint totalValue; uint newTotalValue;
+        uint newDiff; uint currentDiff;
     }
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
@@ -294,23 +301,54 @@ contract MO is Ownable {
     }
 
     function _optimise(uint position0, uint position1, 
-        uint amount0, uint amount1) public view returns 
-        (uint final0, uint256 final1, bool sell0, 
-        uint amountSold) { uint price = _getPrice();
-        uint amount0Scaled = amount0 * 1e12; // to 1e18
-        uint targetRatio = (position1 * 1e18) / position0;
-        uint total = amount0Scaled + (amount1 * price) / 1e18;
-        final0 = (totalValue * 1e18) / 
-            (1e18 + (targetRatio * price) / 1e18);
-        final1 = (targetRatio * finalAmount0) / 1e18;
-        // Determine which token is sold, by how much
-        if (final0 <= amount0Scaled) { sell0 = true;
-            amountSold = amount0Scaled - final0;
-            amountSold = amountSold / 1e12; // to 1e6
-        } else { amountSold = amount1 - final1; }
-        final0 = final0 / 1e12;  // back to 1e6...
-        return (final0, final1, sell0, amountSold);
+        uint amount0, uint amount1, uint iter) public 
+        view returns (uint final0, uint final1, bool sell0, 
+        uint amountSold) { SwapInner memory state;
+        uint price = _getPrice();
+        if (amount0 < 100) { // 0.0001 dollars
+            amountSold = amount1 * 95 / 100;
+            return (amount0, amount1, false, amountSold);
+        } 
+        if (amount1 < 1e12) { // 0.00001 ETH 
+            amountSold = amount0 * 95 / 100;
+            return (amount0, amount1, true, amountSold);
+        } 
+        state.targetRatio = (position1 * 1e18) / (position0 * 1e12);
+        state.currentRatio = (amount1 * 1e18) / (amount0 * 1e12);
+        state.ratioDiff = state.currentRatio > state.targetRatio ? 
+            (state.currentRatio * 1e18) / state.targetRatio : 
+            (state.targetRatio * 1e18) / state.currentRatio;
+
+        state.basePercentage = state.ratioDiff > 100 * 1e18 ? 95 : 
+                                     _min(50 + (iter * 10), 95);
+
+        // Price impact adjustment
+        state.priceImpact = _min(1e18,
+            ((position0 * 1e18) / amount0 + 
+            (position1 * 1e18) / amount1) / 2
+        );
+        state.tradePercentage = (state.basePercentage * state.priceImpact) / 1e18;
+        if (state.currentRatio > state.targetRatio) { sell0 = false;
+            amountSold = (amount1 * state.tradePercentage) / 100;
+            require(amountSold <= amount1, "INVALID_TRADE_1");
+            final1 = amount1 - amountSold;
+            final0 = amount0 + (amountSold * price) / 1e18;
+        } else { sell0 = true;
+            amountSold = (amount0 * state.tradePercentage) / 100;
+            require(amountSold <= amount0, "INVALID_TRADE_0");
+            final0 = amount0 - amountSold;
+            final1 = amount1 + (amountSold * 1e18) / price;
+        }
+        state.newRatio = (final1 * 1e18) / (final0 * 1e12);
+        state.newDiff = _absDiff(state.newRatio, state.targetRatio);
+        state.currentDiff = _absDiff(state.currentRatio, state.targetRatio);
+        require(state.newDiff <= state.currentDiff, "WORSE_POSITION");
+
+        state.totalValue = (amount0 * 1e12) + (amount1 * price) / 1e18;
+        state.newTotalValue = (final0 * 1e12) + (final1 * price) / 1e18;
+        require(state.newTotalValue >= state.totalValue * 9999 / 10000, "VALUE_LOSS");
     }
+    
     function _liquidity(uint amount0, uint amount1) 
         internal returns (uint160, uint160, uint128) {
         uint160 sqrtPriceX96atLowerTick = TickMath.getSqrtPriceAtTick(LOWER_TICK);
@@ -449,7 +487,7 @@ contract MO is Ownable {
 
     function _swap(uint amount0,
         uint amount1) internal
-        returns (uint, uint) {  SwapState memory state;
+        returns (uint, uint) { SwapOuter memory state;
         (state.sqrtPriceX96, state.tick,,,,,) = POOL.slot0(); 
         require(LAST_TWAP_TICK > 0 && (LAST_TWAP_TICK > state.tick 
         && ((LAST_TWAP_TICK - state.tick) < 100)) || (LAST_TWAP_TICK <= state.tick  
@@ -467,32 +505,32 @@ contract MO is Ownable {
         // pledges[address(this)].last = 
         emit SwapAmountsForLiquidity(state.targetAmount0,
                                      state.targetAmount1);
-        (amount0, amount1, 
-            state.sell0, state.sell) = _optimise(state.targetAmount0,
-                state.targetAmount1, amount0, amount1);
-        
-        (amount0, amount1,
-            state.sell0, state.sell) = _optimise(state.targetAmount0, 
-                state.targetAmount1, amount0, amount1);
-
-        if (state.sell0 && state.sell > 0) { 
-            TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
-            uint amount = ROUTER.exactInput(
-                IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                    USDC, POOL_FEE, WETH), address(this), state.sell, 0)
-            ); TransferHelper.safeApprove(USDC, address(ROUTER), 0);
-            amount0 -= state.sell; amount1 += amount;
-            emit SwapSell0(amount0, amount1);
-        }
-        else if (state.sell > 0) { 
-            TransferHelper.safeApprove(WETH, address(ROUTER), state.sell);
-            uint amount = ROUTER.exactInput(
-                IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                    WETH, POOL_FEE, USDC), address(this), state.sell, 0)
-            );  TransferHelper.safeApprove(WETH, address(ROUTER), 0);
-            amount1 -= state.sell; amount0 += amount;
-            emit SwapSell1(amount0, amount1);
-        }   return (amount0, amount1); 
+        uint count = 0;
+        do { (amount0, amount1, 
+              state.sell0, state.sell) = _optimise(state.targetAmount0, state.targetAmount1,
+                                                               amount0, amount1, count);
+            if (state.sell0) {
+                if (state.sell > 100) {
+                    TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
+                    uint amount = ROUTER.exactInput(
+                        IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                            USDC, POOL_FEE, WETH), address(this), state.sell, 0)
+                    ); TransferHelper.safeApprove(USDC, address(ROUTER), 0);
+                    amount0 -= state.sell; amount1 += amount;
+                    emit SwapSell0(amount0, amount1);
+                } else { break; }
+            } else {
+                if (state.sell > 1e12) {
+                    TransferHelper.safeApprove(WETH, address(ROUTER), state.sell);
+                    uint amount = ROUTER.exactInput(
+                        IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                            WETH, POOL_FEE, USDC), address(this), state.sell, 0)
+                    );  TransferHelper.safeApprove(WETH, address(ROUTER), 0);
+                    amount1 -= state.sell; amount0 += amount;
+                    emit SwapSell1(amount0, amount1);
+                } else { break; }
+            }
+        } while (count < 5); return (amount0, amount1); 
     }   
 
     // call in QD's worth (обнал sans liabilities)
@@ -530,6 +568,8 @@ contract MO is Ownable {
             capitalisation(0, false),
             amount
         );  emit AbsorbAmount(amount);
+        // this is a collect call... 
+        // do you accept the charges
         if (amount > absorb) {  amount -= absorb; 
             // remainder is $ value to be released 
             // after accounting for liabilities...
