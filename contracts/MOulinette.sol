@@ -101,8 +101,6 @@ contract MO is Ownable {
         return (pledge.carry.debit, QUID.balanceOf(who));
         // never need pledge.carry.credit in the frontend,
         // this is more of an internal tracking variable
-        // the dark place between the edge case 520 Omfeel
-        //
     }   function get_more_info(address who) view
         external returns (uint, uint, uint, uint) { 
         Offer memory pledge = pledges[who];
