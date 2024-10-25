@@ -300,9 +300,10 @@ contract MO is Ownable {
         uint amount0Scaled = amount0 * 1e12; // to 1e18
         uint targetRatio = (position1 * 1e18) / position0;
         uint total = amount0Scaled + (amount1 * price) / 1e18;
-        final0 = (total * 1e18) / (price + targetRatio);
-        final1 = (total * targetRatio) / (price + targetRatio);
-        // Determine which token is being sold, by how much
+        final0 = (totalValue * 1e18) / 
+            (1e18 + (targetRatio * price) / 1e18);
+        final1 = (targetRatio * finalAmount0) / 1e18;
+        // Determine which token is sold, by how much
         if (final0 <= amount0Scaled) { sell0 = true;
             amountSold = amount0Scaled - final0;
             amountSold = amountSold / 1e12; // to 1e6
@@ -625,8 +626,7 @@ contract MO is Ownable {
                 withdrawable; // to clear work.credit of pledge          
                 transfer = _min(amount, pledge.work.debit);  
             }   pledges[address(this)].work.credit -= transfer;
-            // Procedure for unwrapping from Uniswap to transfer ETH:
-            // determine liquidity needed to call decreaseLiquidity...
+            // for unwrapping from Uniswap to transfer ETH...
             (,, uint128 liquidity) = _liquidity(0, transfer);
             (amount0, amount1) = _withdrawAndCollect(liquidity);
             // emit WithdrawingETH(transfer, amount0, amount1);
