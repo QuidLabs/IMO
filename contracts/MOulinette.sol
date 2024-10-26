@@ -44,18 +44,11 @@ contract MO is Ownable {
     
     uint public ID; uint public MINTED; // QD
     IUniswapV3Pool POOL; IV3SwapRouter ROUTER; 
-    struct SwapOuter { uint priceX96; int24 tick;
+    struct SwapState { uint priceX96; int24 tick;
         uint targetAmount0; uint targetAmount1; 
         uint160 sqrtPriceX96Lower; bool sell0;
         uint160 sqrtPriceX96Upper; uint sell;
         uint128 liq; uint160 sqrtPriceX96;
-    }
-    struct SwapInner { uint targetRatio; 
-        uint currentRatio; uint ratioDiff;
-        uint basePercentage; uint priceImpact;
-        uint tradePercentage; uint newRatio;
-        uint totalValue; uint newTotalValue;
-        uint newDiff; uint currentDiff;
     }
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
@@ -166,10 +159,6 @@ contract MO is Ownable {
         WAD / (index + 11); }
     //  recall 3rd Delphic maxim
     mapping (address => Offer) pledges;
-    function _absDiff(uint a, uint b) 
-        internal pure returns (uint) {
-        return a >= b ? a - b : b - a;
-    }
     function _max(uint128 _a, uint128 _b) 
         internal pure returns (uint128) {
         return (_a > _b) ? _a : _b;
@@ -304,55 +293,6 @@ contract MO is Ownable {
             SUM += credit; // update sum with new share
             // emit CreditHelper(credit, who);
         }
-    }
-
-    function _optimise(uint position0, uint position1, 
-        uint amount0, uint amount1, uint iter) public 
-        view returns (uint final0, uint final1, bool sell0, 
-        uint amountSold) { SwapInner memory state;
-        uint price = _getPrice();
-        if (amount0 < 100) { // 0.0001 dollars
-            amountSold = amount1 * 95 / 100;
-            return (amount0, amount1, 
-                    false, amountSold);
-        } 
-        if (amount1 < 1e12) { // 0.00001 ETH 
-            amountSold = amount0 * 95 / 100;
-            return (amount0, amount1, true, amountSold);
-        } 
-        state.targetRatio = (position1 * 1e18) / (position0 * 1e12);
-        state.currentRatio = (amount1 * 1e18) / (amount0 * 1e12);
-        state.ratioDiff = state.currentRatio > state.targetRatio ? 
-            (state.currentRatio * 1e18) / state.targetRatio : 
-            (state.targetRatio * 1e18) / state.currentRatio;
-
-        state.basePercentage = state.ratioDiff > 100 * 1e18 ? 95 : 
-                                     _min(50 + (iter * 10), 95);
-        // price impact adjustment...
-        state.priceImpact = _min(1e18,
-            ((position0 * 1e18) / amount0 + 
-            (position1 * 1e18) / amount1) / 2
-        );
-        state.tradePercentage = (state.basePercentage * state.priceImpact) / 1e18;
-        if (state.currentRatio > state.targetRatio) { sell0 = false;
-            amountSold = (amount1 * state.tradePercentage) / 100;
-            require(amountSold <= amount1, "INVALID_TRADE_1");
-            final1 = amount1 - amountSold;
-            final0 = amount0 + (amountSold * price) / 1e18;
-        } else { sell0 = true;
-            amountSold = (amount0 * state.tradePercentage) / 100;
-            require(amountSold <= amount0, "INVALID_TRADE_0");
-            final0 = amount0 - amountSold;
-            final1 = amount1 + (amountSold * 1e18) / price;
-        }
-        state.newRatio = (final1 * 1e18) / (final0 * 1e12);
-        state.newDiff = _absDiff(state.newRatio, state.targetRatio);
-        state.currentDiff = _absDiff(state.currentRatio, state.targetRatio);
-        require(state.newDiff <= state.currentDiff, "WORSE_POSITION");
-
-        state.totalValue = (amount0 * 1e12) + (amount1 * price) / 1e18;
-        state.newTotalValue = (final0 * 1e12) + (final1 * price) / 1e18;
-        require(state.newTotalValue >= state.totalValue * 9999 / 10000, "VALUE_LOSS");
     }
     
     function _liquidity(uint amount0, uint amount1) 
@@ -493,7 +433,7 @@ contract MO is Ownable {
 
     function _swap(uint amount0,
         uint amount1) internal
-        returns (uint, uint) { SwapOuter memory state;
+        returns (uint, uint) { SwapState memory state;
         (state.sqrtPriceX96, state.tick,,,,,) = POOL.slot0(); 
         emit SwapTicks(LAST_TWAP_TICK, state.tick);
         // require(LAST_TWAP_TICK > 0 && (LAST_TWAP_TICK > state.tick 
@@ -511,16 +451,16 @@ contract MO is Ownable {
          state.targetAmount1) = LiquidityAmounts.getAmountsForLiquidity(state.sqrtPriceX96, 
          state.sqrtPriceX96Lower, state.sqrtPriceX96Upper, state.liq);
         if (state.targetAmount0 == 0 && amount0 > 0) { // TODO order
-            pledges[address(this)].work.credit += amount0;
+            pledges[address(this)].work.debit += amount0;
             amount0 = 0;
         } else if (state.targetAmount1 == 0 && amount1 > 0) {
             pledges[address(this)].weth.debit += amount0;
             amount1 = 0;
         } else if (state.targetAmount1 - amount1 > 1e13 
-            || state.targetAmount0 - amount0 > 1000) {
-            do { (amount0, amount1, // swap until ratio closest to target for liquidity
-            state.sell0, state.sell) = _optimise(state.targetAmount0, state.targetAmount1,
-                                                             amount0, amount1, count);
+            || state.targetAmount0 - amount0 > 1000) { uint count = 0;
+            do { (amount0, amount1, 
+              state.sell0, state.sell) = LiquidityAmounts.optimise(state.targetAmount0, 
+                state.targetAmount1, amount0, amount1, count, _getPrice());
             if (state.sell0 && state.sell > 1000) {
                 TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
                 uint amount = ROUTER.exactInput(
@@ -537,7 +477,7 @@ contract MO is Ownable {
                 );  TransferHelper.safeApprove(WETH, address(ROUTER), 0);
                 amount1 -= state.sell; amount0 += amount;
                 emit SwapSell1(amount0, amount1);
-            } else { break; }
+            } else { break; } count++;
             } while (count < 5); 
         } return (amount0, amount1); 
     }   
@@ -550,7 +490,6 @@ contract MO is Ownable {
     // "you never count your money while you're
     // sittin' at the table...there'll be time
     // enough for countin'...when,"
-    /*
     function redeem(uint amount) 
         external returns (uint absorb) {
         amount = _min(QUID.matureBalanceOf(_msgSender()),
@@ -627,14 +566,13 @@ contract MO is Ownable {
         } 
         else { pledges[address(this)].carry.credit -= amount; }
             // else the entire amount being redeemed is consumed 
-    } */
+    }
     
     // quid says if amount is QD...
     // ETH can only be withdrawn from
     // pledge.work.debit; if ETH was 
     // deposited pledge.weth.debit,
     // call fold() before withdraw()
-    /*
     function withdraw(uint amount, 
         bool quid) external payable {
         uint amount0; uint amount1; 
@@ -689,7 +627,7 @@ contract MO is Ownable {
         }   pledges[_msgSender()] = pledge;
         if (amount0 > 0 || amount1 > 0) 
         { repackNFT(amount0, amount1); }
-    } */
+    }
 
     // allowing deposits on behalf of a benecifiary
     // enables similar functionality to suretyship
@@ -741,7 +679,7 @@ contract MO is Ownable {
                  amount += msg.value; }
             if (msg.value > 0) { IWETH(WETH).deposit{
                                  value: msg.value }(); 
-            }       if (long) { pledge.work.debit += amount; }
+            }  if (long) { pledge.work.debit += amount; }
             else { uint price = _getPrice(); // insuring the $ value...
                 uint in_dollars = FullMath.mulDiv(price, amount, WAD);
                 uint deductible = FullMath.mulDiv(in_dollars, FEE, WAD);

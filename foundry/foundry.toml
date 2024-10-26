@@ -1,26 +1,8 @@
 [profile.default]
-src = "src"
+solc_version = '0.8.25'
+src = 'src'
 out = 'out'
-libs = ['node_modules', 'lib']
-test = 'test'
-ffi = true
-solc_version = '0.8.24'
-auto_detect_solc = false
-evm_version = 'london'
-ignored_error_codes = [2394] # Transient storage
-fs_permissions = [{ access = "read-write", path = "./"}] # SE-2 default to allow script to write contract info from /foundry to /nextjs
-
-[dependencies]
-solmate = { git = "https://github.com/Rari-Capital/solmate" }
-v3-periphery = { git = "https://github.com/Uniswap/v3-periphery" }
-v3-core = { git = "https://github.com/Uniswap/v3-core" }
-balancer-v3-monorepo = { git = "https://github.com/balancer/balancer-v3-monorepo" }
-permit2 = { git = "https://github.com/uniswap/permit2" }
-solidity-bytes-utils = { git = "https://github.com/gnsps/solidity-bytes-utils" }
-foundry-devops = { git = "https://github.com/Cyfrin/foundry-devops" }
-openzeppelin-contracts = { git = "https://github.com/OpenZeppelin/openzeppelin-contracts" }
-forge-std = { git = "https://github.com/foundry-rs/forge-std" }
-
+libs = ['lib']
 optimizer = true
 optimizer_runs = 10_000_000
 # @see {@link https://github.com/foundry-rs/foundry/issues/4060}
@@ -33,6 +15,12 @@ via_ir = true
 fuzz_runs = 500
 deny_warnings = false
 
+[dependencies]
+solmate = { git = "https://github.com/Rari-Capital/solmate" }
+v3-periphery = { git = "https://github.com/Uniswap/v3-periphery" }
+v3-core = { git = "https://github.com/Uniswap/v3-core" }
+forge-std = { git = "https://github.com/foundry-rs/forge-std" }
+
 [profile.default.optimizer_details]
 constantOptimizer = true
 yul = true
@@ -40,11 +28,3 @@ yul = true
 [profile.default.optimizer_details.yulDetails]
 stackAllocation = true
 
-[rpc_endpoints]
-default_network = "http://127.0.0.1:8545"
-localhost = "http://127.0.0.1:8545"
-sepolia = "${SEPOLIA_RPC_URL}"
-
-# [etherscan]
-# polygonMumbai = { key = "${ETHERSCAN_API_KEY}" }
-# sepolia = { key = "${ETHERSCAN_API_KEY}" }
