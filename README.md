@@ -1,7 +1,6 @@
 
 ## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
-borrowers, hedgers, and  
-insurers `mint` **Q**ui**D** for  
+Insurers `mint` **Q**ui**D** for  
 `USDe`xUSDS...over 2yr  
 are 16 chances  to `mint`:  
 
