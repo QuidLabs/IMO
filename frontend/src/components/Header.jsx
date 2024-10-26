@@ -7,13 +7,14 @@ import "./Styles/Header.scss"
 
 export const Header = () => {
   const {
-    connectToMetaMask, getTotalInfo, getSdai, getSdaiBalance, getUserInfo, 
+    connectToMetaMask, getTotalInfo, getSdai, getWalletBalance, getUserInfo,
     account, connected
   } = useAppContext()
 
   const [actualAmount, setAmount] = useState(0)
   const [actualUsd, setUsd] = useState(0)
   const [actualSdai, setSdai] = useState(0)
+  const [actualEth, setEth] = useState(0)
 
   const handleConnectClick = useCallback(async () => {
     try {
@@ -25,19 +26,20 @@ export const Header = () => {
 
   const updatedTotalInfo = useCallback(async () => {
     try {
-      await Promise.all([getTotalInfo(), getSdaiBalance()])
-      .then( info => {
-        if(info[0]){
-          setUsd(info[0].total_dep)
-          setAmount(info[0].total_mint)
+      await Promise.all([getTotalInfo(), getWalletBalance()])
+        .then(info => {
+          if (info[0]) {
+            setUsd(info[0].total_dep)
+            setAmount(info[0].total_mint)
 
-          setSdai(info[1])
-        }
-      })
+            setSdai(info[1].sdai)
+            setEth(info[1].eth)
+          }
+        })
     } catch (error) {
       console.warn(`Failed to get total info:`, error)
     }
-  }, [getTotalInfo, getSdaiBalance])
+  }, [getTotalInfo, getWalletBalance])
 
 
   const sdaiToWallet = useCallback(async () => {
@@ -45,7 +47,7 @@ export const Header = () => {
       if (connected) await Promise.all([getSdai()]).then(() => updatedTotalInfo())
     } catch (error) {
       console.warn(`Failed to getting sdai on wallet:`, error)
-    }    
+    }
   }, [getSdai, updatedTotalInfo, connected])
 
   useEffect(() => {
@@ -75,12 +77,20 @@ export const Header = () => {
   )
 
   const balanceBlock = (
-    <div className="header-summaryEl">
-      <div className="header-summaryElTitle">sDAI balance</div>
-      <div className="header-summaryElValue">
-        {numberWithCommas(parseFloat(actualSdai))}
+    <>
+      <div className="header-summaryEl">
+        <div className="header-summaryElTitle">ETH balance</div>
+        <div className="header-summaryElValue">
+          Ξ{Number(actualEth).toFixed(4)}
+        </div>
       </div>
-    </div>
+      <div className="header-summaryEl">
+        <div className="header-summaryElTitle">sDAI balance</div>
+        <div className="header-summaryElValue">
+          ${numberWithCommas(parseFloat(Number(actualSdai).toFixed(2)))}
+        </div>
+      </div>
+    </>
   )
 
   return (

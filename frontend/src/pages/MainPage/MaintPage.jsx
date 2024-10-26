@@ -1,11 +1,12 @@
-import React from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
+import React from 'react'
+import { Swiper, SwiperSlide } from 'swiper/react'
 
-import { Summary } from '../../components/Summary';
-import { Mint } from '../../components/Mint';
+import { MintBar } from '../../components/MintBar'
+import { DepositeBar } from '../../components/DepositeBar'
+
+import { Mint } from '../../components/Mint'
 
 import './MaintPage.scss';
-
 const MaintPage = () => {
   return (
     <React.Fragment>
@@ -18,7 +19,7 @@ const MaintPage = () => {
       >
         <SwiperSlide className="main-slide">
           <div className="main-side">
-            <Summary />
+            <MintBar />
           </div>
           <div className="main-content">
             <div className="main-mintContainer">
@@ -26,6 +27,9 @@ const MaintPage = () => {
             </div>
           </div>
           <div className="main-fakeCol" />
+          <div className="main-side">
+            <DepositeBar />
+          </div>
         </SwiperSlide>
       </Swiper>
     </React.Fragment>

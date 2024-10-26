@@ -14,7 +14,7 @@ import "./Styles/Mint.scss"
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { changeButton, getTotalInfo, getUserInfo, getTotalSupply, getStorage, setAllInfo, setStorage,
+  const { getTotalInfo, getUserInfo, getTotalSupply, setAllInfo, setStorage,
     addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
@@ -90,6 +90,15 @@ export const Mint = () => {
 
     if (regex.test(originalValue)) setMintValue(Number(originalValue).toFixed(0))
   }
+
+  const changeButton = useCallback((isProcessing, state) => {
+    try {
+      if (state) return (isProcessing ? 'off' : 'on')
+      else return ('off')
+    } catch (error) {
+      console.error(error)
+    }
+  }, [])
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault()
@@ -201,9 +210,9 @@ export const Mint = () => {
         )
 
       await Promise.all([getUserInfo(), getTotalInfo()])
-      .then(array => {
-        setAllInfo(array[0], array[1])
-      })
+        .then(array => {
+          setAllInfo(array[0], array[1])
+        })
 
       setStorage(prevNotifications => [
         ...prevNotifications,
@@ -235,7 +244,6 @@ export const Mint = () => {
     if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight
 
     if (account && connected && quid) {
-      getStorage()
       setStartMsg('Terminal started. Mint is available!')
 
       const classState = changeButton(isProcessing, true)
@@ -250,7 +258,7 @@ export const Mint = () => {
 
       setGlowClass(classState)
     }, 500)
-  }, [updateTotalSupply, changeButton, getStorage, setStorage, account, connected, quid, notifications, isProcessing])
+  }, [updateTotalSupply, changeButton, setStorage, account, connected, quid, notifications, isProcessing])
 
   return (
     <>
@@ -304,6 +312,16 @@ export const Mint = () => {
                 Future profit
               </div>
             ) : null}
+            <label style={{ position: "relative", top: 15, right: -55 }}>
+              <input
+                name="isBeneficiary"
+                className="mint-checkBox"
+                type="checkbox"
+                checked={isSameBeneficiary}
+                onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
+              />
+              <span className="mint-availabilityMax">to myself</span>
+            </label>
           </div>
           <button ref={buttonRef} type="submit" className={isProcessing ? "mint-processing" : "mint-submit"}>
             {isProcessing ? "Processing" : state !== "none" ? `${state}` : "MINT"}
@@ -311,16 +329,6 @@ export const Mint = () => {
           </button>
           {//<button type="button" className="dd-submit"> DROP DOWN 
           /**</button>**/}
-          <label style={{ position: "absolute", top: 165, right: -170 }}>
-            <input
-              name="isBeneficiary"
-              className="mint-checkBox"
-              type="checkbox"
-              checked={isSameBeneficiary}
-              onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
-            />
-            <span className="mint-availabilityMax">to myself</span>
-          </label>
           {isSameBeneficiary ? null : (
             <div className="mint-beneficiaryContainer">
               <div className="mint-inputContainer">
