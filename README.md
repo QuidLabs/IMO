@@ -7,7 +7,7 @@ are 16 chances  to `mint`:
 
 8 per year times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
-today's," 46% `AVG_ROI`.  
+today's," 46% `AVG_ROI`.    
 
 Over time, retained fees  
 from ΞTH deployed into  

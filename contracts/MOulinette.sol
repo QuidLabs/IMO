@@ -23,11 +23,13 @@ contract MO is Ownable {
     address public SUSDE;
     uint internal _ETH_PRICE; // TODO delete when finished testing
     uint constant WAD = 1e18;
+    
     uint internal FEE = WAD / 28; 
     uint128 constant Q96 = 2**96; 
     uint constant DIME = 10 * WAD;
     uint24 constant POOL_FEE = 500;
     INonfungiblePositionManager NFPM;
+   
     int24 internal LAST_TWAP_TICK;
     int24 internal UPPER_TICK; 
     int24 internal LOWER_TICK;
@@ -66,6 +68,7 @@ contract MO is Ownable {
     // event CreditHelper(uint credit, address who);
     // event TransferHelperEvent(uint ratio);
     // event DebitTransferHelper(uint debit);
+    
     // event WithdrawingETH(uint amount, uint amount0, uint ammount1);
     // event DepositDeductibleInDollars(uint deductible);
     // event DepositDeductibleInETH(uint deductible);
@@ -93,6 +96,8 @@ contract MO is Ownable {
 
     event SwapAmountsForLiquidity(uint amount0, uint amount1);
     event SwapSell0(uint amount0, uint amount1);
+    event SwapLiquidity(uint128 liq);
+    event SwapTicks(int24 tick1, int24 tick2);
     event SwapSell1(uint amount0, uint amount1);
 
     event RepackNFTamountsAfterCollectInBurn(uint amount0, uint amount1);
@@ -215,6 +220,7 @@ contract MO is Ownable {
         TransferHelper.safeApprove(WETH, nfpm, type(uint256).max);
         TransferHelper.safeApprove(USDC, nfpm, type(uint256).max);
         TransferHelper.safeApprove(USDE, SUSDE, type(uint256).max);
+        
     }
     // present value of the expected cash flows...
     function capitalisation(uint qd, bool burn) 
@@ -307,7 +313,8 @@ contract MO is Ownable {
         uint price = _getPrice();
         if (amount0 < 100) { // 0.0001 dollars
             amountSold = amount1 * 95 / 100;
-            return (amount0, amount1, false, amountSold);
+            return (amount0, amount1, 
+                    false, amountSold);
         } 
         if (amount1 < 1e12) { // 0.00001 ETH 
             amountSold = amount0 * 95 / 100;
@@ -321,8 +328,7 @@ contract MO is Ownable {
 
         state.basePercentage = state.ratioDiff > 100 * 1e18 ? 95 : 
                                      _min(50 + (iter * 10), 95);
-
-        // Price impact adjustment
+        // price impact adjustment...
         state.priceImpact = _min(1e18,
             ((position0 * 1e18) / amount0 + 
             (position1 * 1e18) / amount1) / 2
@@ -489,48 +495,51 @@ contract MO is Ownable {
         uint amount1) internal
         returns (uint, uint) { SwapOuter memory state;
         (state.sqrtPriceX96, state.tick,,,,,) = POOL.slot0(); 
-        require(LAST_TWAP_TICK > 0 && (LAST_TWAP_TICK > state.tick 
-        && ((LAST_TWAP_TICK - state.tick) < 100)) || (LAST_TWAP_TICK <= state.tick  
-        && ((state.tick  - LAST_TWAP_TICK) < 100)), "delta"); // 100 = 1% 
-        state.priceX96 = FullMath.mulDiv(state.sqrtPriceX96, 
-                                         state.sqrtPriceX96, Q96);
+        emit SwapTicks(LAST_TWAP_TICK, state.tick);
+        // require(LAST_TWAP_TICK > 0 && (LAST_TWAP_TICK > state.tick 
+        // && ((LAST_TWAP_TICK - state.tick) < 100)) || (LAST_TWAP_TICK <= state.tick  
+        // && ((state.tick - LAST_TWAP_TICK) < 100)), "delta"); // 100 = 1% 
+        // state.priceX96 = FullMath.mulDiv(state.sqrtPriceX96, 
+        //                                  state.sqrtPriceX96, Q96);
         (state.sqrtPriceX96Lower, 
          state.sqrtPriceX96Upper, state.liq) = _liquidity(amount0, amount1);
+
+        emit SwapLiquidity(state.liq);
         // sellingAmount0 = false implies we are selling Amount1. It's a binary situation
         // we're always selling one to get more of the other to reach the target ratio...
         (state.targetAmount0, // this represents target amounts for the liquidity deposit
          state.targetAmount1) = LiquidityAmounts.getAmountsForLiquidity(state.sqrtPriceX96, 
          state.sqrtPriceX96Lower, state.sqrtPriceX96Upper, state.liq);
-        
-        // pledges[address(this)].last = 
-        emit SwapAmountsForLiquidity(state.targetAmount0,
-                                     state.targetAmount1);
-        uint count = 0;
-        do { (amount0, amount1, 
-              state.sell0, state.sell) = _optimise(state.targetAmount0, state.targetAmount1,
-                                                               amount0, amount1, count);
-            if (state.sell0) {
-                if (state.sell > 100) {
-                    TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
-                    uint amount = ROUTER.exactInput(
-                        IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                            USDC, POOL_FEE, WETH), address(this), state.sell, 0)
-                    ); TransferHelper.safeApprove(USDC, address(ROUTER), 0);
-                    amount0 -= state.sell; amount1 += amount;
-                    emit SwapSell0(amount0, amount1);
-                } else { break; }
-            } else {
-                if (state.sell > 1e12) {
-                    TransferHelper.safeApprove(WETH, address(ROUTER), state.sell);
-                    uint amount = ROUTER.exactInput(
-                        IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                            WETH, POOL_FEE, USDC), address(this), state.sell, 0)
-                    );  TransferHelper.safeApprove(WETH, address(ROUTER), 0);
-                    amount1 -= state.sell; amount0 += amount;
-                    emit SwapSell1(amount0, amount1);
-                } else { break; }
-            }
-        } while (count < 5); return (amount0, amount1); 
+        if (state.targetAmount0 == 0 && amount0 > 0) { // TODO order
+            pledges[address(this)].work.credit += amount0;
+            amount0 = 0;
+        } else if (state.targetAmount1 == 0 && amount1 > 0) {
+            pledges[address(this)].weth.debit += amount0;
+            amount1 = 0;
+        } else if (state.targetAmount1 - amount1 > 1e13 
+            || state.targetAmount0 - amount0 > 1000) {
+            do { (amount0, amount1, // swap until ratio closest to target for liquidity
+            state.sell0, state.sell) = _optimise(state.targetAmount0, state.targetAmount1,
+                                                             amount0, amount1, count);
+            if (state.sell0 && state.sell > 1000) {
+                TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
+                uint amount = ROUTER.exactInput(
+                    IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                        USDC, POOL_FEE, WETH), address(this), state.sell, 0)
+                ); TransferHelper.safeApprove(USDC, address(ROUTER), 0);
+                amount0 -= state.sell; amount1 += amount;
+                emit SwapSell0(amount0, amount1);
+            } else if (state.sell > 1e13) {
+                TransferHelper.safeApprove(WETH, address(ROUTER), state.sell);
+                uint amount = ROUTER.exactInput(
+                    IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                        WETH, POOL_FEE, USDC), address(this), state.sell, 0)
+                );  TransferHelper.safeApprove(WETH, address(ROUTER), 0);
+                amount1 -= state.sell; amount0 += amount;
+                emit SwapSell1(amount0, amount1);
+            } else { break; }
+            } while (count < 5); 
+        } return (amount0, amount1); 
     }   
 
     // call in QD's worth (обнал sans liabilities)
@@ -625,6 +634,7 @@ contract MO is Ownable {
     // pledge.work.debit; if ETH was 
     // deposited pledge.weth.debit,
     // call fold() before withdraw()
+    /*
     function withdraw(uint amount, 
         bool quid) external payable {
         uint amount0; uint amount1; 
@@ -679,7 +689,7 @@ contract MO is Ownable {
         }   pledges[_msgSender()] = pledge;
         if (amount0 > 0 || amount1 > 0) 
         { repackNFT(amount0, amount1); }
-    }
+    } */
 
     // allowing deposits on behalf of a benecifiary
     // enables similar functionality to suretyship
