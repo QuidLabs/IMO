@@ -6,6 +6,7 @@ const BN = require('bn.js')
 // require('dotenv').config()
 const { config: dotenvConfig } = require("dotenv");
 dotenvConfig({ path: resolve(__dirname, "../.env") });
+const helpers = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 async function getContract(name, addr, signer) {
   const CONTRACT = await ethers.getContractFactory(name)
@@ -68,7 +69,7 @@ async function deployAndInitializeContracts() {
     }
     saveAddresses(addresses)
     var tx = await mo.setQuid(QDaddress)
-
+    await tx.wait()
     try {  
       console.log("START");
       tx = await qd.restart()
@@ -89,7 +90,7 @@ async function deployAndInitializeContracts() {
 }
 
 async function main() { // run some tests on our contracts... 
-    const provider = ethers.provider
+  const provider = ethers.provider
     const latestBlock = await provider.getBlockNumber()  
     const shouldDeploy = process.env.SHOULD_DEPLOY !== 'false'
     var addresses;
@@ -106,6 +107,11 @@ async function main() { // run some tests on our contracts...
     const beneficiary = new ethers.Wallet(process.env.PRIVATE_KEY_1, provider)
     const secondary = new ethers.Wallet(process.env.PRIVATE_KEY_2, provider)
     
+    const amount = ethers.parseEther("100"); // 100 ETH
+    // Set balance
+    await helpers.setBalance(beneficiary.address, amount);
+    await helpers.setBalance(secondary.address, amount);
+
     const MO = await getContract("MO", addresses.Moulinette, beneficiary)
     const MOWithSecondary = await getContract("MO", addresses.Moulinette, secondary)
     
@@ -117,7 +123,7 @@ async function main() { // run some tests on our contracts...
 
     const sUSDE = await getContract("mockVault", addresses.sUSDe, beneficiary)
      
-    const fromBlock = latestBlock - 1000
+    const fromBlock = latestBlock // - 1000
     const toBlock = latestBlock
     // Create a filter to get all logs emitted
     const filterMO = { address: addresses.Moulinette, 
@@ -258,7 +264,8 @@ async function main() { // run some tests on our contracts...
     
     const amountInWei = ethers.parseEther("0.01"); // 
     const largeAmountInWei = ethers.parseEther("0.1"); // 245.7
-    const WETH = '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14';
+    // const WETH = '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14';
+    const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
     var myETH = await provider.getBalance(beneficiary) 
     var before = new BN(myETH.toString())
     console.log('myETH before deposit', before.toString())
@@ -266,8 +273,8 @@ async function main() { // run some tests on our contracts...
     // we can actually insure some ETH
     try {
       tx = await MO.deposit(beneficiary, 0, WETH, false,  {
-        value: amountInWei // Attach Ether to transaction
-        //gasLimit 
+        value: amountInWei, // Attach Ether to transaction
+        gasLimit: 20000000
       })
       await tx.wait()
     } catch (error) {

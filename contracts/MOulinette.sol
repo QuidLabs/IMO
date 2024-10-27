@@ -34,13 +34,13 @@ contract MO is Ownable {
     int24 internal UPPER_TICK; 
     int24 internal LOWER_TICK;
 
-    address constant public WETH = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14; // token0 on mainnet, token1 on sepolia
-    address constant public USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // token1 on mainnet, token0 on sepolia
+    // address constant public WETH = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14; // token0 on mainnet, token1 on sepolia
+    // address constant public USDC = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238; // token1 on mainnet, token0 on sepolia
     // TODO uncomment these for mainnet deployment, make sure to respect token0 and token1 order in _swap and NFPM.mint
     // address constant public SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     // address constant public USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
-    // address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    // address constant public USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; 
+    address constant public WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
+    address constant public USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48; 
     
     uint public ID; uint public MINTED; // QD
     IUniswapV3Pool POOL; IV3SwapRouter ROUTER; 
@@ -56,36 +56,38 @@ contract MO is Ownable {
         bool liquidate; uint repay; uint collat; 
     }   Quid QUID; // units of ^^ for ETH ^^^^^
     
-    // event CreditHelperShare(uint share, address who); 
-    // event CreditHelperROI(uint roi, address who);
-    // event CreditHelper(uint credit, address who);
-    // event TransferHelperEvent(uint ratio);
-    // event DebitTransferHelper(uint debit);
+    event CreditHelperShare(uint share, address who); 
+    event CreditHelperROI(uint roi, address who);
+    event CreditHelper(uint credit, address who);
+    event TransferHelperEvent(uint ratio);
+    event DebitTransferHelper(uint debit);
     
-    // event WithdrawingETH(uint amount, uint amount0, uint ammount1);
-    // event DepositDeductibleInDollars(uint deductible);
-    // event DepositDeductibleInETH(uint deductible);
-    // event DepositInsured(uint insured);
-    // event DepositInDollars(uint in_dollars); 
+    event WithdrawingETH(uint amount, uint amount0, uint ammount1);
+    event DepositDeductibleInDollars(uint deductible);
+    event DepositDeductibleInETH(uint deductible);
+    event DepositInsured(uint insured);
+    event DepositInDollars(uint in_dollars); 
     // TODO ^these seem right, double check later?
     
-    // event Fold(uint price, uint value, uint cover);
-    // event FoldDelta(uint delta);
-    // event FoldMinted(uint minted, uint delta);
-    // event FoldSalve(uint amount); 
-    // event FoldLiquidate(uint amount);
-    // event FoldDeductible(uint amount, uint deductible);
-    // event FoldRepayNoLiquidate(uint amount);
-    // event FoldRepayLiquidate(uint amount);
+    event Fold(uint price, uint value, uint cover);
+    event FoldDelta(uint delta);
+    event FoldMinted(uint minted, uint delta);
+    event FoldSalve(uint amount); 
+    event FoldLiquidate(uint amount);
+    event FoldDeductible(uint amount, uint deductible);
+    event FoldRepayNoLiquidate(uint amount);
+    event FoldRepayLiquidate(uint amount);
 
     // TODO test redeem after all others 
-    // event AbsorbAmount(uint amount);
-    // event USDCinRedeem(uint usdc);
-    // event WeirdRedeem(uint absorb, uint amount);
-    // event ThirdInRedeem(uint third);
-    // event AbsorbInRedeem(uint absorb);
-    // event SellInRedeem(uint amount);
-    // event WithDrawing(uint amount);
+    event AbsorbAmount(uint amount);
+    event USDCinRedeem(uint usdc);
+    event WeirdRedeem(uint absorb, uint amount);
+    event ThirdInRedeem(uint third);
+    event AbsorbInRedeem(uint absorb);
+    event SellInRedeem(uint amount);
+    event WithDrawing(uint amount);
+    event RedeemWETH(uint weth);
+    event RedeemUSDC(uint usdc);
 
     event SwapAmountsForLiquidity(uint amount0, uint amount1);
     event SwapSell0(uint amount0, uint amount1);
@@ -196,18 +198,21 @@ contract MO is Ownable {
     }
     constructor(address _usde, address _susde) { 
         USDE = _usde; SUSDE = _susde; // TODO remove (for Sepolia only)
-        address nfpm = 0x1238536071E1c677A632429e3655c799b22cDA52;
-        // 0xC36442b4a4522E871399CD717aBDD847Ab11FE88; TODO uncomment (L1)
-        POOL = IUniswapV3Pool(0x3289680dD4d6C10bb19b899729cda5eEF58AEfF1);
-        // IUniswapV3Pool(0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640);
-        ROUTER = IV3SwapRouter(0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E);
-        // IV3SwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+        // address nfpm = 0x1238536071E1c677A632429e3655c799b22cDA52;
+        address nfpm = 0xC36442b4a4522E871399CD717aBDD847Ab11FE88;
+        // POOL = IUniswapV3Pool(0x3289680dD4d6C10bb19b899729cda5eEF58AEfF1);
+        POOL = IUniswapV3Pool(0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640);
+        // ROUTER = IV3SwapRouter(0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E);
+        ROUTER = IV3SwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+        
         NFPM = INonfungiblePositionManager(nfpm); // Pod carry, weth; work; 
         // last "Le souffle des 4 vents décuple ma puissance De longs ^^^^
         // mois de travail ont exacerbé mes sens Je crée un déséquilibre 
         // interne volontairement Afin que le côté Yang soit le dominant"
         TransferHelper.safeApprove(WETH, nfpm, type(uint256).max);
         TransferHelper.safeApprove(USDC, nfpm, type(uint256).max);
+        TransferHelper.safeApprove(WETH, address(ROUTER), type(uint256).max);
+        TransferHelper.safeApprove(USDC, address(ROUTER), type(uint256).max);
         TransferHelper.safeApprove(USDE, SUSDE, type(uint256).max);
         
     }
@@ -248,11 +253,11 @@ contract MO is Ownable {
                 // transferred for ROI pro rata
                 uint ratio = FullMath.mulDiv(WAD, 
                     amount, QUID.balanceOf(from));
-                // emit TransferHelperEvent(ratio);
+                emit TransferHelperEvent(ratio);
                 // proportionally transfer debit...
                 uint debit = FullMath.mulDiv(ratio, 
                 pledges[from].carry.debit, WAD);
-                // emit DebitTransferHelper(debit);
+                emit DebitTransferHelper(debit);
                 pledges[to].carry.debit += debit;  
                 pledges[from].carry.debit -= debit;
                 // pledge.carry.credit in helper...
@@ -275,7 +280,7 @@ contract MO is Ownable {
             uint debit = pledges[who].carry.debit;
             uint share = FullMath.mulDiv(WAD, 
                 balance, QUID.totalSupply());
-            // emit CreditHelperShare(share, who);
+            emit CreditHelperShare(share, who);
             credit = share;
             if (debit > 0) { // share is product
                 // projected ROI if QD is $1...
@@ -284,14 +289,14 @@ contract MO is Ownable {
                 // calculate individual ROI over total 
                 roi = FullMath.mulDiv(WAD, roi, AVG_ROI);
                 credit = FullMath.mulDiv(roi, share, WAD);
-                // emit CreditHelperROI(roi, who);
+                emit CreditHelperROI(roi, who);
                 // credit is the product (composite) of 
                 // two separate share (ratio) quantities 
                 // and the sum of products is what we use
                 // in determining pro rata in redeem()...
             }   pledges[who].carry.credit = credit;
             SUM += credit; // update sum with new share
-            // emit CreditHelper(credit, who);
+            emit CreditHelper(credit, who);
         }
     }
     
@@ -450,31 +455,32 @@ contract MO is Ownable {
         (state.targetAmount0, // this represents target amounts for the liquidity deposit
          state.targetAmount1) = LiquidityAmounts.getAmountsForLiquidity(state.sqrtPriceX96, 
          state.sqrtPriceX96Lower, state.sqrtPriceX96Upper, state.liq);
-        if (state.targetAmount0 == 0 && amount0 > 0) { // TODO order
-            pledges[address(this)].work.debit += amount0;
-            amount0 = 0;
-        } else if (state.targetAmount1 == 0 && amount1 > 0) {
-            pledges[address(this)].weth.debit += amount0;
-            amount1 = 0;
-        } else if (state.targetAmount1 - amount1 > 1e13 
-            || state.targetAmount0 - amount0 > 1000) { uint count = 0;
+        // if (state.targetAmount0 == 0 && amount0 > 0) { // TODO order
+        //     pledges[address(this)].work.debit += amount0;
+        //     amount0 = 0;
+        // } else if (state.targetAmount1 == 0 && amount1 > 0) {
+        //     pledges[address(this)].weth.debit += amount0;
+        //     amount1 = 0;
+        // } 
+        if (state.targetAmount1 - amount1 > 1000
+        || state.targetAmount0 - amount0 > 1e13) { uint count = 0;
             do { (amount0, amount1, 
               state.sell0, state.sell) = LiquidityAmounts.optimise(state.targetAmount0, 
                 state.targetAmount1, amount0, amount1, count, _getPrice());
-            if (state.sell0 && state.sell > 1000) {
-                TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
-                uint amount = ROUTER.exactInput(
-                    IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                        USDC, POOL_FEE, WETH), address(this), state.sell, 0)
-                ); TransferHelper.safeApprove(USDC, address(ROUTER), 0);
-                amount0 -= state.sell; amount1 += amount;
-                emit SwapSell0(amount0, amount1);
-            } else if (state.sell > 1e13) {
-                TransferHelper.safeApprove(WETH, address(ROUTER), state.sell);
+            if (state.sell0 && state.sell > 1e13) {
+                // TransferHelper.safeApprove(WETH, address(ROUTER), state.sell);
                 uint amount = ROUTER.exactInput(
                     IV3SwapRouter.ExactInputParams(abi.encodePacked(
                         WETH, POOL_FEE, USDC), address(this), state.sell, 0)
-                );  TransferHelper.safeApprove(WETH, address(ROUTER), 0);
+                );  // TransferHelper.safeApprove(WETH, address(ROUTER), 0);
+                amount0 -= state.sell; amount1 += amount;
+                emit SwapSell0(amount0, amount1);
+            } else if (state.sell > 1000) {
+                // TransferHelper.safeApprove(USDC, address(ROUTER), state.sell);
+                uint amount = ROUTER.exactInput(
+                    IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                        USDC, POOL_FEE, WETH), address(this), state.sell, 0)
+                ); // TransferHelper.safeApprove(USDC, address(ROUTER), 0);
                 amount1 -= state.sell; amount0 += amount;
                 emit SwapSell1(amount0, amount1);
             } else { break; } count++;
@@ -543,21 +549,20 @@ contract MO is Ownable {
             } else { amount = 0; // ETH being sent out...
                 pledges[address(this)].work.debit -= usdc; 
             }
+            (,, uint128 liquidity) = _liquidity(amount, usdc);
             (uint amount0, 
-             uint amount1) = _withdrawAndCollect(
-                _liquidity(usdc,amount)
-            );
-            if (amount1 >= amount) { 
+             uint amount1) = _withdrawAndCollect(liquidity);
+            if (amount0 >= amount) { 
                 TransferHelper.safeTransfer(WETH, 
-                        _msgSender(), usdc);
-                           amount1 -= amount;
-                           // emit RedeemWETH(weth);
+                        _msgSender(), amount);
+                           amount0 -= amount;
+                           emit RedeemWETH(amount);
             }
-            if (amount0 >= usdc) { 
+            if (amount1 >= usdc) { 
                 TransferHelper.safeTransfer(USDC, 
                         _msgSender(), usdc);
-                           amount0 -= usdc;
-                           // emit RedeemUSDC(usdc);
+                           amount1 -= usdc;
+                           emit RedeemUSDC(usdc);
                 
             }   pledges[address(this)].carry.credit -= absorb; 
             // pledge.carry.credit // TODO
@@ -595,7 +600,7 @@ contract MO is Ownable {
                 amount = dollar_amt_to_qd_amt(
                 capitalisation(amount, false), amount); 
                 QUID.mint(amount, _msgSender(), address(QUID)); 
-            }   // emit WithDrawing(amount); // in QD
+            }   emit WithDrawing(amount); // in QD
         } else { uint withdrawable; // uint of ETH...
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
@@ -615,14 +620,17 @@ contract MO is Ownable {
                 transfer = _min(amount, pledge.work.debit);  
             }   pledges[address(this)].work.credit -= transfer;
             // for unwrapping from Uniswap to transfer ETH...
-            (,, uint128 liquidity) = _liquidity(0, transfer);
+            // (,, uint128 liquidity) = _liquidity(0, transfer);
+            (,, uint128 liquidity) = _liquidity(transfer, 0);
             (amount0, amount1) = _withdrawAndCollect(liquidity);
-            // emit WithdrawingETH(transfer, amount0, amount1);
-            if (amount1 >= transfer) { 
+            emit WithdrawingETH(transfer, amount0, amount1);
+            // if (amount1 >= transfer) { 
+            if (amount0 >= transfer) { 
                 // address(this) balance should be >= amount1
                 TransferHelper.safeTransfer(
                     WETH, _msgSender(), transfer);
-                             amount1 -= transfer;
+                             // amount1 -= transfer;
+                             amount0 -= transfer;
             }     
         }   pledges[_msgSender()] = pledge;
         if (amount0 > 0 || amount1 > 0) 
@@ -683,14 +691,14 @@ contract MO is Ownable {
             else { uint price = _getPrice(); // insuring the $ value...
                 uint in_dollars = FullMath.mulDiv(price, amount, WAD);
                 uint deductible = FullMath.mulDiv(in_dollars, FEE, WAD);
-                // emit DepositInDollars(in_dollars); 
+                emit DepositInDollars(in_dollars); 
                 in_dollars -= deductible; 
-                // emit DepositDeductibleInDollars(deductible); 
+                emit DepositDeductibleInDollars(deductible); 
                 // change deductible to be in units of ETH instead
                 deductible = FullMath.mulDiv(WAD, deductible, price);
-                // emit DepositDeductibleInETH(deductible);
+                emit DepositDeductibleInETH(deductible);
                 uint insured = amount - deductible; // in ETH
-                // emit DepositInsured(insured);
+                emit DepositInsured(insured);
                 pledge.weth.debit += insured; // withdrawable
                 // by folding balance into pledge.work.debit...
                 pledges[address(this)].weth.debit += deductible;
@@ -701,7 +709,8 @@ contract MO is Ownable {
                 );  require(pledges[address(this)].carry.debit
                             > in_dollars, "insuring too much"); 
                 pledges[beneficiary] = pledge; // save changes
-            }   repackNFT(0, amount); // 0 represents USDC
+            }   // repackNFT(0, amount); // 0 represents USDC
+            repackNFT(amount, 0);
         } // TODO consider that half the ETH is converted ^
         // so this affects the risk the protocol is holding
         // and edge case (there may not be enough liquidity
@@ -738,13 +747,13 @@ contract MO is Ownable {
                 state.repay = pledge.work.credit - state.collat; 
                 state.repay += state.collat / 10;
                 state.liquidate = true; // not final
-                // emit FoldRepayLiquidate(state.repay);
+                emit FoldRepayLiquidate(state.repay);
             } else { // for using claimed coverage to payoff debt
                 state.delta = state.collat - pledge.work.credit;
                 if (state.collat / 10 > state.delta) {
                     state.repay = (state.collat / 10) - state.delta;
                 }
-                // emit FoldRepayNoLiquidate(state.repay);
+                emit FoldRepayNoLiquidate(state.repay);
             }   
         } if (amount > 0) { // claim ETH amount that's been insured
             state.collat = FullMath.mulDiv(amount, state.price, WAD);
@@ -754,11 +763,11 @@ contract MO is Ownable {
             state.average_value = FullMath.mulDiv( 
                 amount, state.average_price, WAD
             );  
-            // emit Fold(state.average_price, state.average_value, FullMath.mulDiv(110, state.price, 100));
+            emit Fold(state.average_price, state.average_value, FullMath.mulDiv(110, state.price, 100));
             // if price drop > 10% (average_value > 10% more than current value) 
             if (state.average_price >= FullMath.mulDiv(110, state.price, 100)) { 
                 state.delta = state.average_value - state.collat;
-                // emit FoldDelta(state.delta);
+                emit FoldDelta(state.delta);
                 
                 if (!sell) { state.minting = state.delta;  
                     state.deductible = FullMath.mulDiv(WAD, 
@@ -778,7 +787,7 @@ contract MO is Ownable {
                         );
                 } if (state.repay > 0) { // capitalise into credit
                     state.cap = _min(state.minting, state.repay);
-                    // ^^^^^^ variable being reused for space...
+                    // ^^^^^^ variable reused to save space...
                     pledge.work.credit -= state.cap; 
                     state.minting -= state.cap; 
                     state.repay -= state.cap; 
@@ -791,7 +800,7 @@ contract MO is Ownable {
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
-                    // emit FoldMinted(state.minting, state.delta);
+                    emit FoldMinted(state.minting, state.delta);
                     QUID.mint(state.minting, beneficiary, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
                 } else { state.deductible = 0; } // no mint = no charge  
@@ -802,7 +811,7 @@ contract MO is Ownable {
                 // if we were to deduct actual value instead
                 // that could be taken advantage of (increased
                 // payouts with each subsequent call to fold)... 
-                // emit FoldDeductible(amount, state.deductible);
+                emit FoldDeductible(amount, state.deductible);
                 pledge.work.debit += amount - state.deductible;
                 // if sell true, pledge doesn't get any ETH back
                 pledges[address(this)].work.credit -= state.deductible;
@@ -823,7 +832,7 @@ contract MO is Ownable {
             amount = qd_amt_to_dollar_amt(state.cap, amount);
             // subtract the $ value of QD
             pledge.work.credit -= amount;
-            // emit FoldSalve(amount); 
+            emit FoldSalve(amount); 
             // "lightnin' ⚡️ strikes and the 🏀 court lights...
             if (pledge.work.credit > state.collat) { // get dim"
                 if (pledge.work.credit > DIME) { // assumes that 
@@ -834,7 +843,7 @@ contract MO is Ownable {
                     amount = _min(pledge.work.credit, 
                         FullMath.mulDiv(state.price, 
                                         amount, WAD));
-                    // emit FoldLiquidate(amount);
+                    emit FoldLiquidate(amount);
                     // "It's like inch by inch, and step by 
                     // step, I'm closin' in on your position
                     // and [eviction] is my mission..."
@@ -875,8 +884,10 @@ contract MO is Ownable {
                  uint collected1) = _withdrawAndCollect(liquidity); 
                 amount0 += collected0; amount1 += collected1;
                 emit RepackNFTamountsAfterCollectInBurn(amount0, amount1);
-                pledges[address(this)].weth.debit += collected1;
-                pledges[address(this)].work.debit += collected0;
+                // pledges[address(this)].weth.debit += collected1;
+                // pledges[address(this)].work.debit += collected0;
+                pledges[address(this)].weth.debit += collected0;
+                pledges[address(this)].work.debit += collected1;
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
             }
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
@@ -887,18 +898,20 @@ contract MO is Ownable {
             UPPER_TICK, LOWER_TICK, amount0, amount1
         );
         INonfungiblePositionManager.MintParams memory params =
-            INonfungiblePositionManager.MintParams({token0: USDC, 
-                token1: WETH, fee: POOL_FEE, tickLower: LOWER_TICK, 
+            INonfungiblePositionManager.MintParams({token0: WETH, // USDC in sepolia
+                token1: USDC, fee: POOL_FEE, tickLower: LOWER_TICK, 
                 tickUpper: UPPER_TICK, amount0Desired: amount0, 
                 amount1Desired: amount1, amount0Min: 0, amount1Min: 0, 
                 recipient: address(this), deadline: block.timestamp + 
                 1 minutes}); (ID,,,) = NFPM.mint(params); // V3 NFT
-        } // else no need to repack NFT, need to collect LP fees
+        } // else no need to repack NFT, only to collect LP fees...
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
             emit RepackNFTamountsAfterCollect(amount0, amount1);
-            pledges[address(this)].weth.debit += collected1;
-            pledges[address(this)].work.debit += collected0;
+            // pledges[address(this)].weth.debit += collected1;
+            // pledges[address(this)].work.debit += collected0;
+            pledges[address(this)].weth.debit += collected0;
+            pledges[address(this)].work.debit += collected1;
             (amount0, amount1) = _swap(amount0, amount1);
             // FIXME amount1 isn't getting split into amount0
             emit RepackNFTamountsAfterSwap(amount0, amount1);

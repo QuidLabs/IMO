@@ -62,21 +62,16 @@ const etherscanApiKey: string | undefined = process.env.ETHERSCAN_API_KEY;
     throw new Error("Please set your ETHERSCAN_API_KEY in a .env file");
   }
 
-
-// const alchemyApiKey: string | undefined = process.env.ALCHEMY_MAINNET_API_KEY_URL;
-//   if (!alchemyApiKey) {
-//     throw new Error("Please set your ALCHEMY_MAINNET_API_KEY_URL in a .env file");
-//   }
-
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "sepolia",
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
+      forking: {
+        url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+        blockNumber: 21057847
+      }
     },
-    // forking: {
-    //   url: alchemyApiKey
-    // },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
       chainId: 11155111,

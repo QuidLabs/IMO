@@ -168,7 +168,8 @@ contract Quid is ERC20,
         // 0x8e604308BD61d975bc6aE7903747785Db7dE97e2
         // ETH-USD 7-Day Realized Volatility
         // 0xF3140662cE17fDee0A6675F9a511aDbc4f394003
-        chainlink = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);
+        // chainlink = AggregatorV3Interface(0x694AA1769357215DE4FAC081bf1f309aDC325306);
+        chainlink = AggregatorV3Interface(0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419);
         (, int priceAnswer,, uint timeStamp,) = chainlink.latestRoundData();
         price = uint(priceAnswer);
         require(timeStamp > 0 
