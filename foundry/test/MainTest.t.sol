@@ -25,9 +25,9 @@ contract MainTest is Test {
 
     address public User01 = address(0x1);
     address public User02 = address(0x2);
-    address public User02 = address(0x3);
-    address public User02 = address(0x4);
-    address public User02 = address(0x5);
+    address public User03 = address(0x3);
+    address public User04 = address(0x4);
+    address public User05 = address(0x5);
 
     uint public half_a_rock = 500000000000000000000000; // $500k
     uint public rack = 1000000000000000000000; // $1000
@@ -48,12 +48,6 @@ contract MainTest is Test {
         USDe = new mockToken();
         sUSDe = new mockVault(USDe);
 
-        USDe.mint(User01);
-        USDe.mint(User02);
-        USDe.mint(User03);
-        USDe.mint(User04);
-        USDe.mint(User05);
-
         moulinette = new MO(
             address(USDe), address(sUSDe), 
             address(weth), address(nfpm), 
@@ -67,8 +61,8 @@ contract MainTest is Test {
     }
     
     function testDiscountedMint() public {
-        vm.startPark(User01);
-        
+        vm.startPrank(User01);
+        USDe.mint();
         weth.deposit{value: 1_000_000 ether}();
 
         weth.approve(address(moulinette), type(uint256).max);
@@ -84,8 +78,8 @@ contract MainTest is Test {
         // Simulate passage of time
         vm.warp(block.timestamp + 14 days);
         
-        vm.startPark(User02);
-        
+        vm.startPrank(User02);
+        USDe.mint();
         weth.deposit{value: 1_000_000 ether}();
 
         weth.approve(address(moulinette), type(uint256).max);
@@ -94,7 +88,7 @@ contract MainTest is Test {
         moulinette.deposit(User02, bill, address(USDe), false);
 
         minted = quid.balanceOf(User02);
-        assertEq(amount, bill);
+        assertEq(minted, bill);
         
         vm.stopPrank();
     }

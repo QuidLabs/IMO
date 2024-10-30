@@ -6,10 +6,11 @@ pragma solidity =0.8.8; // evm target: london
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import "./interfaces/AggregatorV3Interface.sol";
+import "lib/forge-std/src/console.sol"; // TODO delete
 // interface ICollection is ERC721 {
 //     function latestTokenId() 
 //     external view returns (uint);
-// }   
+// } // TODO add back later
 import "./MOulinette.sol";
 contract Quid is ERC20 {
     uint public AVG_ROI;
