@@ -84,6 +84,4 @@ USE OF CONTENTS OR THEIR IMPLEMENTATION.
 `cd ./frontend && npm install && npm run dev`   
 
 copy deployedAddresses.json into utils/constant.js   
-if you run it again with `DEPLOY=false` make sure  
-to comment out the `fast_forward()` line which  
-2 years expends; `currentBatch` 17 is the last.  
+Latest backend version is in the `foundry` folder.

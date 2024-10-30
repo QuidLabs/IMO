@@ -90,6 +90,7 @@ async function deployAndInitializeContracts() {
 }
 
 async function main() { // run some tests on our contracts... 
+  // await helpers.reset('https://rpc.ankr.com/eth', `0x${Number(21057847).toString(16)}`);
   const provider = ethers.provider
     const latestBlock = await provider.getBlockNumber()  
     const shouldDeploy = process.env.SHOULD_DEPLOY !== 'false'
@@ -291,7 +292,7 @@ async function main() { // run some tests on our contracts...
 
     var cap = await MO.capitalisation(0, false)
     console.log('capitalisation...', cap.toString())
-    /*
+    
     try {
       tx = await MO.withdraw(bill, true, {
         value: largeAmountInWei // 245
@@ -337,7 +338,7 @@ async function main() { // run some tests on our contracts...
     catch (error) {
       console.error("Error in fold:", error)
     }
-    */
+    
     tx = await MO.get_more_info(beneficiary)
     console.log("get_more_info(beneficiary)", tx.toString());
     
@@ -354,7 +355,6 @@ async function main() { // run some tests on our contracts...
     var batch = await QD.currentBatch() 
     console.log('batch', batch.toString())
     
-    /*
     tx = await QD.fast_forward(0)
     await tx.wait()
 
@@ -386,12 +386,6 @@ async function main() { // run some tests on our contracts...
 
     tx = await MO.get_info(addresses.Moulinette)
     console.log("get_info(MO):", tx.toString());
-
-    */
-
-    // TODO log WEIGHTS before vote
-    // log WEIGHTS after vote
-
 }  
 
 // We recommend this pattern to be able to 
