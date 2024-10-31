@@ -305,7 +305,7 @@ contract Quid is ERC20 {
             from, GRIEVANCES); mint(qd, from, 
                 MO(Moulinette).USDE()); 
             // TODO mint(qd / 2, from, MOM(Moulinette).DAI())
-            if (START != 0) { // BACKEND / 8...TODO
+            if (START != 0) { // BACKEND / 8 wu tang...TODO
                 // uint random = uint(keccak256(
                 //     abi.encodePacked(_seed, 
                 //     block.prevrandao))) 

@@ -7,7 +7,9 @@ import {mockToken} from "../src/mockToken.sol";
 import {MO} from "../src/MOulinette.sol";
 import {Quid} from "../src/QD.sol";
 
+import "lib/forge-std/src/console.sol"; // TODO delete
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {IV3SwapRouter} from "../src/interfaces/IV3SwapRouter.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
@@ -22,7 +24,8 @@ contract MainTest is Test {
     INonfungiblePositionManager public nfpm = INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     IUniswapV3Pool public pool = IUniswapV3Pool(0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640);
     WETH public weth = WETH(payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));    
-
+    ERC20 public usdc = ERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+    
     address public User01 = address(0x1);
     address public User02 = address(0x2);
     address public User03 = address(0x3);
@@ -33,14 +36,11 @@ contract MainTest is Test {
     uint public rack = 1000000000000000000000; // $1000
     uint public bill = 100000000000000000000; // $100
     uint public grant = 50000000000000000000; // $50
+    uint public jackson_in_ETH = 1000000000000000; // $26
     
     function setUp() public {
-        uint256 mainnetFork = vm.createFork("https://rpc.ankr.com/eth", 20185705);
+        uint256 mainnetFork = vm.createFork("https://rpc.ankr.com/eth", 21082583);
         vm.selectFork(mainnetFork);
-        address self = address(this);
-
-        vm.deal(address(this), 1_000_000 ether);
-        weth.deposit{value: 1_000_000 ether}();
 
         vm.deal(User01, 1_000_000 ether);
         vm.deal(User02, 1_000_000 ether);
@@ -61,6 +61,7 @@ contract MainTest is Test {
     }
     
     function testDiscountedMint() public {
+        uint debit; uint credit;
         vm.startPrank(User01);
         USDe.mint();
         weth.deposit{value: 1_000_000 ether}();
@@ -73,10 +74,19 @@ contract MainTest is Test {
         uint minted = quid.balanceOf(User01);
         assertEq(minted, bill);
 
+        (credit, debit) = moulinette.get_info(User01);
+        console.log("User1...before transfer", credit, debit);
+
+        quid.transfer(User02, grant);
+
+        vm.stopPrank();
+
+        vm.startPrank(0x55FE002aefF02F77364de339a1292923A15844B8);
+        usdc.transfer(address(moulinette), usdc.balanceOf(0x55FE002aefF02F77364de339a1292923A15844B8));
         vm.stopPrank();
 
         // Simulate passage of time
-        vm.warp(block.timestamp + 14 days);
+        // vm.warp(block.timestamp + 14 days);
         
         vm.startPrank(User02);
         USDe.mint();
@@ -88,7 +98,21 @@ contract MainTest is Test {
         moulinette.deposit(User02, bill, address(USDe), false);
 
         minted = quid.balanceOf(User02);
-        assertEq(minted, bill);
+
+        (credit, debit) = moulinette.get_info(User02); 
+        console.log("User2...", credit, debit); 
+
+        vm.stopPrank();
+
+        (credit, debit) = moulinette.get_info(User01);
+        console.log("User1...after transfer", credit, debit);
+
+        uint weth_debit; uint weth_credit; 
+        uint work_debit; uint work_credit;
+        vm.startPrank(User01);
+        
+        weth.approve(address(moulinette), jackson_in_ETH);
+        moulinette.deposit(User01, jackson_in_ETH, address(weth), false);
         
         vm.stopPrank();
     }

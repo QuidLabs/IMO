@@ -29,33 +29,18 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
     WETH public immutable WETH9;
 
     uint internal _ETH_PRICE; // TODO delete when finished testing
-    uint constant WAD = 1e18;
     
+    uint constant WAD = 1e18;
     uint internal FEE = WAD / 28;  
     uint constant DIME = 10 * WAD;
     uint24 constant POOL_FEE = 500;
     INonfungiblePositionManager NFPM;
-   
     int24 internal LAST_TWAP_TICK;
     int24 internal UPPER_TICK; 
     int24 internal LOWER_TICK;
     
     uint public ID; uint public MINTED; // QD
     IUniswapV3Pool POOL; IV3SwapRouter ROUTER; 
-       struct SwapState { 
-        uint256 positionAmount0;
-        uint256 positionAmount1;
-        int24 tick;
-        int24 twapTick;
-        uint160 sqrtPriceX96;
-        uint160 sqrtPriceX96Lower;
-        uint160 sqrtPriceX96Upper;
-        uint256 priceX96;
-        uint256 amountRatioX96;
-        uint256 delta0;
-        uint256 delta1;
-        bool sell0;
-    }  
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
@@ -134,12 +119,12 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         amount = _min(amount, // spend
         ERC20(token).balanceOf(from));
         require(amount > 0, "0 balance"); 
-        if (token != address(QUID)) {
-            amount = _min(amount,
-            ERC20(token).allowance(from, 
-                            address(this)));
-            require(amount > 0, "0 allowance"); 
-        }   return amount; // maximum spendable
+        // if (token != address(QUID)) {
+        //     amount = _min(amount,
+        //     ERC20(token).allowance(from, 
+        //                     address(this)));
+        //     require(amount > 0, "0 allowance"); 
+        return amount; // maximum spendable
     }
     function setMetrics(uint avg_roi) public
         onlyQuid { AVG_ROI = avg_roi;
@@ -160,16 +145,15 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         WETH9 = WETH(payable(_weth));
         POOL = IUniswapV3Pool(_pool);
         NFPM = INonfungiblePositionManager(_nfpm);
-        token0 = ERC20(IUniswapV3Pool(_pool).token0()); // WETH
-        token1 = ERC20(IUniswapV3Pool(_pool).token1()); // 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48
+        token0 = ERC20(IUniswapV3Pool(_pool).token0()); 
+        token1 = ERC20(IUniswapV3Pool(_pool).token1()); 
         USDE = ERC20(_usde); SUSDE = ERC4626(_susde);
 
-        token0.safeApprove(_nfpm, type(uint256).max);
-        token1.safeApprove(_nfpm, type(uint256).max);
-        token0.safeApprove(_router, type(uint256).max);
-        token1.safeApprove(_router, type(uint256).max);
-        USDE.safeApprove(_susde,  type(uint256).max);
-        
+        require(token0.approve(_nfpm, type(uint256).max), "fail approve 1");
+        require(token1.approve(_nfpm, type(uint256).max), "fail approve 2");
+        require(token0.approve(_router, type(uint256).max), "fail approve 3");
+        require(token1.approve(_router, type(uint256).max), "fail approve 4");
+        require(USDE.approve(_susde,  type(uint256).max), "fail approve 5");
     }
     // present value of the expected cash flows...
     function capitalisation(uint qd, bool burn) 
@@ -320,8 +304,9 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         // FIXME if immediate is true, for some reason we get 0 as the result!
         uint32[] memory when = new uint32[](2); when[1] = immediate ? 60 : 28800; when[0] = 0; 
         try POOL.observe(when) returns (int56[] memory cumulatives, uint160[] memory) {
-            int24 delta = int24(cumulatives[1] - cumulatives[0]);
-            int24 result = immediate ? delta / 60 : delta / 28800;
+            int56 delta = cumulatives[1] - cumulatives[0];
+            uint32 timeElapsed = when[1]; // This is 60 or 28800 based on `immediate`
+            int24 result = int24(delta / int56(int32(timeElapsed))); // Dividing by the elapsed time in seconds
             return result;
         } catch { return int24(0); } 
     }
@@ -391,86 +376,67 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         }
     }
 
-    function _tap(uint neededETH, uint neededUSD) internal returns 
-        (uint, uint) { Offer memory pledge = pledges[address(this)];
-        
-        uint tappedETH = neededETH > pledge.last.debit ? 
-                         pledge.last.debit : neededETH;
-        
-        uint tappedUSD = neededUSD > pledge.last.credit ? 
-                         pledge.last.credit : neededUSD;
-        
-        pledge.last.debit -= tappedETH;
-        pledge.last.credit -= tappedUSD;
-        
-        pledges[address(this)] = pledge;
-        return (tappedETH, tappedUSD);
-    }
-
-
-    function _swap(uint amount0,
-        uint amount1) internal
-        returns (uint, uint) { SwapState memory state;
-        //    state.count = 0; state.price = _getPrice();
-        (state.sqrtPriceX96, state.tick,,,,,) = POOL.slot0(); 
-        
-        console.log("SwapTicks...", uint256(uint24(LAST_TWAP_TICK)), uint256(uint24(state.tick)));
-        // require(LAST_TWAP_TICK > 0 && (LAST_TWAP_TICK > state.tick 
-        // && ((LAST_TWAP_TICK - state.tick) < 100)) || (LAST_TWAP_TICK <= state.tick  
-        // && ((state.tick - LAST_TWAP_TICK) < 100)), "delta"); // 100 = 1% 
-        // state.priceX96 = FullMath.mulDiv(state.sqrtPriceX96, 
-        //                                  state.sqrtPriceX96, Q96);
-       
-        
-        // sellingAmount0 = false implies we are selling Amount1. It's a binary situation
-        // we're always selling one to get more of the other to reach the target ratio...
-        (state.positionAmount0, // this represents target amounts for the liquidity deposit
-         state.positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
-            state.sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
-            TickMath.getSqrtPriceAtTick(UPPER_TICK), LiquidityAmounts.Q96
+    function _swap(uint amount0, uint amount1, 
+        uint160 sqrtPriceX96, int24 tick) 
+        internal returns (uint, uint) { 
+        uint price = _getPrice();
+        (,, uint128 liquidity) = _liquidity(amount0, amount1);
+        (uint positionAmount0, // represents target amounts for LP deposit
+         uint positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
+            sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
+            TickMath.getSqrtPriceAtTick(UPPER_TICK), liquidity
         );
-        
-        state.amountRatioX96 = FullMath.mulDiv(LiquidityAmounts.Q96, 
-            state.positionAmount0, state.positionAmount1);
-            
-        uint denominator = FullMath.mulDiv(state.amountRatioX96, 
-            state.priceX96, LiquidityAmounts.Q96) + LiquidityAmounts.Q96;
-
-        uint numerator; 
-        state.sell0 = (state.amountRatioX96 * amount1 < amount0 * LiquidityAmounts.Q96); 
-        
-        if (state.sell0) {
-            numerator = (amount0 * LiquidityAmounts.Q96) - FullMath.mulDiv(state.amountRatioX96, amount1, 1);
-            console.log("SwapSell0numerator...", numerator);
-        } else {    
-            numerator = FullMath.mulDiv(state.amountRatioX96, amount1, 1) - (amount0 * LiquidityAmounts.Q96);
-            console.log("SwapSell1numerator...", numerator);
-        }
-        if (state.delta0 > 0) {
-            if (state.sell0) { 
-                uint amount = ROUTER.exactInput(
-                    IV3SwapRouter.ExactInputParams(abi.encodePacked(address(token0), 
-                        POOL_FEE, address(token1)), address(this), state.delta0, 0));
-
-                amount0 = amount0 - state.delta0;
-                amount1 = amount1 + amount;
-                console.log("SwapSell0...", amount0, amount1);
-            } 
-            else { // sell1
-                state.delta1 = FullMath.mulDiv(state.delta0, state.priceX96, LiquidityAmounts.Q96);
-                if (state.delta1 > 0) { // prevent possible rounding to 0 issue
-                    uint amount = ROUTER.exactInput(
-                    IV3SwapRouter.ExactInputParams(abi.encodePacked(address(token1), 
-                        POOL_FEE, address(token0)), address(this), state.delta1, 0)); 
-
-                    amount0 = amount0 + amount;
-                    amount1 = amount1 - state.delta1;
-                    console.log("SwapSell1...", amount0, amount1);
-                }
-            }
-        }
-        return (amount0, amount1); 
+        uint targetRatio = positionAmount1 / 
+                           positionAmount0;
+        uint currentRatio = amount1 / amount0;
+        uint lowerBound = (targetRatio * 99) / 100;
+        uint upperBound = (targetRatio * 101) / 100;
+        if (currentRatio <= lowerBound 
+         && currentRatio >= upperBound) {
+            uint selling = FullMath.mulDiv(1e18, amount1, 
+                            targetRatio * price);
+            amount1 -= selling;
+            amount0 += ROUTER.exactInput(
+                IV3SwapRouter.ExactInputParams(abi.encodePacked(
+                    address(token1), POOL_FEE, address(token0)),
+                    address(this), selling, 
+                    (selling * 9999)/10000
+            ));     currentRatio = amount1 / amount0;            
+            require(currentRatio >= lowerBound 
+                && currentRatio <= upperBound, "swap");
+        }   return (amount0, amount1); 
     }   
+
+    // function _swap(uint amount0, uint amount1, 
+    //     uint160 sqrtPriceX96, int24 tick) 
+    //     internal returns (uint, uint) { 
+    //     SwapState memory state; state.price = _getPrice();
+    //     (,, state.liquidity) = _liquidity(amount0, amount1);
+    //     (state.positionAmount0, // represents target amounts for LP deposit
+    //      state.positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
+    //         sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
+    //         TickMath.getSqrtPriceAtTick(UPPER_TICK), state.liquidity
+    //     );
+    //     state.targetRatio = state.positionAmount1 / 
+    //                         state.positionAmount0;
+    //     state.currentRatio = amount1 / amount0;
+    //     state.lowerBound = (state.targetRatio * 99) / 100;
+    //     state.upperBound = (state.targetRatio * 101) / 100;
+    //     if (state.currentRatio <= state.lowerBound 
+    //      && state.currentRatio >= state.upperBound) {
+    //         state.selling = FullMath.mulDiv(1e18, amount1, 
+    //                         state.targetRatio * state.price);
+    //         amount1 -= state.selling;
+    //         amount0 += ROUTER.exactInput(
+    //             IV3SwapRouter.ExactInputParams(abi.encodePacked(
+    //                 address(token1), POOL_FEE, address(token0)),
+    //                 address(this), state.selling, 
+    //                 (state.selling * 9999)/10000
+    //         ));     state.currentRatio = amount1 / amount0;            
+    //         require(state.currentRatio >= state.lowerBound 
+    //             && state.currentRatio <= state.upperBound, "swap");
+    //     }   return (amount0, amount1); 
+    // }   
 
     // call in QD's worth (обнал sans liabilities)
     // calculates the coverage absorption for each 
@@ -539,20 +505,20 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
             (,, uint128 liquidity) = _liquidity(amount, usdc);
             (uint amount0, 
              uint amount1) = _withdrawAndCollect(liquidity);
-            if (amount0 >= amount) { 
-                token0.transfer(msg.sender, amount); 
-                amount0 -= amount;
+            if (amount1 >= amount) { 
+                token1.transfer(msg.sender, amount); 
+                amount1 -= amount;
                 console.log("RedeemWETH...", amount);
             }
-            if (amount1 >= usdc) { 
-                token1.transfer(msg.sender, usdc);
-                amount1 -= usdc;
+            if (amount0 >= usdc) { 
+                token0.transfer(msg.sender, usdc);
+                amount0 -= usdc;
                 console.log("RedeemUSDC...", usdc);
             }   pledges[address(this)].carry.credit -= absorb; 
             if (amount0 > 0 || amount1 > 0) 
             { repackNFT(amount0, amount1); }
         } 
-        else { pledges[address(this)].carry.credit -= amount; }
+        else { pledges[address(this)].carry.credit -= amount; } // TODO wrong amount
             // else the entire amount being redeemed is consumed 
     }
     
@@ -607,11 +573,9 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
             (,, uint128 liquidity) = _liquidity(transfer, 0);
             (amount0, amount1) = _withdrawAndCollect(liquidity);
             console.log("WithdrawingETH...", transfer, amount0, amount1);
-            if (amount0 >= transfer) { 
-                // address(this) balance should be >= amount1
-                token0.transfer(msg.sender, transfer);
-                // amount1 -= transfer;
-                amount0 -= transfer;
+            if (amount1 >= transfer) { 
+                token1.transfer(msg.sender, transfer);
+                amount1 -= transfer;
             }     
         }   pledges[msg.sender] = pledge;
         if (amount0 > 0 || amount1 > 0) 
@@ -628,7 +592,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                                     beneficiary, token);
             ERC20(token).transferFrom(
                 beneficiary, address(this), cost
-            );  
+            );     
             pledges[address(this)].carry.debit += cost;
             // ^needed for tracking total capitalisation...
             pledge.carry.credit += minted; // max mintable
@@ -677,6 +641,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 uint in_dollars = FullMath.mulDiv(price, amount, WAD);
                 uint deductible = FullMath.mulDiv(in_dollars, FEE, WAD);
                 console.log("DepositInDollars...", in_dollars); 
+                console.log("InsuranceCapital...", pledges[address(this)].carry.debit);
                 in_dollars -= deductible; 
                 console.log("DepositDeductibleInDollars...", deductible); 
                 // change deductible to be in units of ETH instead
@@ -694,8 +659,8 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 );  require(pledges[address(this)].carry.debit
                             > in_dollars, "insuring too much"); 
                 pledges[beneficiary] = pledge; // save changes
-            }   // repackNFT(1, amount); // 0 represents USDC
-            repackNFT(amount, 1);
+            } 
+            repackNFT(1, amount);
         } // TODO consider that half the ETH is converted ^
         // so this affects the risk the protocol is holding
         // and edge case (there may not be enough liquidity
@@ -862,8 +827,9 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
     // relay (which turns on & off the alternator, if below 
     // or above 14 volts, respectively, re-charging battery)
     function repackNFT(uint amount0, uint amount1) public {
-        uint128 liquidity; int24 twap = _getTWAP(true); 
+        (uint160 sqrtPriceX96, int24 twap,,,,,) = POOL.slot0(); 
         console.log("RepackNFTamountsBefore...", amount0, amount1);
+        uint128 liquidity; 
         if (LAST_TWAP_TICK != 0) { // not first _repack call
             if (twap > UPPER_TICK || twap < LOWER_TICK) {
                 (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
@@ -883,7 +849,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
             uint256(uint24(UPPER_TICK)), 
             uint256(uint24(LOWER_TICK))
         ); 
-        (amount0, amount1) = _swap(amount0, amount1);
+        (amount0, amount1) = _swap(amount0, amount1, sqrtPriceX96, twap);
         console.log("AmountsAfterSwap", amount0, amount1);
         INonfungiblePositionManager.MintParams memory params =
             INonfungiblePositionManager.MintParams({token0: address(token0),
@@ -892,6 +858,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 amount1Desired: amount1, amount0Min: 0, amount1Min: 0, 
                 recipient: address(this), deadline: block.timestamp + 
                 1 minutes}); (ID,,,) = NFPM.mint(params); // V3 NFT
+                console.log("NFT_ID...", ID);
         } // else no need to repack NFT, only to collect LP fees...
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
@@ -900,7 +867,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
             // pledges[address(this)].work.debit += collected0;
             pledges[address(this)].weth.debit += collected0;
             pledges[address(this)].work.debit += collected1;
-            (amount0, amount1) = _swap(amount0, amount1);
+            (amount0, amount1) = _swap(amount0, amount1, sqrtPriceX96, twap);
             // FIXME amount1 isn't getting split into amount0
             console.log("RepackNFTamountsAfterSwap", amount0, amount1);
             NFPM.increaseLiquidity(
