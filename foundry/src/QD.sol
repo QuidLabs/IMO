@@ -1,18 +1,28 @@
 
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity =0.8.8; // evm target: london
-// import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-// import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+pragma solidity =0.8.8; // EVM: london
+
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {ERC721} from "lib/solmate/src/tokens/ERC721.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
-// interface ICollection is ERC721 {
-//     function latestTokenId() 
-//     external view returns (uint);
-// } // TODO add back later
+
+interface IERC721Receiver {
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
+}
+interface ICollection is ERC721 {
+    function latestTokenId() 
+    external view returns (uint);
+} // TODO add back later
 import "./MOulinette.sol";
-contract Quid is ERC20 {
+contract Quid is ERC20,
+    IERC721Receiver {
     uint public AVG_ROI;
     uint public START;  
     // "Walked in the 
@@ -141,10 +151,10 @@ contract Quid is ERC20 {
     }
     function transferFrom(address from, address to, uint value) 
         public override(ERC20) returns (bool) {
-        // _spendAllowance(from, msg.sender, value);
         MO(Moulinette).transferHelper(from, 
             to, value); _transferHelper(from, 
-            to, value); super.transferFrom(from, to, value);
+            to, value); super.transferFrom(from, 
+            to, value);
     }
     
     function getPrice() public view returns 
@@ -267,7 +277,7 @@ contract Quid is ERC20 {
         }
     }
 
-    // address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
+    address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20:
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, 
      * checking that recipient prevent tokens from being forever locked.
@@ -280,7 +290,6 @@ contract Quid is ERC20 {
      *   by the recipient, the transfer will be reverted. TODO ONLY MAINNET
      */
     // QuidMint...foundation.app/@quid 
-    /*
     function onERC721Received(address, 
         address from, // previous owner 
         uint tokenId, bytes calldata data 
@@ -296,7 +305,7 @@ contract Quid is ERC20 {
             ); uint qd = MO(Moulinette).draw(
             from, GRIEVANCES); mint(qd, from, 
                 MO(Moulinette).USDE()); 
-            // TODO mint(qd / 2, from, MOM(Moulinette).DAI())
+            // TODO mint(qd / 2, from, MO(Moulinette).DAI())
             if (START != 0) { // BACKEND / 8 wu tang...TODO
                 // uint random = uint(keccak256(
                 //     abi.encodePacked(_seed, 
@@ -313,7 +322,7 @@ contract Quid is ERC20 {
             // in the frontend, we do transferFrom in order
             // to receive NFT & pass in calldata for lotto
         } return this.onERC721Received.selector; // TODO ^
-    } */
+    }
 
     // TODO remove, testing only
     function restart() public { 

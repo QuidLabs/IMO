@@ -1,7 +1,6 @@
 
 // SPDX-License-Identifier: AGPL-3.0
-
-pragma solidity =0.8.8; 
+pragma solidity =0.8.8; // EVM: london
 
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
@@ -209,50 +208,46 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 _creditHelper(to); 
             }   _creditHelper(from); 
     }
-    function _creditHelper(address who) // QD holder 
-        internal { // until batch 1 we have no AVG_ROI
-        // TODO edge case burning in a CDP in first batch
-        if (QUID.currentBatch() > 0) { // to work with
-            uint credit = pledges[who].carry.credit;
-            SUM -= credit; // subtract old share, which
-            // may be zero if this is the first time 
-            // _creditHelper is called for `who`...
-            uint balance = QUID.balanceOf(who);
-            uint debit = pledges[who].carry.debit;
-            uint share = FullMath.mulDiv(WAD, 
-                balance, QUID.totalSupply());
-            console.log("CreditHelperShare...", share, who);
-            credit = share;
-            if (debit > 0) { // share is product
-                // projected ROI if QD is $1...
-                uint roi = FullMath.mulDiv(WAD, 
-                        balance - debit, debit);
-                // calculate individual ROI over total 
-                roi = FullMath.mulDiv(WAD, roi, AVG_ROI);
-                credit = FullMath.mulDiv(roi, share, WAD);
-                console.log("CreditHelperROI...", roi, who);
-                // credit is the product (composite) of 
-                // two separate share (ratio) quantities 
-                // and the sum of products is what we use
-                // in determining pro rata in redeem()...
-            }   pledges[who].carry.credit = credit;
-            SUM += credit; // update sum with new share
-            console.log("CreditHelper...", credit, who);
-        }
+    function _creditHelper(address who) internal { 
+        uint credit = pledges[who].carry.credit;
+        SUM -= credit; // subtract old share, which
+        // may be zero if this is the first time 
+        // _creditHelper is called for `who`...
+        uint balance = QUID.balanceOf(who);
+        uint debit = pledges[who].carry.debit;
+        uint share = FullMath.mulDiv(WAD, 
+            balance, QUID.totalSupply());
+        console.log("CreditHelperShare...", share, who);
+        credit = share;
+        if (debit > 0 && QUID.currentBatch() > 0) { 
+            // projected ROI if QD is $1...
+            uint roi = FullMath.mulDiv(WAD, 
+                    balance - debit, debit);
+            // calculate individual ROI over total... 
+            roi = FullMath.mulDiv(WAD, roi, AVG_ROI);
+            credit = FullMath.mulDiv(roi, share, WAD);
+            console.log("CreditHelperROI...", roi, who);
+            // credit is the product (composite) of 
+            // two separate share (ratio) quantities 
+            // and the sum of products is what we use
+            // in determining pro rata in redeem()...
+        }   pledges[who].carry.credit = credit;
+        SUM += credit; // update sum with new share
+        console.log("CreditHelper...", credit, who);
+    
     }
     
     function _liquidity(uint amount0, uint amount1) 
         internal returns (uint160, uint160, uint128) {
-        uint160 sqrtPriceX96atLowerTick = TickMath.getSqrtPriceAtTick(LOWER_TICK);
-        uint160 sqrtPriceX96atUpperTick = TickMath.getSqrtPriceAtTick(UPPER_TICK);
+        uint160 sqrtPriceX96lower = TickMath.getSqrtPriceAtTick(LOWER_TICK);
+        uint160 sqrtPriceX96upper = TickMath.getSqrtPriceAtTick(UPPER_TICK);
         uint128 liquidity0 = LiquidityAmounts.getLiquidityForAmount0(
-            sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, amount0
+            sqrtPriceX96upper, sqrtPriceX96lower, amount0
         );
         uint128 liquidity1 = LiquidityAmounts.getLiquidityForAmount1(
-            sqrtPriceX96atUpperTick, sqrtPriceX96atLowerTick, amount1
+            sqrtPriceX96upper, sqrtPriceX96lower, amount1
         );
-        return (sqrtPriceX96atLowerTick, 
-                sqrtPriceX96atUpperTick,
+        return (sqrtPriceX96lower, sqrtPriceX96upper,
                 _max(liquidity0, liquidity1));
     }
     function _collect() internal returns 
@@ -300,16 +295,6 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         if (adjustedIncrease == adjustedDecrease) { // edge case
             adjustedIncrease += 10; 
         } 
-    }
-    function _getTWAP(bool immediate) internal view returns (int24) {
-        // FIXME if immediate is true, for some reason we get 0 as the result!
-        uint32[] memory when = new uint32[](2); when[1] = immediate ? 60 : 28800; when[0] = 0; 
-        try POOL.observe(when) returns (int56[] memory cumulatives, uint160[] memory) {
-            int56 delta = cumulatives[1] - cumulatives[0];
-            uint32 timeElapsed = when[1]; // This is 60 or 28800 based on `immediate`
-            int24 result = int24(delta / int56(int32(timeElapsed))); // Dividing by the elapsed time in seconds
-            return result;
-        } catch { return int24(0); } 
     }
     function _getPrice() internal view returns (uint) {
         if (_ETH_PRICE > 0) return _ETH_PRICE; // TODO
@@ -588,7 +573,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 // TODO stake into morpho (mainnet)
             } 
         } 
-        else if (token == address(QUID)) {
+        else if (token == address(QUID)) { // TODO denominate credit in QD?
             amount = _minAmount(msg.sender, token, amount);
             uint cap = capitalisation(amount, true);
             amount = _min(qd_amt_to_dollar_amt(cap, 
@@ -795,7 +780,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
     function repackNFT(uint amount0, uint amount1) public {
         (uint160 sqrtPriceX96, int24 twap,,,,,) = POOL.slot0(); 
         uint128 liquidity; 
-        if (LAST_TWAP_TICK != 0) { // not first _repack call
+        if (LAST_TWAP_TICK != 0) { // not first _repack...
             if (twap > UPPER_TICK || twap < LOWER_TICK) {
                 (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
                 (uint collected0, 

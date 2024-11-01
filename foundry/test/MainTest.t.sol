@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: AGPL-3.0
 pragma solidity =0.8.8;
 
 import {Test, console} from "forge-std/Test.sol";
@@ -14,12 +14,17 @@ import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
 
+interface ICollection is ERC721 {
+    function latestTokenId() 
+    external view returns (uint);
+} 
 contract MainTest is Test {
     Quid public quid;
     MO public moulinette;
     mockVault public sUSDe;
     mockToken public USDe;
 
+    ICollection public F8N = ICollection(0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405); 
     ISwapRouter public router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     INonfungiblePositionManager public nfpm = INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     IUniswapV3Pool public pool = IUniswapV3Pool(0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640);
@@ -60,7 +65,7 @@ contract MainTest is Test {
         moulinette.set_price_eth(false, true);
     }
     
-    function testDiscountedMint() public {
+    function testEverything() public {
         uint weth_debit; uint weth_credit; 
         uint work_debit; uint work_credit;
         uint quid_debit; uint quid_credit;
@@ -84,10 +89,6 @@ contract MainTest is Test {
         quid.transfer(User02, grant);
 
         vm.stopPrank(); // exit User1 context
-
-        vm.startPrank(0x55FE002aefF02F77364de339a1292923A15844B8);
-        usdc.transfer(address(moulinette), usdc.balanceOf(0x55FE002aefF02F77364de339a1292923A15844B8));
-        vm.stopPrank();
 
         // Simulate passage of time
         vm.warp(block.timestamp + 14 days);
@@ -123,7 +124,6 @@ contract MainTest is Test {
         console.log("User1...more_info beforeFOLD", 
             work_debit, work_credit, weth_debit
         );
-        
         moulinette.fold(User01, jackson_in_ETH, false);
 
         (work_debit, work_credit, 
@@ -132,7 +132,14 @@ contract MainTest is Test {
         console.log("User1...more_info AFTERfold", 
             work_debit, work_credit, weth_debit
         );
-        
         vm.stopPrank();
     }
+
+    /*
+        vm.startPrank(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4);
+        F8N.approve(address(moulinette), 16508);
+        F8N.transferFrom(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4,
+            address(moulinette), 16508);
+        vm.stopPrank();
+    */
 }
