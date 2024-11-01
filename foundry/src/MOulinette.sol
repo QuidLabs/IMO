@@ -680,7 +680,8 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 state.average_price, state.average_value, 
                 FullMath.mulDiv(110, state.price, 100)
             );
-            // if price drop > 10% (average_value > 10% more than current value) 
+            pledges[address(this)].work.credit += amount; pledge.work.debit += amount;
+            // if price drop above 10% (average_value > 10% more than current value)... 
             if (state.average_price >= FullMath.mulDiv(110, state.price, 100)) { 
                 state.delta = state.average_value - state.collat;
                 console.log("FoldDelta...", state.delta);
@@ -707,10 +708,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                     state.minting -= state.cap; 
                     state.repay -= state.cap; 
                 }
-                pledges[address(this)].work.credit += amount;
-                // we need to increment before calling capitalisation
-                // in order for the ratio to be calculated correctly
-                    state.cap = capitalisation(state.delta, false); 
+                state.cap = capitalisation(state.delta, false); 
                 if (state.minting > state.delta || state.cap > 57) { 
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
@@ -718,24 +716,28 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                     console.log("FoldMinted...", state.minting, state.delta);
                     QUID.mint(state.minting, beneficiary, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
-                } else { state.deductible = 0; } // no mint = no charge  
-                pledges[address(this)].weth.credit -= amount;
-                // amount is no longer insured by the protocol
-                pledge.weth.debit -= amount; // deduct amount
-                pledge.weth.credit -= state.average_value;
-                // if we were to deduct actual value instead
-                // that could be taken advantage of (increased
-                // payouts with each subsequent call to fold)... 
-                console.log("FoldDeductible...", amount, state.deductible);
-                pledge.work.debit += amount - state.deductible;
-                // if sell true, pledge doesn't get any ETH back
-                pledges[address(this)].work.credit -= state.deductible;
-                pledges[address(this)].weth.debit += state.deductible;
-                
-                state.collat = FullMath.mulDiv(pledge.work.debit, state.price, WAD);
-                if (state.collat > pledge.work.credit) { state.liquidate = false; }
+                } 
+                else { state.deductible = 0; } // no mint = no charge  
             } 
-            else if (!state.liquidate) { require(msg.sender == beneficiary, "auth"); } 
+            else if (!state.liquidate) { 
+                require(msg.sender == beneficiary, "auth"); 
+            } 
+            pledges[address(this)].weth.credit -= amount;
+            // amount is no longer insured by the protocol
+            pledge.weth.debit -= amount; // deduct amount
+            pledge.weth.credit -= _min(pledge.weth.credit, 
+                                    state.average_value);
+            // if we were to deduct actual value instead
+            // that could be taken advantage of (increased
+            // payouts with each subsequent call to fold)... 
+            console.log("FoldDeductible...", amount, state.deductible);
+            pledge.work.debit -= state.deductible;
+            // if sell true, pledge doesn't get any ETH back
+            pledges[address(this)].work.credit -= state.deductible;
+            pledges[address(this)].weth.debit += state.deductible;  
+
+            state.collat = FullMath.mulDiv(pledge.work.debit, state.price, WAD);
+            if (state.collat > pledge.work.credit) { state.liquidate = false; } 
         }
         // "things have gotten closer to the sun, and I've done 
         // things in small doses, so don't think that I'm pushing 
