@@ -61,7 +61,10 @@ contract MainTest is Test {
     }
     
     function testDiscountedMint() public {
-        uint debit; uint credit;
+        uint weth_debit; uint weth_credit; 
+        uint work_debit; uint work_credit;
+        uint quid_debit; uint quid_credit;
+
         vm.startPrank(User01);
         USDe.mint();
         weth.deposit{value: 1_000_000 ether}();
@@ -74,8 +77,9 @@ contract MainTest is Test {
         uint minted = quid.balanceOf(User01);
         assertEq(minted, bill);
 
-        (credit, debit) = moulinette.get_info(User01);
-        console.log("User1...before transfer", credit, debit);
+        (quid_credit, 
+         quid_debit) = moulinette.get_info(User01);
+        console.log("User1...before transfer", quid_credit, quid_debit);
 
         quid.transfer(User02, grant);
 
@@ -86,7 +90,7 @@ contract MainTest is Test {
         vm.stopPrank();
 
         // Simulate passage of time
-        // vm.warp(block.timestamp + 14 days);
+        vm.warp(block.timestamp + 14 days);
         
         vm.startPrank(User02);
         USDe.mint();
@@ -99,21 +103,35 @@ contract MainTest is Test {
 
         minted = quid.balanceOf(User02);
 
-        (credit, debit) = moulinette.get_info(User02); 
-        console.log("User2...", credit, debit); 
+        (quid_credit, 
+         quid_debit) = moulinette.get_info(User02); 
+        console.log("User2...", quid_credit, quid_debit); 
 
         vm.stopPrank(); // exit User2 context
 
-        (credit, debit) = moulinette.get_info(User01);
-        console.log("User1...after transfer", credit, debit);
-
-        uint weth_debit; uint weth_credit; 
-        uint work_debit; uint work_credit;
+        (quid_credit, quid_debit) = moulinette.get_info(User01);
+        console.log("User1...after transfer", quid_credit, quid_debit);
         
         vm.startPrank(User01);
         
         weth.approve(address(moulinette), jackson_in_ETH);
         moulinette.deposit(User01, jackson_in_ETH, address(weth), false);
+        
+        (work_debit, work_credit, 
+         weth_debit, weth_credit) = moulinette.get_more_info(User01);
+
+        console.log("User1...more_info beforeFOLD", 
+            work_debit, work_credit, weth_debit
+        );
+        
+        moulinette.fold(User01, jackson_in_ETH, false);
+
+        (work_debit, work_credit, 
+         weth_debit, weth_credit) = moulinette.get_more_info(User01);
+
+        console.log("User1...more_info AFTERfold", 
+            work_debit, work_credit, weth_debit
+        );
         
         vm.stopPrank();
     }
