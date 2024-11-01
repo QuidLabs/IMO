@@ -134,12 +134,12 @@ export const Mint = () => {
       setMintValue("")
 
       if (account){ 
-        
         await mo.methods.deposit(
         beneficiaryAccount.toString(),
         0,
-        '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2').send({ from: account, value: ethDepo }
-        )}
+        '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', false).send({ from: account, value: ethDepo.toString() }
+        )
+      }
 
       setNotifications("success", "Your deposite has been pending completed!", true) 
 

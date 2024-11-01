@@ -419,7 +419,6 @@
   color: #54b420;
   border: 1px solid #352200;
   border-radius: 5px;
-  padding: 10px;
   font-family: monospace;
   font-size: 14px;
   overflow-y: auto;
@@ -429,6 +428,7 @@
   height: 100px;
   margin-top: 20px;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .mint-console-line {
@@ -468,8 +468,11 @@
 }
 
 .mint-console-content {
+  padding: 10px;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  position: absolute;
 }
 
 @keyframes blink {
