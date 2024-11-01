@@ -234,7 +234,6 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         }   pledges[who].carry.credit = credit;
         SUM += credit; // update sum with new share
         console.log("CreditHelper...", credit, who);
-    
     }
     
     function _liquidity(uint amount0, uint amount1) 
@@ -582,6 +581,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
             cap = capitalisation(amount, true); 
             QUID.burn(msg.sender,
             dollar_amt_to_qd_amt(cap, amount));
+            pledges[beneficiary] = pledge;
         } else {
             if (amount > 0) { amount = _minAmount(
                 msg.sender, address(WETH9), amount); 
@@ -610,8 +610,9 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                     FullMath.mulDiv(
                         pledges[address(this)].weth.credit, 
                         price, WAD), "insuring too much"
-                );      pledges[beneficiary] = pledge; 
+                );      
             }   
+            pledges[beneficiary] = pledge; 
             repackNFT(1, amount);
         }
     }
