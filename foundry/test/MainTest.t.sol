@@ -11,7 +11,7 @@ import "lib/forge-std/src/console.sol"; // TODO delete
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
-import {IV3SwapRouter} from "../src/interfaces/IV3SwapRouter.sol";
+import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
 
 contract MainTest is Test {
@@ -20,7 +20,7 @@ contract MainTest is Test {
     mockVault public sUSDe;
     mockToken public USDe;
 
-    IV3SwapRouter public router = IV3SwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
+    ISwapRouter public router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     INonfungiblePositionManager public nfpm = INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     IUniswapV3Pool public pool = IUniswapV3Pool(0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640);
     WETH public weth = WETH(payable(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2));    
@@ -79,7 +79,7 @@ contract MainTest is Test {
 
         quid.transfer(User02, grant);
 
-        vm.stopPrank();
+        vm.stopPrank(); // exit User1 context
 
         vm.startPrank(0x55FE002aefF02F77364de339a1292923A15844B8);
         usdc.transfer(address(moulinette), usdc.balanceOf(0x55FE002aefF02F77364de339a1292923A15844B8));
@@ -102,13 +102,14 @@ contract MainTest is Test {
         (credit, debit) = moulinette.get_info(User02); 
         console.log("User2...", credit, debit); 
 
-        vm.stopPrank();
+        vm.stopPrank(); // exit User2 context
 
         (credit, debit) = moulinette.get_info(User01);
         console.log("User1...after transfer", credit, debit);
 
         uint weth_debit; uint weth_credit; 
         uint work_debit; uint work_credit;
+        
         vm.startPrank(User01);
         
         weth.approve(address(moulinette), jackson_in_ETH);

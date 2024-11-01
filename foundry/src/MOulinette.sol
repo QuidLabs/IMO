@@ -4,7 +4,7 @@
 pragma solidity =0.8.8; 
 
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
-import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
+// import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {Owned} from "lib/solmate/src/auth/Owned.sol";
@@ -12,14 +12,14 @@ import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
-import {IV3SwapRouter} from "./interfaces/IV3SwapRouter.sol";
+import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 
 import "./QD.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
-contract MO is ReentrancyGuard, Owned(msg.sender) {
+contract MO is Owned(msg.sender) {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
     ERC4626 public immutable SUSDE;
@@ -40,7 +40,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
     int24 internal LOWER_TICK;
     
     uint public ID; uint public MINTED; // QD
-    IUniswapV3Pool POOL; IV3SwapRouter ROUTER; 
+    IUniswapV3Pool POOL; ISwapRouter ROUTER; 
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
@@ -144,6 +144,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         
         WETH9 = WETH(payable(_weth));
         POOL = IUniswapV3Pool(_pool);
+        ROUTER = ISwapRouter(_router);
         NFPM = INonfungiblePositionManager(_nfpm);
         token0 = ERC20(IUniswapV3Pool(_pool).token0()); 
         token1 = ERC20(IUniswapV3Pool(_pool).token1()); 
@@ -378,65 +379,43 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
 
     function _swap(uint amount0, uint amount1, 
         uint160 sqrtPriceX96, int24 tick) 
-        internal returns (uint, uint) { 
-        uint price = _getPrice();
+        internal returns (uint, uint) { uint price = _getPrice();
         (,, uint128 liquidity) = _liquidity(amount0, amount1);
         (uint positionAmount0, // represents target amounts for LP deposit
          uint positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
             sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
             TickMath.getSqrtPriceAtTick(UPPER_TICK), liquidity
         );
-        uint targetRatio = positionAmount1 / 
-                           positionAmount0;
+        uint targetRatio = positionAmount1 / positionAmount0;
         uint currentRatio = amount1 / amount0;
         uint lowerBound = (targetRatio * 99) / 100;
         uint upperBound = (targetRatio * 101) / 100;
         if (currentRatio <= lowerBound 
-         && currentRatio >= upperBound) {
-            uint selling = FullMath.mulDiv(1e18, amount1, 
-                            targetRatio * price);
-            amount1 -= selling;
-            amount0 += ROUTER.exactInput(
-                IV3SwapRouter.ExactInputParams(abi.encodePacked(
-                    address(token1), POOL_FEE, address(token0)),
-                    address(this), selling, 
-                    (selling * 9999)/10000
-            ));     currentRatio = amount1 / amount0;            
+         || currentRatio >= upperBound) {
+            int selling = (
+                int(amount1 * price / 1e18) - int(amount0 * 1e12)
+            ) / int(2 * price / 1e18);
+            if (selling > 0) {
+                amount1 -= uint(selling);
+                amount0 += ROUTER.exactInput(
+                    ISwapRouter.ExactInputParams(abi.encodePacked(
+                        address(token1), POOL_FEE, address(token0)),
+                        address(this), block.timestamp, uint(selling), 0
+                ));
+            } else { 
+                selling = selling * int(price) / 1e30;
+                amount0 -= uint(selling);
+                amount1 += ROUTER.exactInput(
+                    ISwapRouter.ExactInputParams(abi.encodePacked(
+                        address(token0), POOL_FEE, address(token1)),
+                        address(this), block.timestamp, uint(selling), 0
+                ));
+            } 
+            currentRatio = amount1 / amount0;
             require(currentRatio >= lowerBound 
-                && currentRatio <= upperBound, "swap");
+                 && currentRatio <= upperBound, "swap");
         }   return (amount0, amount1); 
     }   
-
-    // function _swap(uint amount0, uint amount1, 
-    //     uint160 sqrtPriceX96, int24 tick) 
-    //     internal returns (uint, uint) { 
-    //     SwapState memory state; state.price = _getPrice();
-    //     (,, state.liquidity) = _liquidity(amount0, amount1);
-    //     (state.positionAmount0, // represents target amounts for LP deposit
-    //      state.positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
-    //         sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
-    //         TickMath.getSqrtPriceAtTick(UPPER_TICK), state.liquidity
-    //     );
-    //     state.targetRatio = state.positionAmount1 / 
-    //                         state.positionAmount0;
-    //     state.currentRatio = amount1 / amount0;
-    //     state.lowerBound = (state.targetRatio * 99) / 100;
-    //     state.upperBound = (state.targetRatio * 101) / 100;
-    //     if (state.currentRatio <= state.lowerBound 
-    //      && state.currentRatio >= state.upperBound) {
-    //         state.selling = FullMath.mulDiv(1e18, amount1, 
-    //                         state.targetRatio * state.price);
-    //         amount1 -= state.selling;
-    //         amount0 += ROUTER.exactInput(
-    //             IV3SwapRouter.ExactInputParams(abi.encodePacked(
-    //                 address(token1), POOL_FEE, address(token0)),
-    //                 address(this), state.selling, 
-    //                 (state.selling * 9999)/10000
-    //         ));     state.currentRatio = amount1 / amount0;            
-    //         require(state.currentRatio >= state.lowerBound 
-    //             && state.currentRatio <= state.upperBound, "swap");
-    //     }   return (amount0, amount1); 
-    // }   
 
     // call in QD's worth (обнал sans liabilities)
     // calculates the coverage absorption for each 
@@ -514,9 +493,9 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 token0.transfer(msg.sender, usdc);
                 amount0 -= usdc;
                 console.log("RedeemUSDC...", usdc);
-            }   pledges[address(this)].carry.credit -= absorb; 
-            if (amount0 > 0 || amount1 > 0) 
-            { repackNFT(amount0, amount1); }
+            }  
+            pledges[address(this)].carry.credit -= absorb; 
+            repackNFT(amount0, amount1);
         } 
         else { pledges[address(this)].carry.credit -= amount; } // TODO wrong amount
             // else the entire amount being redeemed is consumed 
@@ -577,9 +556,9 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 token1.transfer(msg.sender, transfer);
                 amount1 -= transfer;
             }     
-        }   pledges[msg.sender] = pledge;
-        if (amount0 > 0 || amount1 > 0) 
-        { repackNFT(amount0, amount1); }
+        }   
+        pledges[msg.sender] = pledge;
+        repackNFT(amount0, amount1);
     }
 
     // allowing deposits on behalf of a benecifiary
@@ -631,10 +610,10 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 address(this), amount);
             } else { 
                 require(msg.value > 0, "ETH!");
-                amount += msg.value; 
             }
             if (msg.value > 0) { 
                 WETH9.deposit{value: msg.value }(); 
+                amount += msg.value; 
             }  
             if (long) { pledge.work.debit += amount; }
             else { uint price = _getPrice(); // insuring the $ value...
@@ -828,7 +807,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
     // or above 14 volts, respectively, re-charging battery)
     function repackNFT(uint amount0, uint amount1) public {
         (uint160 sqrtPriceX96, int24 twap,,,,,) = POOL.slot0(); 
-        console.log("RepackNFTamountsBefore...", amount0, amount1);
+        console.log("RepackNFT...amountsBefore...", amount0, amount1);
         uint128 liquidity; 
         if (LAST_TWAP_TICK != 0) { // not first _repack call
             if (twap > UPPER_TICK || twap < LOWER_TICK) {
@@ -845,12 +824,12 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
             }
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
-        console.log("RepackNFTtwap...", uint256(uint24(twap)), 
+        console.log("RepackNFT...twap...", uint256(uint24(twap)), 
             uint256(uint24(UPPER_TICK)), 
             uint256(uint24(LOWER_TICK))
         ); 
         (amount0, amount1) = _swap(amount0, amount1, sqrtPriceX96, twap);
-        console.log("AmountsAfterSwap", amount0, amount1);
+        console.log("RepackNFT...amountsAfterSwap1", amount0, amount1);
         INonfungiblePositionManager.MintParams memory params =
             INonfungiblePositionManager.MintParams({token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
@@ -862,14 +841,14 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         } // else no need to repack NFT, only to collect LP fees...
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
-            console.log("RepackNFTamountsAfterCollect", amount0, amount1);
+            console.log("RepackNFT...amountsAfterCollect", amount0, amount1);
             // pledges[address(this)].weth.debit += collected1;
             // pledges[address(this)].work.debit += collected0;
             pledges[address(this)].weth.debit += collected0;
             pledges[address(this)].work.debit += collected1;
             (amount0, amount1) = _swap(amount0, amount1, sqrtPriceX96, twap);
             // FIXME amount1 isn't getting split into amount0
-            console.log("RepackNFTamountsAfterSwap", amount0, amount1);
+            console.log("RepackNFT...amountsAfterSwap2", amount0, amount1);
             NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp
