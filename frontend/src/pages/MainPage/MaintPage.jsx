@@ -1,6 +1,7 @@
 import React from 'react'
 
 import { MintBar } from '../../components/MintBar'
+import { DepositeBar } from '../../components/DepositeBar'
 import { Mint } from '../../components/Mint'
 
 import './MaintPage.scss'
@@ -17,6 +18,9 @@ const MaintPage = () => {
         </div>
       </div>
       <div className="main-fakeCol" />
+      <div className="main-side">
+        <DepositeBar />
+      </div>
     </React.Fragment>
   )
 }

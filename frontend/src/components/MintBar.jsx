@@ -68,26 +68,26 @@ export const MintBar = () => {
       <div className="summary-section">
         <div className="summary-title">Current price</div>
         <div className="summary-value">
-          <span className="summary-value">{connected && account ? numberWithCommas(parseFloat(Number(price).toFixed(2))) : 0}</span>
+          <span className="summary-value">{connected && account ? numberWithCommas(parseFloat(Number(price).toFixed(0))) : 0}</span>
           <span className="summary-cents"> Cents</span>
         </div>
       </div>
       <div className="summary-section">
         <div className="summary-title">sDAI Deposited</div>
         <div className="summary-value">
-          ${connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(2))) : 0}
+          ${connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(0))) : 0}
         </div>
       </div>
       <div className="summary-section">
         <div className="summary-title">Gain</div>
         <div className="summary-value">
-          {connected && account ? numberWithCommas(parseFloat(Number(gain).toFixed(2))) : 0}
+          {connected && account ? numberWithCommas(parseFloat(Number(gain).toFixed(0))) : 0}
         </div>
       </div>
       <div className="summary-section">
         <div className="summary-title">My future QD</div>
         <div className="summary-value">
-          {connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(2))) : 0}
+          {connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(0))) : 0}
         </div>
       </div>
     </div>

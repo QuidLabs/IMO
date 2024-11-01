@@ -12,8 +12,8 @@ import 'swiper/css/navigation'
 
 import "./Styles/Slider.scss"
 
-export function Buttons({ names, buttonRef, isProcessing }) {
-    const { account, connected, notifications, quid } = useAppContext()
+export function Buttons({ names, initialSlide, buttonRef, isProcessing, handleSubmit }) {
+    const { choiseButton, account, connected, notifications, quid } = useAppContext()
 
     const [glowClass, setGlowClass] = useState('')
 
@@ -47,12 +47,23 @@ export function Buttons({ names, buttonRef, isProcessing }) {
                 navigation={true}
                 modules={[EffectFlip, Navigation]}
                 className="mySwiper"
-                slidesPerView={1}>
-                {names.map((item, key) => (
+                slidesPerView={1}
+                initialSlide={initialSlide}
+                >
+                {names.map((name, key) => (
                     <SwiperSlide key={"mint_button_" + key} >
                         <div className="button-overflow" >
-                            <button ref={buttonRef} type="submit" className={isProcessing ? "mint-processing" : "mint-submit"}>
-                                {isProcessing ? "Processing" : item}
+                            <button
+                                ref={buttonRef}
+                                type="submit"
+                                className={isProcessing ? "mint-processing" : "mint-submit"}
+                                name={name}
+                                onClick={(name) => {
+                                    choiseButton(name.target.name)
+                                    handleSubmit()
+                                }}
+                            >
+                                {isProcessing ? "Processing" : name}
                                 <div className={`mint-glowEffect mint-glow-${glowClass}`} />
                             </button>
                         </div>

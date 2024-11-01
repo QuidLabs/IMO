@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, useCallback } from "react"
+import { createContext, useState, useContext, useCallback, useRef} from "react"
 import { useSDK } from "@metamask/sdk-react"
 import { formatUnits, parseUnits } from "@ethersproject/units"
 import { BigNumber } from "@ethersproject/bignumber"
@@ -19,6 +19,8 @@ const contextState = {
   setNotifications: () => { },
   setStorage: () => { },
   resetAccounts: () => { },
+  choiseButton: () => {},
+  chooseButton: null,
   account: "",
   connected: false,
   connecting: false,
@@ -253,6 +255,17 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [setAccount, setMO, setSdai, setSusde, setQuid, account, provider])
 
+  const chooseButton = useRef(null)
+
+  const choiseButton = useCallback((name) => {
+      try{
+          const newButton = name
+
+          return chooseButton.current = newButton
+      }catch(error){
+          console.error("Error with button's choising: ", error)
+      }
+  },[chooseButton])
 
   return (
     <AppContext.Provider
@@ -285,7 +298,9 @@ export const AppContextProvider = ({ children }) => {
         addressSDAI,
         notifications,
         mo,
-        SECONDS_IN_DAY
+        SECONDS_IN_DAY,
+        choiseButton,
+        chooseButton
       }}
     >
       {children}
