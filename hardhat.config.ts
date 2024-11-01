@@ -63,10 +63,14 @@ const etherscanApiKey: string | undefined = process.env.ETHERSCAN_API_KEY;
   }
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "hardhat",
+  defaultNetwork: "sepolia",
   networks: {
     hardhat: {
       allowUnlimitedContractSize: true,
+      forking: {
+        url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
+        blockNumber: 21057847
+      }
     },
     sepolia: {
       url: `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}`,
@@ -99,6 +103,8 @@ const config: HardhatUserConfig = {
     disambiguatePaths: true,
     runOnCompile: false,
   },
+  // lockGasLimit: 200000000000,
+  // gasPrice: 10000000000,
 }
 
 export default config

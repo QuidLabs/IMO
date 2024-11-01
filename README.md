@@ -1,13 +1,12 @@
 
 ## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
-borrowers, hedgers, and  
-insurers `mint` **Q**ui**D** for  
+Insurers `mint` **Q**ui**D** for  
 `USDe`xUSDS...over 2yr  
 are 16 chances  to `mint`:  
 
 8 per year times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
-today's," 46% `AVG_ROI`.  
+today's," 46% `AVG_ROI`.    
 
 Over time, retained fees  
 from ΞTH deployed into  
@@ -85,6 +84,4 @@ USE OF CONTENTS OR THEIR IMPLEMENTATION.
 `cd ./frontend && npm install && npm run dev`   
 
 copy deployedAddresses.json into utils/constant.js   
-if you run it again with `DEPLOY=false` make sure  
-to comment out the `fast_forward()` line which  
-2 years expends; `currentBatch` 17 is the last.  
+Latest backend version is in the `foundry` folder.
