@@ -7,6 +7,8 @@ import { Icon } from "./Icon"
 import { useDebounce } from "../utils/use-debounce"
 import { numberWithCommas } from "../utils/number-with-commas"
 
+import { Buttons } from "./Adds/Buttons"
+
 import { useAppContext } from "../contexts/AppContext"
 
 import "./Styles/Mint.scss"
@@ -14,23 +16,20 @@ import "./Styles/Mint.scss"
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalInfo, getUserInfo, getTotalSupply, setAllInfo, setStorage,
-    addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
+  const { getTotalSupply, setStorage, addressQD, addressSDAI, account, connected, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
   const [sdaiValue, setSdaiValue] = useState(0)
   const [totalSupplyCap, setTotalSupplyCap] = useState(0)
-  const [state, setState] = useState("MINT")
   const [isSameBeneficiary, setIsSameBeneficiary] = useState(true)
   const [beneficiary, setBeneficiary] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
   const [startMsg, setStartMsg] = useState('')
 
-  const [glowClass, setGlowClass] = useState('')
+  const [isProcessing, setIsProcessing] = useState(false)
 
-  const inputRef = useRef(null)
   const buttonRef = useRef(null)
+  const inputRef = useRef(null)
   const consoleRef = useRef(null)
 
   const handleCloseModal = () => setIsModalOpen(false)
@@ -91,14 +90,12 @@ export const Mint = () => {
     if (regex.test(originalValue)) setMintValue(Number(originalValue).toFixed(0))
   }
 
-  const changeButton = useCallback((isProcessing, state) => {
-    try {
-      if (state) return (isProcessing ? 'off' : 'on')
-      else return ('off')
-    } catch (error) {
-      console.error(error)
-    }
-  }, [])
+  const setNotifications = useCallback((severity, message, status = false) => {
+    setStorage(prevNotifications => [
+      ...prevNotifications,
+      { severity: severity, message: message, status: status }
+    ])
+  }, [setStorage])
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault()
@@ -106,67 +103,28 @@ export const Mint = () => {
     const beneficiaryAccount = !isSameBeneficiary && beneficiary !== "" ? beneficiary : account
     const hasAgreedToTerms = localStorage.getItem("hasAgreedToTerms") === "true"
 
-    if (!hasAgreedToTerms) {
-      setIsModalOpen(true)
-      return
-    }
+    if (!hasAgreedToTerms) return setIsModalOpen(true)
 
-    if (!isSameBeneficiary && beneficiary === "") {
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "error", message: "Please select a beneficiary" }
-      ])
-      return
-    }
+    if (!isSameBeneficiary && beneficiary === "") return setNotifications("error", "Please select a beneficiary", false)
+    
+    if (!account) return setNotifications("error", "Please connect your wallet")
 
-    if (!account) {
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "error", message: "Please connect your wallet" }
-      ])
-      return
-    }
+    if (!mintValue.length) return setNotifications("error", "Please enter amount")
 
-    if (!mintValue.length) {
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "error", message: "Please enter amount" }
-      ])
-      return
-    }
+    if (mintValue < 50) return setNotifications("error", "The amount should be more than 50")
 
-    if (+mintValue < 50) {
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "error", message: "The amount should be more than 50" }
-      ])
-      return
-    }
-
-    if (+mintValue > totalSupplyCap) {
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "error", message: "The amount should be less than the maximum mintable QD" }
-      ])
-      return
-    }
+    if (mintValue > totalSupplyCap) return setNotifications("error", "The amount should be less than the maximum mintable QD")
 
     const balance = async () => {
       if (sdai) return Number(formatUnits(await sdai.methods.balanceOf(account).call(), 18))
     }
 
-    if (+sdaiValue > (await balance())) {
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "error", message: "Cost shouldn't be more than your sDAI balance" }
-      ])
-      return
-    }
-
+    if (sdaiValue > (await balance())) return setNotifications("error", "Cost shouldn't be more than your sDAI balance")
+  
     try {
       const qdAmount = parseUnits(mintValue, 18)
       setIsProcessing(true)
-      setState("Processing. Please don't close or refresh page when terminal is working")
+      setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
       setMintValue("")
 
       const sdaiAmount = await qdAmountToSdaiAmt(qdAmount, DELAY)
@@ -175,33 +133,23 @@ export const Mint = () => {
       const allowanceBigNumber = await sdai.methods.allowance(account, addressQD).call()
       const allowanceBigNumberBN = allowanceBigNumber ? allowanceBigNumber.toString() : 0
 
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "info", message: `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}` }
-      ])
+      setNotifications("info", `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}`) 
 
-      setState("approving")
+      setNotifications("info", "Please, approve minting in your wallet.")
 
       if (account) await sdai.methods.approve(addressMO.toString(), sdaiAmount.toString()).send({ from: account })
 
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "success", message: "Please wait for approving" }
-      ])
+      setNotifications("info", `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}`) 
 
-      setState("minting")
+      setNotifications("success", "Please wait for approving") 
 
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "success", message: "Please check your wallet" }
-      ])
+      setNotifications("info", "Minting...")
+
+      setNotifications("success", "Please check your wallet") 
 
       const allowanceBeforeMinting = await sdai.methods.allowance(account, addressQD).call()
 
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "info", message: `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}` }
-      ])
+      setNotifications("info", `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}`) 
 
       if (account) await mo.methods.deposit(
         beneficiaryAccount.toString(),
@@ -209,26 +157,15 @@ export const Mint = () => {
         addressSDAI.toString(), false).send({ from: account }
         )
 
-      await Promise.all([getUserInfo(), getTotalInfo()])
-        .then(array => {
-          setAllInfo(array[0], array[1])
-        })
+      setNotifications("success", "Your minting is pending!", true) 
 
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "success", message: "Your minting is pending!" }
-      ])
     } catch (err) {
       const er = "MO::mint: supply cap exceeded"
       const msg = err.error?.message === er || err.message === er ? "Please wait for more QD to become mintable..." : err.error?.message || err.message
 
-      setStorage(prevNotifications => [
-        ...prevNotifications,
-        { severity: "error", message: msg }
-      ])
+      setNotifications("error", msg) 
     } finally {
       setIsProcessing(false)
-      setState("none")
       setMintValue("")
     }
   }
@@ -243,22 +180,12 @@ export const Mint = () => {
 
     if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight
 
-    if (account && connected && quid) {
-      setStartMsg('Terminal started. Mint is available!')
+    if (account && connected && quid) setStartMsg('Terminal started. Mint is available!')
+    else localStorage.setItem("consoleNotifications", JSON.stringify(''))
 
-      const classState = changeButton(isProcessing, true)
+    if (notifications[0] && !connected) setTimeout(()=> setStorage([]), 500)
 
-      setGlowClass(classState)
-    } else localStorage.setItem("consoleNotifications", JSON.stringify(''))
-
-    if (notifications[0] && !connected) setTimeout(() => {
-      setStorage([])
-
-      const classState = changeButton(isProcessing, false)
-
-      setGlowClass(classState)
-    }, 500)
-  }, [updateTotalSupply, changeButton, setStorage, account, connected, quid, notifications, isProcessing])
+  }, [updateTotalSupply, setStorage, account, connected, quid, notifications, isProcessing])
 
   return (
     <>
@@ -323,12 +250,11 @@ export const Mint = () => {
               <span className="mint-availabilityMax">to myself</span>
             </label>
           </div>
-          <button ref={buttonRef} type="submit" className={isProcessing ? "mint-processing" : "mint-submit"}>
-            {isProcessing ? "Processing" : state !== "none" ? `${state}` : "MINT"}
-            <div className={`mint-glowEffect mint-glow-${glowClass}`} />
-          </button>
-          {//<button type="button" className="dd-submit"> DROP DOWN 
-          /**</button>**/}
+          <Buttons 
+              names={["MINT", "CREDIT", "DEBIT"]}
+              buttonRef={buttonRef}
+              isProcessing={isProcessing} 
+          />
           {isSameBeneficiary ? null : (
             <div className="mint-beneficiaryContainer">
               <div className="mint-inputContainer">

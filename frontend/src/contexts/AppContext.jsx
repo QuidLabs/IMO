@@ -110,8 +110,6 @@ export const AppContextProvider = ({ children }) => {
         const balance = await susde.methods.balanceOf(addressMO).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
-        console.log('Total info has been started')
-
         const totalInfo = {
           total_dep: formattedTotalDeposited,
           total_mint: formattedTotalMinted
@@ -143,8 +141,6 @@ export const AppContextProvider = ({ children }) => {
 
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
-
-        console.log('USER info has been started')
         
         const userInfo = {
           actualUsd: actualUsd, 
@@ -160,7 +156,6 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [account, connected, currentTimestamp, quid, mo])
 
-
   const getDepositInfo = useCallback(async () => {
     try {
       if (connected && account && mo) {
@@ -171,8 +166,6 @@ export const AppContextProvider = ({ children }) => {
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
         const wethUsdBalance = (parseFloat(more_info[3]) / 1e18)
 
-        console.log('DEPO info has been started: ', workEthBalance, workUsdBalance, wethEthBalance, wethUsdBalance)
-        
         const depoInfo = {
           work_eth_balance: workEthBalance,
           work_usd_balance: workUsdBalance,

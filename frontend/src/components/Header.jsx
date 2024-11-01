@@ -8,7 +8,7 @@ import "./Styles/Header.scss"
 export const Header = () => {
   const {
     connectToMetaMask, getTotalInfo, getSdai, getWalletBalance, getUserInfo,
-    account, connected
+    account, connected, notifications
   } = useAppContext()
 
   const [actualAmount, setAmount] = useState(0)
@@ -57,7 +57,7 @@ export const Header = () => {
     } else {
       getUserInfo()
     }
-  }, [connected, connectToMetaMask, updatedTotalInfo, getUserInfo])
+  }, [connectToMetaMask, updatedTotalInfo, getUserInfo, connected, notifications])
 
   const summary = (
     <div className="header-summary">

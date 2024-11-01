@@ -6,7 +6,7 @@ import "./Styles/MintBar.scss"
 
 export const MintBar = () => {
   const { getSales, getUserInfo, resetAccounts, 
-    account, connected, currentTimestamp, quid, sdai, addressQD, SECONDS_IN_DAY } = useAppContext()
+    account, connected, currentTimestamp, quid, sdai, notifications, addressQD, SECONDS_IN_DAY } = useAppContext()
 
   const [smartContractStartTimestamp, setSmartContractStartTimestamp] = useState("")
   const [mintPeriodDays, setMintPeriodDays] = useState("")
@@ -57,7 +57,7 @@ export const MintBar = () => {
     } catch (error) {
       console.error("Some problem with sale's start function: ", error)
     }
-  }, [resetAccounts, updatingInfo, connected])
+  }, [resetAccounts, updatingInfo, connected, notifications])
 
   return (
     <div className={`summary-root`} >
