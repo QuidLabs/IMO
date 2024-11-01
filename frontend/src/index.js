@@ -18,12 +18,12 @@ letsgo.render(
           //url: window.location.href,
         },
         injectProvider: {
-            chainId: chainID,
-            infuraAPIKey: infuraAPIKey
+          chainId: chainID,
+          infuraAPIKey: infuraAPIKey
         }
       }}>
       <AppContextProvider>
-        <App />
+          <App />
       </AppContextProvider>
     </MetamaskProvider>
   </React.StrictMode>

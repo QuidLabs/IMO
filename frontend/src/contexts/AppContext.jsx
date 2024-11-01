@@ -1,7 +1,8 @@
-import { createContext, useState, useContext, useCallback } from "react"
+import { createContext, useState, useContext, useCallback, useRef} from "react"
 import { useSDK } from "@metamask/sdk-react"
 import { formatUnits, parseUnits } from "@ethersproject/units"
 import { BigNumber } from "@ethersproject/bignumber"
+import { Web3Provider } from "@ethersproject/providers"
 
 import Web3 from "web3"
 
@@ -13,12 +14,13 @@ const contextState = {
   getSales: () => { },
   getTotalInfo: () => { },
   getUserInfo: () => { },
+  getDepositInfo: () => { },
   getTotalSupply: () => { },
-  setAllInfo: () => { },
-  changeButton: () => { },
   setNotifications: () => { },
   setStorage: () => { },
-  getStorage: () => { },
+  resetAccounts: () => { },
+  choiseButton: () => {},
+  chooseButton: null,
   account: "",
   connected: false,
   connecting: false,
@@ -42,28 +44,11 @@ export const AppContextProvider = ({ children }) => {
   const [mo, setMO] = useState(null)
   const [susde, setSusde] = useState(null)
 
-  const [UsdBalance, setUsdBalance] = useState(null)
-  const [localMinted, setLocalMinted] = useState(null)
-
-  const [totalDeposite, setTotalDeposited] = useState("")
-  const [totalMint, setTotalMinted] = useState("")
-  const [currentPrice, setPrice] = useState(null)
-
   const [currentTimestamp, setAccountTimestamp] = useState(0)
 
   const [notifications, setNotifications] = useState('')
 
   const SECONDS_IN_DAY = 86400
-
-  //Get storage
-
-  const getStorage = useCallback(() => {
-    try {
-      //realizations
-    } catch (error) {
-      console.error("Error getting notifications:", error)
-    }
-  }, [])
 
   const setStorage = useCallback((newNotifications) => {
     try {
@@ -75,23 +60,10 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [])
 
-  const changeButton = useCallback((isProcessing, state) => {
-    try{
-      if (state) {
-        return (isProcessing ? 'off' : 'on')
-      } else {
-        return ('off')
-      }
-    } catch ( error ){
-      console.error(error)
-    }
-  }, [])
-
   const getTotalSupply = useCallback(async () => {
     try {
       if (account && connected && quid && currentTimestamp) {
         const timestamp = await quid.methods.blocktimestamp().call()
-        //
 
         setAccountTimestamp(Number(timestamp))
 
@@ -114,11 +86,8 @@ export const AppContextProvider = ({ children }) => {
 
   const getSales = useCallback(async () => {
     try {
-
       if (account && quid && sdai && addressQD && mo && addressMO) {
-
         const days = await quid.methods.DAYS().call()
-
         const startDate = await quid.methods.START().call()
 
         const salesInfo = {
@@ -143,24 +112,17 @@ export const AppContextProvider = ({ children }) => {
         const balance = await susde.methods.balanceOf(addressMO).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
-        const more_info = await mo.methods.get_more_info(addressMO).call()
-        console.log('more_info MO', more_info)
-
-        if (totalMint !== formattedTotalMinted) setTotalMinted(formattedTotalMinted)
-
-        if (totalDeposite !== formattedTotalDeposited) setTotalDeposited(formattedTotalDeposited)
-
         const totalInfo = {
           total_dep: formattedTotalDeposited,
           total_mint: formattedTotalMinted
         }
 
-        if (formattedTotalDeposited && formattedTotalMinted) return totalInfo
+        return totalInfo
       }
     } catch (error) {
       console.error("Error in updateInfo: ", error)
     }
-  }, [setTotalMinted, setTotalDeposited, account, connected, quid, sdai, susde, totalMint, totalDeposite])
+  }, [account, connected, quid, sdai, susde])
 
   const getUserInfo = useCallback(async () => {
     try {
@@ -178,17 +140,15 @@ export const AppContextProvider = ({ children }) => {
         const price = BigNumber.from(Math.floor(value).toString())
 
         const info = await mo.methods.get_info(account).call()
-        // const more_info = await mo.methods.get_more_info(account).call()
 
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
-
-        setPrice(price)
-        if (UsdBalance !== actualUsd) setUsdBalance(actualUsd)
-        if (localMinted !== actualQD) setLocalMinted(actualQD)
-
+        
         const userInfo = {
-          actualUsd: actualUsd, actualQD: actualQD, price: price, info: info
+          actualUsd: actualUsd, 
+          actualQD: actualQD, 
+          price: price, 
+          info: info
         }
 
         return userInfo
@@ -196,34 +156,58 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
     }
-  }, [setPrice, setLocalMinted, setUsdBalance,
-    quid, account, connected, currentTimestamp, mo, localMinted, UsdBalance])
+  }, [account, connected, currentTimestamp, quid, mo])
+
+  const getDepositInfo = useCallback(async () => {
+    try {
+      if (connected && account && mo) {
+        const more_info = await mo.methods.get_more_info(addressMO).call()
+        
+        const workEthBalance = (parseFloat(more_info[0]) / 1e18)
+        const workUsdBalance = (parseFloat(more_info[1]) / 1e18)
+        const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
+        const wethUsdBalance = (parseFloat(more_info[3]) / 1e18)
+
+        const depoInfo = {
+          work_eth_balance: workEthBalance,
+          work_usd_balance: workUsdBalance,
+          weth_eth_balance: wethEthBalance,
+          weth_usd_balance: wethUsdBalance,
+        }
+
+        return depoInfo
+      }
+    } catch (error) {
+      console.warn(`Failed to get account info:`, error)
+    }
+  }, [account, connected, mo])
 
   const getSdai = useCallback(async () => {
     try {
-      console.log("Sdai 0")
-
-      if (account && sdai) {
-        await sdai.methods.mint(account).send({ from: account })
-
-        console.log("ACCOUNT: ", account)
-      }
+      if (account && sdai) await sdai.methods.mint(account).send({ from: account })
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
   }, [account, sdai])
 
-  const getSdaiBalance = useCallback(async () => {
+  const getWalletBalance = useCallback(async () => {
     try {
       if (sdai && account) {
         const balance = await sdai.methods.balanceOf(account).call()
+        const formatSdaiBalance = (parseFloat(balance) / 1e18).toFixed(2) 
 
-        setSdaiBalance(parseFloat(balance) / 1e18)
+        setSdaiBalance(formatSdaiBalance)
+
+        const ethersProvider = new Web3Provider(provider)
+        const mainBalance = await ethersProvider.getBalance(account)
+        const formatEthBalance = (parseFloat(mainBalance) / 1e18).toFixed(4)
+
+        return {sdai: formatSdaiBalance, eth: formatEthBalance}
       }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [setSdaiBalance, account, sdai])
+  }, [setSdaiBalance, account, provider, sdai])
 
   const getQdBalance = useCallback(async () => {
     try {
@@ -237,20 +221,13 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [setQdBalance, account, quid])
 
-  const setAllInfo = useCallback(async (gUSD, gSDAI, lUsd, lSdai, price, reset = false) => {
+  const resetAccounts = useCallback(async (reset = false) => {
     try {
-      setUsdBalance(gUSD)
-      setLocalMinted(gSDAI)
-
-      setTotalDeposited(lUsd)
-      setTotalMinted(lSdai)
-      setPrice(price)
-
       if (reset) setAccount("")
     } catch (error) {
       console.warn(`Failed to set all info:`, error)
     }
-  }, [setLocalMinted, setTotalDeposited, setTotalMinted, setPrice, setUsdBalance])
+  }, [])
 
   const connectToMetaMask = useCallback(async () => {
     try {
@@ -278,6 +255,17 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [setAccount, setMO, setSdai, setSusde, setQuid, account, provider])
 
+  const chooseButton = useRef(null)
+
+  const choiseButton = useCallback((name) => {
+      try{
+          const newButton = name
+
+          return chooseButton.current = newButton
+      }catch(error){
+          console.error("Error with button's choising: ", error)
+      }
+  },[chooseButton])
 
   return (
     <AppContext.Provider
@@ -286,15 +274,14 @@ export const AppContextProvider = ({ children }) => {
         getSdai,
         getTotalInfo,
         getUserInfo,
+        getDepositInfo,
         getSales,
         getTotalSupply,
-        setAllInfo,
-        getSdaiBalance,
+        resetAccounts,
+        getWalletBalance,
         getQdBalance,
-        changeButton,
         setNotifications,
         setStorage,
-        getStorage,
         setMO,
         account,
         addressMO,
@@ -309,14 +296,11 @@ export const AppContextProvider = ({ children }) => {
         SDAIbalance,
         addressQD,
         addressSDAI,
-        currentPrice,
-        UsdBalance,
-        localMinted,
-        totalDeposite,
-        totalMint,
         notifications,
         mo,
-        SECONDS_IN_DAY
+        SECONDS_IN_DAY,
+        choiseButton,
+        chooseButton
       }}
     >
       {children}
