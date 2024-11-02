@@ -4,7 +4,7 @@ pragma solidity =0.8.8; // EVM: london
 
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import {ERC721} from "lib/solmate/src/tokens/ERC721.sol";
+import "./interfaces/IERC721.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
 
@@ -16,7 +16,7 @@ interface IERC721Receiver {
         bytes calldata data
     ) external returns (bytes4);
 }
-interface ICollection is ERC721 {
+interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
 } // TODO add back later
@@ -224,8 +224,8 @@ contract Quid is ERC20,
             // no _calculateMedian `to`
         } else { i = int(currentBatch()); 
             // _transfer(from, to, amount);
-            // _calculateMedian(balance_to, to_vote, 
-            //            balanceOf(to), to_vote);
+            _calculateMedian(balance_to, to_vote, 
+                   this.balanceOf(to), to_vote);
         }   // loop from newest to oldest batch
         // until requested amount fulfilled...
         while (amount > 0 && i >= 0) { uint k = uint(i);    
@@ -239,8 +239,8 @@ contract Quid is ERC20,
                 amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        // _calculateMedian(balance_from, from_vote, 
-        //             balanceOf(from), from_vote);
+        _calculateMedian(balance_from, from_vote, 
+               this.balanceOf(from), from_vote);
     } // TODO test medianizer last 
 
     function mint(uint amount, address pledge, 
@@ -304,7 +304,7 @@ contract Quid is ERC20,
                 address(this), from, LAMBO
             ); uint qd = MO(Moulinette).draw(
             from, GRIEVANCES); mint(qd, from, 
-                MO(Moulinette).USDE()); 
+                address(MO(Moulinette).USDE())); 
             // TODO mint(qd / 2, from, MO(Moulinette).DAI())
             if (START != 0) { // BACKEND / 8 wu tang...TODO
                 // uint random = uint(keccak256(

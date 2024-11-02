@@ -6,7 +6,7 @@ import {mockVault} from "../src/mockVault.sol";
 import {mockToken} from "../src/mockToken.sol";
 import {MO} from "../src/MOulinette.sol";
 import {Quid} from "../src/QD.sol";
-
+import "../src/interfaces/IERC721.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
@@ -14,8 +14,8 @@ import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
 
-interface ICollection is ERC721 {
-    function latestTokenId() 
+interface ICollection is IERC721 {
+    function latestTokenId()
     external view returns (uint);
 } 
 contract MainTest is Test {
@@ -141,5 +141,41 @@ contract MainTest is Test {
         F8N.transferFrom(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4,
             address(moulinette), 16508);
         vm.stopPrank();
+
+        assertGt(amountOut, 0);
+
+         vm.expectRevert(FoldCaptiveStaking.AlreadyInitialized.selector);
+
+         /// @dev Ensure the contract is protected against reentrancy attacks.
+        function testReentrancy() public {
+            testAddLiquidity();
+
+            // Create a reentrancy attack contract and attempt to exploit the staking contract
+            ReentrancyAttack attack = new ReentrancyAttack(payable(address(foldCaptiveStaking)));
+            fold.transfer(address(attack), 1 ether);
+            weth.transfer(address(attack), 1 ether);
+
+            vm.expectRevert();
+            attack.attack();
+        }
     */
 }
+
+// Reentrancy attack contract
+/*
+contract ReentrancyAttack {
+    FoldCaptiveStaking public staking;
+
+    constructor(address payable _staking) {
+        staking = FoldCaptiveStaking(_staking);
+    }
+
+    function attack() public {
+        staking.deposit(1 ether, 1 ether, 0);
+        staking.withdraw(1);
+    }
+
+    receive() external payable {
+        staking.withdraw(1);
+    }
+} */
