@@ -278,6 +278,7 @@ contract Quid is ERC20,
     }
 
     address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
+    // I have a ratchet tattoo that says AK47 so this reloads the clip...
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20:
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, 
      * checking that recipient prevent tokens from being forever locked.

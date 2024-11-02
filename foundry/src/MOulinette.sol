@@ -16,9 +16,9 @@ import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 
-import "./QD.sol";
+import {Quid} from "./QD.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
-contract MO is /*ReentrancyGuard,*/ Owned(msg.sender) {
+contract MO is ReentrancyGuard, Owned(msg.sender) {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
     ERC4626 public immutable SUSDE;
@@ -101,7 +101,7 @@ contract MO is /*ReentrancyGuard,*/ Owned(msg.sender) {
     function setFee(uint index) 
         public onlyQuid { FEE = 
         WAD / (index + 11); }
-    //  recall 3rd Delphic maxim
+    // recall the 3rd Delphic maxim...
     mapping (address => Offer) pledges;
     function _max(uint128 _a, uint128 _b) 
         internal pure returns (uint128) {
@@ -181,33 +181,33 @@ contract MO is /*ReentrancyGuard,*/ Owned(msg.sender) {
     // uniquely without needing ERC721...
     function transferHelper(address from, 
         address to, uint amount) onlyQuid public {
-            if (to != address(0)) { // not burning
-                // percentage of carry.debit gets 
-                // transferred over in proportion 
-                // to amount's % of total balance
-                // determine % of total balance
-                // transferred for ROI pro rata
-                uint ratio = FullMath.mulDiv(WAD, 
-                    amount, QUID.balanceOf(from));
-                console.log("TransferHelperEvent...", ratio);
-                // proportionally transfer debit...
-                uint debit = FullMath.mulDiv(ratio, 
-                pledges[from].carry.debit, WAD);
-                console.log("DebitTransferHelper...", debit);
-                pledges[to].carry.debit += debit;  
-                pledges[from].carry.debit -= debit;
-                // pledge.carry.credit in helper...
-                // QD minted in coverage claims or 
-                // over-collateralisation does not 
-                // transfer over carry.credit b/c
-                // carry credit only gets created
-                // in the discounted mint windows
-                _creditHelper(to); 
-            }   // _creditHelper(from); 
+        if (to != address(0)) { // not burning
+            // percentage of carry.debit gets 
+            // transferred over in proportion 
+            // to amount's % of total balance
+            // determine % of total balance
+            // transferred for ROI pro rata
+            uint ratio = FullMath.mulDiv(WAD, 
+                amount, QUID.balanceOf(from));
+            console.log("TransferHelperEvent...", ratio);
+            // proportionally transfer debit...
+            uint debit = FullMath.mulDiv(ratio, 
+            pledges[from].carry.debit, WAD);
+            console.log("DebitTransferHelper...", debit);
+            pledges[to].carry.debit += debit;  
+            pledges[from].carry.debit -= debit;
+            // pledge.carry.credit in helper...
+            // QD minted in coverage claims or 
+            // over-collateralisation does not 
+            // transfer over carry.credit b/c
+            // carry credit only gets created
+            // in the discounted mint windows
+            _creditHelper(to); 
+        }   _creditHelper(from); 
     }
     function _creditHelper(address who) internal { 
         uint credit = pledges[who].carry.credit;
-        SUM -= credit; // subtract old share, which
+        SUM -= _min(SUM, credit); // old_share--
         // may be zero if this is the first time 
         // _creditHelper is called for `who`...
         uint balance = QUID.balanceOf(who);
@@ -215,7 +215,7 @@ contract MO is /*ReentrancyGuard,*/ Owned(msg.sender) {
         uint share = FullMath.mulDiv(WAD, 
             balance, QUID.totalSupply());
         console.log("CreditHelperShare...", share, who);
-        credit = share;
+        credit = share; console.log("");
         if (debit > 0 && QUID.currentBatch() > 0) { 
             // projected ROI if QD is $1...
             uint roi = FullMath.mulDiv(WAD, 
@@ -560,7 +560,7 @@ contract MO is /*ReentrancyGuard,*/ Owned(msg.sender) {
             // variable for ROI as well as redemption,
             // carry.credit gets reset in _creditHelper
             pledges[beneficiary] = pledge; // save changes
-            //_creditHelper(beneficiary); // because we read
+            _creditHelper(beneficiary); // because we read
             // from pledge ^^^^^^^^^^ in _creditHelper
             if (token == address(USDE)) {
                 ERC4626(SUSDE).deposit(
@@ -611,6 +611,9 @@ contract MO is /*ReentrancyGuard,*/ Owned(msg.sender) {
             }   
             pledges[beneficiary] = pledge; 
             repackNFT(1, amount);
+            // 1 passed in to prevent
+            // division by zero, later
+            // it is decremented back 
         }
     }
 
