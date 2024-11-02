@@ -19,7 +19,7 @@ interface IERC721Receiver {
 interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
-} // TODO add back later
+}
 import "./MOulinette.sol";
 contract Quid is ERC20,
     IERC721Receiver {
@@ -105,7 +105,8 @@ contract Quid is ERC20,
         }
         uint old_vote = feeVotes[msg.sender];
         require(new_vote != old_vote &&
-                new_vote < 89, "bad vote");
+                new_vote < 89, "bad vote"); 
+                // +11 max vote = 9.0% deductible
         feeVotes[msg.sender] = new_vote;
         uint stake = this.balanceOf(msg.sender);
         _calculateMedian(stake, new_vote, 
@@ -180,11 +181,13 @@ contract Quid is ERC20,
      *  sum(Weights[0:k]) > sum(Weights) / 2
      */ 
     function _calculateMedian(uint new_stake, uint new_vote, 
-        uint old_stake, uint old_vote) internal postLaunch { 
+        uint old_stake, uint old_vote) internal { 
         if (old_vote != 17 && old_stake != 0) { 
-            WEIGHTS[old_vote] -= old_stake;
+            WEIGHTS[old_vote] -= _min(
+                WEIGHTS[old_vote], old_stake
+            );
             if (old_vote <= K) {   
-                SUM -= old_stake;
+                SUM -= _min(SUM, old_stake);
             }
         }   if (new_stake != 0) {
                 if (new_vote <= K) {
@@ -224,8 +227,10 @@ contract Quid is ERC20,
             // no _calculateMedian `to`
         } else { i = int(currentBatch()); 
             // _transfer(from, to, amount);
-            // _calculateMedian(balance_to, to_vote, 
-            //        this.balanceOf(to), to_vote);
+            console.log("MedianTransferHelper...TO", 
+                balance_to, to_vote, this.balanceOf(to));
+            _calculateMedian(balance_to, to_vote, 
+                   this.balanceOf(to), to_vote);
         }   // loop from newest to oldest batch
         // until requested amount fulfilled...
         while (amount > 0 && i >= 0) { uint k = uint(i);    
@@ -239,9 +244,11 @@ contract Quid is ERC20,
                 amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        // _calculateMedian(balance_from, from_vote, 
-        //        this.balanceOf(from), from_vote);
-    } // TODO test medianizer last 
+        console.log("MedianTransferHelper...FROM", 
+            balance_from, from_vote, this.balanceOf(from));
+        _calculateMedian(balance_from, from_vote, 
+               this.balanceOf(from), from_vote);
+    }
 
     function mint(uint amount, address pledge, 
         address token) public onlyGenerators
@@ -288,7 +295,7 @@ contract Quid is ERC20,
      * - {onERC721Received} is called after a safeTransferFrom...
      * - It must return its Solidity selector to confirm the token transfer.
      *   If any other value is returned or the interface is not implemented
-     *   by the recipient, the transfer will be reverted. TODO ONLY MAINNET
+     *   by the recipient, the transfer will be reverted. 
      */
     // QuidMint...foundation.app/@quid 
     function onERC721Received(address, 
