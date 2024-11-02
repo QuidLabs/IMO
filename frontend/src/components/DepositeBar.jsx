@@ -6,7 +6,7 @@ import "./Styles/MintBar.scss"
 
 export const DepositeBar = () => {
     const { getDepositInfo, resetAccounts, 
-        account, connected, quid, sdai, addressQD } = useAppContext()
+        account, connected, quid, sdai, addressQD, notifications } = useAppContext()
 
     const [totalDeposited, setTotalDeposited] = useState("")
     const [totalMinted, setTotalMinted] = useState("")
@@ -36,7 +36,7 @@ export const DepositeBar = () => {
         } catch (error) {
             console.error("Some problem with sale's start function: ", error)
         }
-    }, [resetAccounts, updatingInfo, connected])
+    }, [resetAccounts, updatingInfo, connected, notifications])
 
     return (
         <div className={`summary-root`} >
