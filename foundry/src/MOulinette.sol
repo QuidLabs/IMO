@@ -18,7 +18,7 @@ import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionMana
 
 import "./QD.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
-contract MO is ReentrancyGuard, Owned(msg.sender) {
+contract MO is /*ReentrancyGuard,*/ Owned(msg.sender) {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
     ERC4626 public immutable SUSDE;
@@ -37,7 +37,6 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
     int24 internal LAST_TWAP_TICK;
     int24 internal UPPER_TICK; 
     int24 internal LOWER_TICK;
-    
     
     IUniswapV3Pool POOL; ISwapRouter ROUTER; 
     struct FoldState { uint delta; uint price;
@@ -140,7 +139,6 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
     constructor(address _usde, address _susde, 
         address _weth, address _nfpm, 
         address _pool, address _router) { 
-        
         WETH9 = WETH(payable(_weth));
         POOL = IUniswapV3Pool(_pool);
         ROUTER = ISwapRouter(_router);
@@ -148,12 +146,11 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         token0 = ERC20(IUniswapV3Pool(_pool).token0()); 
         token1 = ERC20(IUniswapV3Pool(_pool).token1()); 
         USDE = ERC20(_usde); SUSDE = ERC4626(_susde);
-
-        require(token0.approve(_nfpm, type(uint256).max), "fail approve 1");
-        require(token1.approve(_nfpm, type(uint256).max), "fail approve 2");
-        require(token0.approve(_router, type(uint256).max), "fail approve 3");
-        require(token1.approve(_router, type(uint256).max), "fail approve 4");
-        require(USDE.approve(_susde,  type(uint256).max), "fail approve 5");
+        token0.safeApprove(_router, type(uint256).max);
+        token1.safeApprove(_router, type(uint256).max);
+        token0.safeApprove(_nfpm, type(uint256).max);
+        token1.safeApprove(_nfpm, type(uint256).max);
+        USDE.safeApprove(_susde,  type(uint256).max);
     }
     // present value of the expected cash flows...
     function capitalisation(uint qd, bool burn) 
@@ -206,7 +203,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
                 // carry credit only gets created
                 // in the discounted mint windows
                 _creditHelper(to); 
-            }   _creditHelper(from); 
+            }   // _creditHelper(from); 
     }
     function _creditHelper(address who) internal { 
         uint credit = pledges[who].carry.credit;
@@ -563,7 +560,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
             // variable for ROI as well as redemption,
             // carry.credit gets reset in _creditHelper
             pledges[beneficiary] = pledge; // save changes
-            _creditHelper(beneficiary); // because we read
+            //_creditHelper(beneficiary); // because we read
             // from pledge ^^^^^^^^^^ in _creditHelper
             if (token == address(USDE)) {
                 ERC4626(SUSDE).deposit(
@@ -798,7 +795,7 @@ contract MO is ReentrancyGuard, Owned(msg.sender) {
         (ID,,,) = NFPM.mint(
             INonfungiblePositionManager.MintParams({ token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
-                tickUpper: UPPER_TICK, amount0Desired: amount0, 
+                tickUpper: UPPER_TICK, amount0Desired: amount0 - 1, 
                 amount1Desired: amount1, amount0Min: 0, amount1Min: 0, 
                 recipient: address(this), deadline: block.timestamp }));
         } // else no need to repack NFT, only collect LP fees

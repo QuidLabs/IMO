@@ -224,8 +224,8 @@ contract Quid is ERC20,
             // no _calculateMedian `to`
         } else { i = int(currentBatch()); 
             // _transfer(from, to, amount);
-            _calculateMedian(balance_to, to_vote, 
-                   this.balanceOf(to), to_vote);
+            // _calculateMedian(balance_to, to_vote, 
+            //        this.balanceOf(to), to_vote);
         }   // loop from newest to oldest batch
         // until requested amount fulfilled...
         while (amount > 0 && i >= 0) { uint k = uint(i);    
@@ -239,8 +239,8 @@ contract Quid is ERC20,
                 amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        _calculateMedian(balance_from, from_vote, 
-               this.balanceOf(from), from_vote);
+        // _calculateMedian(balance_from, from_vote, 
+        //        this.balanceOf(from), from_vote);
     } // TODO test medianizer last 
 
     function mint(uint amount, address pledge, 
