@@ -325,7 +325,7 @@
 
 .mint-submit {
   display: flex;
-  margin-top: 40px;
+  margin-top: 32px;
   margin-bottom: 35px;
   color: #ffa300;
   font-size: 28px;
@@ -348,7 +348,7 @@
   border: 2px solid #855807;
   pointer-events: none;
   position: absolute;
-  width: 110px;
+  width: 135px;
   height: 50px;
   z-index: -2;
   top: -11.5px;
@@ -419,7 +419,6 @@
   color: #54b420;
   border: 1px solid #352200;
   border-radius: 5px;
-  padding: 10px;
   font-family: monospace;
   font-size: 14px;
   overflow-y: auto;
@@ -429,6 +428,7 @@
   height: 100px;
   margin-top: 20px;
   margin-bottom: 20px;
+  position: relative;
 }
 
 .mint-console-line {
@@ -468,8 +468,11 @@
 }
 
 .mint-console-content {
+  padding: 10px;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  position: absolute;
 }
 
 @keyframes blink {
@@ -564,4 +567,86 @@
 
 .mint-link:hover {
   text-decoration: none;
+}
+
+.buttons-anim {
+  display: flex;
+  justify-content: center;
+
+  button {
+    margin-left: 20px;
+    margin-right: 20px;
+  }
+}
+
+.button-slider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.button-arrow {
+  background-color: transparent;
+  border: none;
+  color: #4ad300;
+  cursor: pointer;
+  padding: 0 10px;
+  font-size: 1.2em;
+  transition: color 0.3s;
+
+  &:hover {
+    color: #aaff00;
+  }
+}
+
+.main-button {
+  background-color: #02d802;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1.2em;
+  transition: transform 0.5s, opacity 0.5s;
+}
+
+.button-content {
+  position: relative;
+  width: 150px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.button-content.mint {
+  transform: translateX(0);
+}
+
+.button-content.debit {
+  transform: translateX(-100%);
+}
+
+.button-content.credit {
+  transform: translateX(100%);
+}
+
+.button-arrow span {
+  position: relative;
+  padding: 5px 10px;
+  background-color: #02d802;
+  border-radius: 3px;
+  color: white;
+  transition: opacity 0.5s ease;
+}
+
+.button-arrow:disabled span {
+  opacity: 0.5;
+  pointer-events: none;
 }

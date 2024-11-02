@@ -7,14 +7,14 @@ import "./Styles/Header.scss"
 
 export const Header = () => {
   const {
-    connectToMetaMask, getTotalInfo, getUserInfo, getSdai,
-    account, connected, UsdBalance
+    connectToMetaMask, getTotalInfo, getSdai, getWalletBalance, getUserInfo,
+    account, connected, notifications
   } = useAppContext()
 
   const [actualAmount, setAmount] = useState(0)
   const [actualUsd, setUsd] = useState(0)
-
-  const [grain, setGrain] = useState(0)
+  const [actualSdai, setSdai] = useState(0)
+  const [actualEth, setEth] = useState(0)
 
   const handleConnectClick = useCallback(async () => {
     try {
@@ -26,21 +26,29 @@ export const Header = () => {
 
   const updatedTotalInfo = useCallback(async () => {
     try {
-      const updatedInfo = await getTotalInfo()
+      await Promise.all([getTotalInfo(), getWalletBalance()])
+        .then(info => {
+          if (info[0]) {
+            setUsd(info[0].total_dep)
+            setAmount(info[0].total_mint)
 
-      if (updatedInfo && updatedInfo.total_dep && updatedInfo.total_mint) {
-        const costInUsd = updatedInfo.total_dep
-        const qdAmount = updatedInfo.total_mint
-
-        setUsd(costInUsd)
-        setAmount(qdAmount)
-
-        setGrain(costInUsd !== 0 ? (qdAmount - UsdBalance).toFixed(2) : 0)
-      }
+            setSdai(info[1].sdai)
+            setEth(info[1].eth)
+          }
+        })
     } catch (error) {
-      console.warn(`Failed to get user info:`, error)
+      console.warn(`Failed to get total info:`, error)
     }
-  }, [getTotalInfo, UsdBalance])
+  }, [getTotalInfo, getWalletBalance])
+
+
+  const sdaiToWallet = useCallback(async () => {
+    try {
+      if (connected) await Promise.all([getSdai()]).then(() => updatedTotalInfo())
+    } catch (error) {
+      console.warn(`Failed to getting sdai on wallet:`, error)
+    }
+  }, [getSdai, updatedTotalInfo, connected])
 
   useEffect(() => {
     if (connected) {
@@ -49,7 +57,7 @@ export const Header = () => {
     } else {
       getUserInfo()
     }
-  }, [connected, connectToMetaMask, updatedTotalInfo, getUserInfo])
+  }, [connectToMetaMask, updatedTotalInfo, getUserInfo, connected, notifications])
 
   const summary = (
     <div className="header-summary">
@@ -60,27 +68,29 @@ export const Header = () => {
         </div>
       </div>
       <div className="header-summaryEl">
-        <div className="header-summaryElTitle">My Future QD</div>
+        <div className="header-summaryElTitle">Minted QD</div>
         <div className="header-summaryElValue">
           {numberWithCommas(actualAmount)}
-        </div>
-      </div>
-      <div className="header-summaryEl">
-        <div className="header-summaryElTitle">Gain</div>
-        <div className="header-summaryElValue">
-          {numberWithCommas(grain)}
         </div>
       </div>
     </div>
   )
 
   const balanceBlock = (
-    <div className="header-summaryEl">
-      <div className="header-summaryElTitle">sDAI balance</div>
-      <div className="header-summaryElValue">
-        ${numberWithCommas(parseFloat(actualUsd))}
+    <>
+      <div className="header-summaryEl">
+        <div className="header-summaryElTitle">ETH balance</div>
+        <div className="header-summaryElValue">
+          Ξ{Number(actualEth).toFixed(4)}
+        </div>
       </div>
-    </div>
+      <div className="header-summaryEl">
+        <div className="header-summaryElTitle">sDAI balance</div>
+        <div className="header-summaryElValue">
+          ${numberWithCommas(parseFloat(Number(actualSdai).toFixed(2)))}
+        </div>
+      </div>
+    </>
   )
 
   return (
@@ -88,12 +98,12 @@ export const Header = () => {
       <div className="header-logoContainer">
         <a className="header-logo" href="/"> </a>
       </div>
-      {connected ? summary : null}
+      {connected && account ? summary : null}
       <div className="header-walletContainer">
-        {connected ? balanceBlock : null}
+        {connected && account ? balanceBlock : null}
         {connected ? (
           <div className="header-wallet">
-            <button className="header-wallet" onClick={() => getSdai()}>
+            <button className="header-wallet" onClick={() => sdaiToWallet()}>
               GET SDAI
             </button>
             <div className="header-metamaskIcon">
