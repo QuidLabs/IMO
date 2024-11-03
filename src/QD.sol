@@ -4,8 +4,9 @@ pragma solidity =0.8.8; // EVM: london
 
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import "./interfaces/IERC721.sol";
 import "./interfaces/AggregatorV3Interface.sol";
+import "./interfaces/IERC721.sol";
+
 import "lib/forge-std/src/console.sol"; // TODO delete
 
 interface IERC721Receiver {

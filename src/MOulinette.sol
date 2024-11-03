@@ -15,8 +15,9 @@ import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 
-import {Quid} from "./QD.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
+
+import {Quid} from "./QD.sol";
 contract MO is Owned(msg.sender) {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
@@ -179,8 +180,14 @@ contract MO is Owned(msg.sender) {
     // helpers allow treating QD balances
     // uniquely without needing ERC721...
     function transferHelper(address from, 
-        address to, uint amount) onlyQuid public {
-        if (to != address(0)) { // not burning
+        address to, uint amount) onlyQuid 
+        public { if (to == address(this)) { // burn
+            uint credit = pledges[from].work.credit;
+            pledges[from].work.credit -= _min(
+                qd_amt_to_dollar_amt(
+                capitalisation(amount, true), 
+                amount), credit);
+        } else if (to != address(0)) {
             // percentage of carry.debit gets 
             // transferred over in proportion 
             // to amount's % of total balance
@@ -569,17 +576,7 @@ contract MO is Owned(msg.sender) {
                 // TODO stake into morpho (mainnet)
             } 
         } 
-        else if (token == address(QUID)) { // TODO denominate credit in QD?
-            amount = _minAmount(msg.sender, token, amount);
-            uint cap = capitalisation(amount, true);
-            amount = _min(qd_amt_to_dollar_amt(cap, 
-            amount), pledge.work.credit); 
-            pledge.work.credit -= amount;
-            cap = capitalisation(amount, true); 
-            QUID.burn(msg.sender,
-            dollar_amt_to_qd_amt(cap, amount));
-            pledges[beneficiary] = pledge;
-        } else {
+        else {
             if (amount > 0) { amount = _minAmount(
                 msg.sender, address(WETH9), amount); 
                 WETH9.transferFrom(msg.sender, 
