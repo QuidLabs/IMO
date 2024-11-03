@@ -1,0 +1,27 @@
+[profile.default]
+solc_version = '0.8.8'
+src = 'src'
+out = 'out'
+libs = ['lib']
+optimizer = true
+optimizer_runs = 10_000_000
+# @see {@link https://github.com/foundry-rs/foundry/issues/4060}
+bytecode_hash = "none"
+cbor_metadata = false
+sparse_mode = false
+build_info = true
+
+via_ir = true
+fuzz_runs = 500
+deny_warnings = false
+
+[profile.dependencies]
+solmate = { git = "https://github.com/Rari-Capital/solmate" }
+forge-std = { git = "https://github.com/foundry-rs/forge-std" }
+
+[profile.default.optimizer_details]
+constantOptimizer = true
+yul = true
+
+[profile.default.optimizer_details.yulDetails]
+stackAllocation = true
