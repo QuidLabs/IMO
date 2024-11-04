@@ -109,6 +109,8 @@ export const AppContextProvider = ({ children }) => {
         const totalSupply = await quid.methods.totalSupply().call()
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
 
+        console.log('totalSupply', totalSupply)
+
         const balance = await susde.methods.balanceOf(addressMO).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
@@ -143,11 +145,11 @@ export const AppContextProvider = ({ children }) => {
 
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
-        
+
         const userInfo = {
-          actualUsd: actualUsd, 
-          actualQD: actualQD, 
-          price: price, 
+          actualUsd: actualUsd,
+          actualQD: actualQD,
+          price: price,
           info: info
         }
 
@@ -162,7 +164,7 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (connected && account && mo) {
         const more_info = await mo.methods.get_more_info(addressMO).call()
-        
+
         const workEthBalance = (parseFloat(more_info[0]) / 1e18)
         const workUsdBalance = (parseFloat(more_info[1]) / 1e18)
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
@@ -194,7 +196,7 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (sdai && account) {
         const balance = await sdai.methods.balanceOf(account).call()
-        const formatSdaiBalance = (parseFloat(balance) / 1e18).toFixed(2) 
+        const formatSdaiBalance = (parseFloat(balance) / 1e18).toFixed(2)
 
         setSdaiBalance(formatSdaiBalance)
 

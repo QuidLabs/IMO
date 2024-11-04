@@ -50,12 +50,8 @@ export const Mint = () => {
   },[])
 
   const qdAmountToSdaiAmt = useCallback(async (qdAmount, delay = 0) => {
-    const tx = await quid.methods.blocktimestamp().call()
-    const currentTimestamp = Number(tx.toString())
-    const currentTimestampBN = currentTimestamp.toString()
     const qdAmountBN = qdAmount ? qdAmount.toString() : 0
-
-    return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN, currentTimestampBN).call() : 0
+    return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN).call() : 0
   },[quid])
 
   useDebounce(
@@ -103,16 +99,16 @@ export const Mint = () => {
       .then((numbers) => {
         return numbers
       })
-    
+
     console.log("NUMBERS: ", depInfo)
-    
+
     const beneficiaryAccount = !isSameBeneficiary && beneficiary !== "" ? beneficiary : account
     const hasAgreedToTerms = localStorage.getItem("hasAgreedToTerms") === "true"
 
     if (!hasAgreedToTerms) return setIsModalOpen(true)
 
     if (!isSameBeneficiary && beneficiary === "") return setNotifications("error", "Please select a beneficiary", false)
-    
+
     if (!account) return setNotifications("error", "Please connect your wallet")
 
     if (!mintValue.length) return setNotifications("error", "Please enter the Etherum ballance")
@@ -126,14 +122,14 @@ export const Mint = () => {
       })
 
     if(ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
-  
+
     try {
       const ethDepo = parseUnits(mintValue, 18)
       setIsProcessing(true)
       setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
       setMintValue("")
 
-      if (account){ 
+      if (account){
         await mo.methods.deposit(
         beneficiaryAccount.toString(),
         0,
@@ -141,13 +137,13 @@ export const Mint = () => {
         )
       }
 
-      setNotifications("success", "Your deposite has been pending completed!", true) 
+      setNotifications("success", "Your deposite has been pending completed!", true)
 
     } catch (err) {
       const er = "MO::mint: supply cap exceeded"
       const msg = err.error?.message === er || err.message === er ? "Please wait for more QD to become mintable..." : err.error?.message || err.message
 
-      setNotifications("error", msg) 
+      setNotifications("error", msg)
     } finally {
       setIsProcessing(false)
       setMintValue("")
@@ -163,7 +159,7 @@ export const Mint = () => {
     if (!hasAgreedToTerms) return setIsModalOpen(true)
 
     if (!isSameBeneficiary && beneficiary === "") return setNotifications("error", "Please select a beneficiary", false)
-    
+
     if (!account) return setNotifications("error", "Please connect your wallet")
 
     if (!mintValue.length) return setNotifications("error", "Please enter amount")
@@ -177,7 +173,7 @@ export const Mint = () => {
     }
 
     if (sdaiValue > (await balance())) return setNotifications("error", "Cost shouldn't be more than your sDAI balance")
-  
+
     try {
       const qdAmount = parseUnits(mintValue, 18)
       setIsProcessing(true)
@@ -190,23 +186,23 @@ export const Mint = () => {
       const allowanceBigNumber = await sdai.methods.allowance(account, addressQD).call()
       const allowanceBigNumberBN = allowanceBigNumber ? allowanceBigNumber.toString() : 0
 
-      setNotifications("info", `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}`) 
+      setNotifications("info", `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}`)
 
       setNotifications("info", "Please, approve minting in your wallet.")
 
       if (account) await sdai.methods.approve(addressMO.toString(), sdaiAmount.toString()).send({ from: account })
 
-      setNotifications("info", `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}`) 
+      setNotifications("info", `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}`)
 
-      setNotifications("success", "Please wait for approving") 
+      setNotifications("success", "Please wait for approving")
 
       setNotifications("info", "Minting...")
 
-      setNotifications("success", "Please check your wallet") 
+      setNotifications("success", "Please check your wallet")
 
       const allowanceBeforeMinting = await sdai.methods.allowance(account, addressQD).call()
 
-      setNotifications("info", `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}`) 
+      setNotifications("info", `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}`)
 
       if (account) await mo.methods.deposit(
         beneficiaryAccount.toString(),
@@ -214,13 +210,13 @@ export const Mint = () => {
         addressSDAI.toString(), false).send({ from: account }
         )
 
-      setNotifications("success", "Your minting is pending!", true) 
+      setNotifications("success", "Your minting is pending!", true)
 
     } catch (err) {
       const er = "MO::mint: supply cap exceeded"
       const msg = err.error?.message === er || err.message === er ? "Please wait for more QD to become mintable..." : err.error?.message || err.message
 
-      setNotifications("error", msg) 
+      setNotifications("error", msg)
     } finally {
       setIsProcessing(false)
       setMintValue("")
@@ -229,7 +225,7 @@ export const Mint = () => {
 
   const handleSubmit = () => {
     if (chooseButton.current === "MINT") handleSdaiSubmit()
-    if (chooseButton.current === "DEBIT") handleEthSubmit()  
+    if (chooseButton.current === "DEBIT") handleEthSubmit()
   }
 
   const handleSetMaxValue = async () => {
@@ -311,11 +307,11 @@ export const Mint = () => {
               <span className="mint-availabilityMax">to myself</span>
             </label>
           </div>
-          <Buttons 
+          <Buttons
               names={["CREDIT", "MINT", "DEBIT"]}
               initialSlide={1}
               buttonRef={buttonRef}
-              isProcessing={isProcessing} 
+              isProcessing={isProcessing}
               handleSubmit={handleSubmit}
           />
           {isSameBeneficiary ? null : (

@@ -7,7 +7,7 @@ import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "./interfaces/IERC721.sol";
 
-import "lib/forge-std/src/console.sol"; // TODO delete
+// import "lib/forge-std/src/console.sol"; // TODO delete
 
 interface IERC721Receiver {
     function onERC721Received(
@@ -89,9 +89,10 @@ contract Quid is ERC20,
         amount = _min(amount, ERC20(token).balanceOf(from));
         require(amount > 0, "insufficient balance"); return amount;
     }
-    function qd_amt_to_dollar_amt(uint qd_amt,  // used in frontend
-        uint block_timestamp) public view returns (uint amount) {
-        uint in_days = ((block.timestamp - START) / 1 days); 
+    function qd_amt_to_dollar_amt(uint qd_amt) public 
+        view returns (uint amount) { uint in_days = (
+            (block.timestamp - START) / 1 days
+        );  
         amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
     }
     function get_total_supply_cap(uint block_timestamp) 
@@ -204,12 +205,12 @@ contract Quid is ERC20,
                 while (K >= 1 && (
                     (SUM - WEIGHTS[K]) >= mid
                 )) { SUM -= WEIGHTS[K]; K -= 1; 
-                    console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
+                    // console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
                 }
             } else { 
                 while (SUM < mid) { 
                     K += 1; SUM += WEIGHTS[K];
-                    console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
+                    // console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
                 }
             } MO(Moulinette).setFee(K);
         }  else { SUM = 0; } // reset
@@ -230,25 +231,25 @@ contract Quid is ERC20,
             _burn(from, amount);
             // no _calculateMedian `to`
         } else { i = int(currentBatch()); 
-            console.log("MedianTransferHelper...TO", 
-                balance_to, to_vote, this.balanceOf(to));
+            // console.log("MedianTransferHelper...TO", 
+            //     balance_to, to_vote, this.balanceOf(to));
             _calculateMedian(balance_to, to_vote, 
                    this.balanceOf(to), to_vote);
         }   // loop from newest to oldest batch
         // until requested amount fulfilled...
-        while (amount > 0 && i >= 0) { 
-            uint amt = consideration[from][uint(i)];
-            console.log("TransferHelper...", amt);
+        while (amount > 0 && i >= 0) { uint k = uint(i);
+            uint amt = consideration[from][k];
+            // console.log("TransferHelper...", amt);
             if (amt > 0) { amt = _min(amount, amt);
-                consideration[from][uint(i)] -= amt;
+                consideration[from][k] -= amt;
                 // `to` may be address(0) but it's 
                 // irrelevant, wastes a bit of gas
-                consideration[to][uint(i)] += amt; 
+                consideration[to][k] += amt; 
                 amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        console.log("MedianTransferHelper...FROM", 
-            balance_from, from_vote, this.balanceOf(from));
+        // console.log("MedianTransferHelper...FROM", 
+        //     balance_from, from_vote, this.balanceOf(from));
         _calculateMedian(balance_from, from_vote, 
                this.balanceOf(from), from_vote);
     }
@@ -341,7 +342,7 @@ contract Quid is ERC20,
             Pod memory day = Piscine[batch - 1][43];  
             AVG_ROI += FullMath.mulDiv(WAD, 
             day.credit - day.debit, day.debit);
-            console.log("Restart...", batch, AVG_ROI);
+            // console.log("Restart...", batch, AVG_ROI);
             MO(Moulinette).setMetrics(AVG_ROI / 
                 (DAYS / 1 days) * batch
             );  require(block.timestamp > START + DAYS &&
