@@ -66,15 +66,13 @@ export const AppContextProvider = ({ children }) => {
 
   const getTotalSupply = useCallback(async () => {
     try {
-      if (account && connected && quid && currentTimestamp) {
-        const timestamp = await quid.methods.blocktimestamp().call()
+      if (account && connected && quid) {
+        const timestamp = Math.floor(Date.now() / 1000)
 
-        setAccountTimestamp(Number(timestamp))
-
-        const currentTimestampBN = currentTimestamp.toString()
+        setAccountTimestamp(Number(timestamp.toString()))
 
         const [totalSupplyCap] = await Promise.all([
-          quid.methods.get_total_supply_cap(currentTimestampBN).call(),
+          quid.methods.get_total_supply_cap(timestamp).call(),
           quid.methods.totalSupply().call()
         ])
 
@@ -86,7 +84,7 @@ export const AppContextProvider = ({ children }) => {
       console.error("Some problem with getSupply: ", error)
       return null
     }
-  }, [setAccountTimestamp, account, connected, currentTimestamp, quid])
+  }, [setAccountTimestamp, account, connected, quid])
 
   const getSales = useCallback(async () => {
     try {
@@ -113,8 +111,6 @@ export const AppContextProvider = ({ children }) => {
         const totalSupply = await quid.methods.totalSupply().call()
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
 
-        console.log('totalSupply', totalSupply)
-
         const balance = await susde.methods.balanceOf(addressMO).call()
         const formattedTotalDeposited = formatUnits(balance, 18)
 
@@ -133,7 +129,7 @@ export const AppContextProvider = ({ children }) => {
   const getUserInfo = useCallback(async () => {
     try {
       if (connected && account && quid) {
-        const timestamp = await quid.methods.blocktimestamp().call()
+        const timestamp = Math.floor(Date.now() / 1000)
 
         setAccountTimestamp(Number(timestamp.toString()))
 
