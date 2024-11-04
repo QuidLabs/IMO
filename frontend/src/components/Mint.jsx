@@ -188,7 +188,7 @@ export const Mint = () => {
 
       setNotifications("info", "Please, approve minting in your wallet.")
 
-      if (account) await sdai.methods.approve(addressMO.toString(), sdaiAmount.toString()).send({ from: account })
+      if (account) await sdai.methods.approve(addressQD.toString(), sdaiAmount.toString()).send({ from: account })
 
       setNotifications("info", `Start minting:\nCurrent allowance: ${formatUnits(allowanceBigNumberBN, 18)}\nNote amount: ${formatUnits(sdaiString, 18)}`)
 

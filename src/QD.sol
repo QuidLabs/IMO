@@ -276,7 +276,7 @@ contract Quid is ERC20,
     }
 
     function mint(address pledge, uint amount, address token) 
-        public returns (uint, uint) { uint batch = currentBatch();
+        public /*returns (uint, uint)*/ { uint batch = currentBatch();
         if (token == address(this)) { _mint(pledge, amount); 
             consideration[pledge][batch] += amount; // redeemable
             require(msg.sender == Moulinette, "!"); // authorisation
@@ -289,9 +289,8 @@ contract Quid is ERC20,
             
             uint in_days = ((block.timestamp - START) / 1 days);
             require(amount >= 10 * WAD, "mint more QD");
-            uint supply_cap = (in_days + 1) * MAX_PER_DAY; 
-            require(Piscine[batch][43].credit + 
-                    amount < supply_cap, "cap"); 
+            require(Piscine[batch][43].credit + amount < 
+                    (in_days + 1) * MAX_PER_DAY, "cap"); 
             // Yesterday's price is NOT today's price,
             // and when I think I'm running low, you're 
             uint price = in_days * PENNY + START_PRICE;
@@ -307,10 +306,10 @@ contract Quid is ERC20,
             Piscine[batch][in_days].debit += cost;
             Piscine[batch][43].credit += amount;  
             Piscine[batch][43].debit += cost;
-            ERC20(token).transferFrom(
-            msg.sender, address(this), cost); // in $ 
-            MO(Moulinette).mint(pledge,cost, amount);
+            MO(Moulinette).mint(pledge, cost, amount);
             if (token == address(USDE)) {
+                ERC20(token).transferFrom(
+                msg.sender, address(this), cost); // in $ 
                 ERC4626(SUSDE).deposit(
                     cost, address(this)
                 );

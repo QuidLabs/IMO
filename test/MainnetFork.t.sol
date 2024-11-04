@@ -88,7 +88,7 @@ contract MainnetFork is Test {
         weth.deposit{value: 1_000_000 ether}();
 
         weth.approve(address(moulinette), type(uint256).max);
-        USDe.approve(address(moulinette), type(uint256).max);
+        USDe.approve(address(quid), type(uint256).max);
 
         quid.mint(User01, half_a_rack, address(USDe));
         quid.mint(User01, half_a_rack, address(USDe));
@@ -101,7 +101,6 @@ contract MainnetFork is Test {
         console.log("User1...before transfer", quid_credit, quid_debit);
 
         quid.transfer(User02, grant);
-
         vm.stopPrank(); // exit User1 context
 
         // Simulate passage of time
@@ -112,7 +111,7 @@ contract MainnetFork is Test {
         weth.deposit{value: 1_000_000 ether}();
 
         weth.approve(address(moulinette), type(uint256).max);
-        USDe.approve(address(moulinette), type(uint256).max);
+        USDe.approve(address(quid), type(uint256).max);
         quid.mint(User02, bill, address(USDe));
 
         minted = quid.balanceOf(User02);

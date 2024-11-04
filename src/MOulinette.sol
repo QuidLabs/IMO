@@ -301,11 +301,9 @@ contract MO is Owned(msg.sender) {
             sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
             TickMath.getSqrtPriceAtTick(UPPER_TICK), liquidity
         );  uint targetRatio = positionAmount1 / positionAmount0;
-        uint lowerBound = (targetRatio * 999) / 1000;
-        uint upperBound = (targetRatio * 1001) / 1000;
-        uint currentRatio = amount1 / amount0;
-        if (currentRatio <= lowerBound 
-         || currentRatio >= upperBound) {
+            uint currentRatio = amount1 / amount0;
+        if (currentRatio <= (targetRatio * 999) / 1000 
+         || currentRatio >= (targetRatio * 1001) / 1000) {
             int selling = ( // some algebra...
                 int(amount1 * price / 1e18) - 
                 int(amount0 * 1e12) // minus
@@ -325,8 +323,6 @@ contract MO is Owned(msg.sender) {
                         address(this), block.timestamp, uint(selling), 0));
             } 
             currentRatio = amount1 / amount0;
-            require(currentRatio >= lowerBound 
-                 && currentRatio <= upperBound, "swap");
         }   return (amount0, amount1); 
     }   
 
@@ -530,7 +526,7 @@ contract MO is Owned(msg.sender) {
     // the halo of a street-lamp, I turn my straddle to
     // the cold and damp...know when to hold 'em...know 
     // when to..." 
-     function fold(address beneficiary, // amount is...
+    function fold(address beneficiary, // amount is...
         uint amount, bool sell) external { // in ETH
         FoldState memory state; state.price = _getPrice();
         // call in collateral that's insured, or liquidate;
@@ -545,11 +541,11 @@ contract MO is Owned(msg.sender) {
         if (pledge.work.credit > 0) {
             state.collat = FullMath.mulDiv(
                 state.price, pledge.work.debit, WAD
-            );  // "lookin' too hot; simmer down"
-            if (pledge.work.credit > state.collat) {
+            );  // "lookin' too hot; simmer down" ~ Bob Marley...
+            if (pledge.work.credit > state.collat) { // "or soon"
                 state.repay = pledge.work.credit - state.collat; 
-                state.repay += state.collat / 10;
-                state.liquidate = true; // not final
+                state.repay += state.collat / 10; // you'll get
+                state.liquidate = true; // dropped, but not final
                 console.log("FoldRepayLiquidate...", state.repay);
             } else { // for using claimed coverage to payoff debt
                 state.delta = state.collat - pledge.work.credit;
@@ -668,7 +664,7 @@ contract MO is Owned(msg.sender) {
                 }   
             }
         }   pledges[beneficiary] = pledge;
-    }
+    } 
 
     // fold() doesn't repackNFT (only withdraw, deposit, redeem)
     // "to improve is to change, to perfect is to change often,"
