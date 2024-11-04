@@ -55,14 +55,9 @@ export const Mint = () => {
 
   const qdAmountToSdaiAmt = useCallback(async (qdAmount, delay = 0) => {
     const qdAmountBN = qdAmount ? qdAmount.toString() : 0
-<<<<<<< HEAD
+
     return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN).call() : 0
   },[quid])
-=======
-
-    return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN, currentTimestampBN).call() : 0
-  }, [quid])
->>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
 
   useDebounce(
     mintValue,
@@ -105,19 +100,10 @@ export const Mint = () => {
   }, [setStorage])
 
   const handleEthSubmit = async () => {
-<<<<<<< HEAD
-    const depInfo = await getDepositInfo()
-      .then((numbers) => {
-        return numbers
-      })
-
-    console.log("NUMBERS: ", depInfo)
-=======
     //const depInfo = await getDepositInfo()
     //  .then((numbers) => {
     //    return numbers
     //  })
->>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
 
     const beneficiaryAccount = !isSameBeneficiary && beneficiary !== "" ? beneficiary : account
     const hasAgreedToTerms = localStorage.getItem("hasAgreedToTerms") === "true"
@@ -139,22 +125,13 @@ export const Mint = () => {
 
     if (ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
-<<<<<<< HEAD
-    if(ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
-
-=======
->>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
     try {
       const ethDepo = parseUnits(mintValue, 18)
       setIsProcessing(true)
       setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
       setMintValue("")
 
-<<<<<<< HEAD
-      if (account){
-=======
       if (account) {
->>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
         await mo.methods.deposit(
           beneficiaryAccount.toString(),
           0,
@@ -248,11 +225,7 @@ export const Mint = () => {
 
   const handleSubmit = () => {
     if (chooseButton.current === "MINT") handleSdaiSubmit()
-<<<<<<< HEAD
-    if (chooseButton.current === "DEBIT") handleEthSubmit()
-=======
     if (chooseButton.current === "DEPOSITE") handleEthSubmit()
->>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
   }
 
   const handleSetMaxValue = async () => {
@@ -294,63 +267,6 @@ export const Mint = () => {
               </span>
               QD mintable
             </span>
-<<<<<<< HEAD
-          </div>
-          <div className="mint-inputContainer">
-            <input
-              type="text"
-              id="mint-input"
-              className="mint-input"
-              value={mintValue}
-              onChange={handleChangeValue}
-              placeholder="Mint amount"
-              ref={inputRef}
-            />
-            <button className="mint-dollarSign" id="mint-button">
-              QD
-            </button>
-            <div className="mint-links">
-              <button href="#" className="mint-link">Link 1</button>
-              <button href="#" className="mint-link">Link 2</button>
-            </div>
-            <button className="mint-maxButton" onClick={handleSetMaxValue} type="button">
-              Max
-              <Icon preserveAspectRatio="none" className="mint-maxButtonBackground" name="btn-bg" />
-            </button>
-          </div>
-          <div className="mint-sub">
-            <div className="mint-subLeft">
-              Cost in $
-              <strong>
-                {sdaiValue === 0 ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * mintValue))}
-              </strong>
-            </div>
-            {mintValue ? (
-              <div className="mint-subRight">
-                <strong style={{ color: "#02d802" }}>
-                  ${numberWithCommas((+mintValue - sdaiValue).toFixed())}
-                </strong>
-                Future profit
-              </div>
-            ) : null}
-            <label style={{ position: "relative", top: 15, right: -55 }}>
-              <input
-                name="isBeneficiary"
-                className="mint-checkBox"
-                type="checkbox"
-                checked={isSameBeneficiary}
-                onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
-              />
-              <span className="mint-availabilityMax">to myself</span>
-            </label>
-          </div>
-          <Buttons
-              names={["CREDIT", "MINT", "DEBIT"]}
-              initialSlide={1}
-              buttonRef={buttonRef}
-              isProcessing={isProcessing}
-              handleSubmit={handleSubmit}
-=======
           </span>
         </div>
         <div className="mint-inputContainer">
@@ -362,7 +278,6 @@ export const Mint = () => {
             onChange={handleChangeValue}
             placeholder="Mint amount"
             ref={inputRef}
->>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
           />
           <div className="mint-dollarSign">
             <button className="mint-dollarSign" id="mint-button">
