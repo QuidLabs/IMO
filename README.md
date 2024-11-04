@@ -56,32 +56,5 @@ analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** 
 (let there be light); regarding lime,  
 note 🇺🇦 [70/30](https://www.instagram.com/p/DAgKU2dxtUq/) here  corresponds  
 to the initial capitalisation of QD...  
-Earth's surface is also 71% liquid,     
-
-`Offer` time value QD = [💯%]() backed   
- © 2022-2026 QuidMint Foundation  
-This software `README` is about material   
-of Quid Labs; quid.io owned by QU!D LTD  
-THIS `README` IS PROVIDED "AS IS," AND  
-© HOLDERS MAKE NO REPRESENTATIONS  
-
-WARRANTIES, EXPRESS OR IMPLIED, INCLUDING,   
-NOT LIMITED TO, MERCHANTABILITY WARRANTIES    
-OF [FITNESS](https://x.com/QuidMint/status/1840815343364677821) FOR A PARTICULAR PURPOSE OR TITLE.  
-
-THE CONTENTS OF `README` ARE SUITABLE FOR  
-IMPLEMENTATION WITHOUT INFRINGING ANY 3RD  
-PARTY PATENTS, COPYRIGHTS, OR TRADEMARKS.   
-COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR  
-DIRECT, INDIRECT, OR [UNUSUAL](https://github.com/QuidLabs/IMO/blob/main/contracts/QD.sol#L36)/CONSEQUENTIAL  
-DAMAGES ARISING OUT OF [PERFORMANCE](https://x.com/lex_node/status/1845182121553559770): ANY   
-USE OF CONTENTS OR THEIR IMPLEMENTATION.  
-
-### Launch instructions
-`npm install` from the root directory,   
-`SHOULD_DEPLOY=true npx hardhat run`  
-`--network sepolia scripts/`[deploy.js](https://github.com/QuidLabs/IMO/blob/main/scripts/deploy.js)  
-`cd ./frontend && npm install && npm run dev`   
-
-copy deployedAddresses.json into utils/constant.js   
-Latest backend version is in the `foundry` folder.
+Earth's surface is also 71% liquid.     
+ 
