@@ -20,6 +20,8 @@ const contextState = {
   setStorage: () => { },
   resetAccounts: () => { },
   choiseButton: () => {},
+  setSwipe: () => { },
+  swipeStatus: false,
   chooseButton: null,
   account: "",
   connected: false,
@@ -47,6 +49,8 @@ export const AppContextProvider = ({ children }) => {
   const [currentTimestamp, setAccountTimestamp] = useState(0)
 
   const [notifications, setNotifications] = useState('')
+
+  const [swipeStatus, setSwipeStatus] = useState(false)
 
   const SECONDS_IN_DAY = 86400
 
@@ -267,6 +271,15 @@ export const AppContextProvider = ({ children }) => {
       }
   },[chooseButton])
 
+  const setSwipe = useCallback(()=>{
+    try{
+      if(swipeStatus) setSwipeStatus(false)
+      else setSwipeStatus(true)
+    }catch(error){
+      console.error("Error with swipe: ", error)
+    }
+  },[swipeStatus])
+
   return (
     <AppContext.Provider
       value={{
@@ -300,7 +313,9 @@ export const AppContextProvider = ({ children }) => {
         mo,
         SECONDS_IN_DAY,
         choiseButton,
-        chooseButton
+        chooseButton,
+        setSwipe,
+        swipeStatus
       }}
     >
       {children}
