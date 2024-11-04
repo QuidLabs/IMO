@@ -90,9 +90,8 @@ contract MainnetFork is Test {
         weth.approve(address(moulinette), type(uint256).max);
         USDe.approve(address(moulinette), type(uint256).max);
 
-        moulinette.deposit(User01, half_a_rack, address(USDe), false);
-
-        moulinette.deposit(User01, half_a_rack, address(USDe), false);
+        quid.mint(User01, half_a_rack, address(USDe));
+        quid.mint(User01, half_a_rack, address(USDe));
 
         uint minted = quid.balanceOf(User01);
         assertEq(minted, rack);
@@ -114,8 +113,7 @@ contract MainnetFork is Test {
 
         weth.approve(address(moulinette), type(uint256).max);
         USDe.approve(address(moulinette), type(uint256).max);
-
-        moulinette.deposit(User02, bill, address(USDe), false);
+        quid.mint(User02, bill, address(USDe));
 
         minted = quid.balanceOf(User02);
 
@@ -131,7 +129,7 @@ contract MainnetFork is Test {
         vm.startPrank(User01);
         
         weth.approve(address(moulinette), jackson_in_ETH);
-        moulinette.deposit(User01, jackson_in_ETH, address(weth), false);
+        moulinette.deposit(User01, jackson_in_ETH, false);
         
         (work_debit, work_credit, 
          weth_debit, weth_credit) = moulinette.get_more_info(User01);

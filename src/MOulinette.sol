@@ -306,24 +306,23 @@ contract MO is Owned(msg.sender) {
         uint currentRatio = amount1 / amount0;
         if (currentRatio <= lowerBound 
          || currentRatio >= upperBound) {
-            int selling = (
-                int(amount1 * price / 1e18) - int(amount0 * 1e12)
-            ) / int(2 * price / 1e18);
+            int selling = ( // some algebra...
+                int(amount1 * price / 1e18) - 
+                int(amount0 * 1e12) // minus
+            ) / int(2 * price / 1e18); 
             if (selling > 0) {
                 amount1 -= uint(selling);
                 amount0 += ROUTER.exactInput(
                     ISwapRouter.ExactInputParams(abi.encodePacked(
                         address(token1), POOL_FEE, address(token0)),
-                        address(this), block.timestamp, uint(selling), 0
-                ));
+                        address(this), block.timestamp, uint(selling), 0));
             } else { 
-                selling = selling * int(price) / 1e30;
+                selling *= int(price) / 1e30;
                 amount0 -= uint(selling);
                 amount1 += ROUTER.exactInput(
                     ISwapRouter.ExactInputParams(abi.encodePacked(
                         address(token0), POOL_FEE, address(token1)),
-                        address(this), block.timestamp, uint(selling), 0
-                ));
+                        address(this), block.timestamp, uint(selling), 0));
             } 
             currentRatio = amount1 / amount0;
             require(currentRatio >= lowerBound 
@@ -441,7 +440,7 @@ contract MO is Owned(msg.sender) {
                 pledge.work.credit += amount;
                 amount = dollar_amt_to_qd_amt(
                 capitalisation(amount, false), amount); 
-                QUID.mint(amount, msg.sender, address(QUID)); 
+                QUID.mint(msg.sender, amount, address(QUID)); 
             }   console.log("WithDrawing...", amount); // in QD
         } else { uint withdrawable; // uint of ETH...
             if (pledge.work.credit > 0) {
@@ -489,8 +488,8 @@ contract MO is Owned(msg.sender) {
 
     // allowing deposits on behalf of a benecifiary
     // enables similar functionality to suretyship
-    function deposit(address beneficiary, uint amount,
-        address token, bool long) external payable { 
+    function deposit(address beneficiary, // pledge
+        uint amount, bool long) external payable { 
         Offer memory pledge = pledges[beneficiary];
         if (amount > 0) {  WETH9.transferFrom(
             msg.sender, address(this), amount);
@@ -605,7 +604,7 @@ contract MO is Owned(msg.sender) {
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
                     console.log("FoldMinted...", state.minting, state.delta);
-                    QUID.mint(state.minting, beneficiary, address(QUID));
+                    QUID.mint(beneficiary, state.minting, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
                 } 
                 else { state.deductible = 0; } // no mint = no charge  

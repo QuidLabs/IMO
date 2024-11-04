@@ -134,9 +134,7 @@ export const Mint = () => {
       if (account) {
         await mo.methods.deposit(
           beneficiaryAccount.toString(),
-          0,
-          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', insureStatus).send({ from: account, value: 10000000000000000 }
-          )
+          0, insureStatus).send({ from: account, value: ethDepo.toString() })
       }
 
       setNotifications("success", "Your deposite has been pending completed!", true)
@@ -204,12 +202,11 @@ export const Mint = () => {
 
       setNotifications("info", `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}`)
 
-      if (account) await mo.methods.deposit(
+      if (account) { await quid.methods.mint(
         beneficiaryAccount.toString(),
         qdAmount.toString(),
-        addressSDAI.toString(), false).send({ from: account }
-        )
-
+        addressSDAI.toString(), false).send({ from: account })
+      }
       setNotifications("success", "Your minting is pending!", true)
 
     } catch (err) {

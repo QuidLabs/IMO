@@ -42,6 +42,7 @@ contract Quid is ERC20,
     // dough, Pierre, not your unsual money, version mint
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
+    // "16 bars keep the car running" ~ chamber music
     // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
@@ -274,14 +275,11 @@ contract Quid is ERC20,
                this.balanceOf(from), from_vote);
     }
 
-    function mint(uint amount, address pledge, 
-        address token) public 
-        returns (uint, uint) { 
-        uint batch = currentBatch();
-        if (token == address(this)) { 
-            _mint(pledge, amount); 
-            require(msg.sender == Moulinette, "!");
+    function mint(address pledge, uint amount, address token) 
+        public returns (uint, uint) { uint batch = currentBatch();
+        if (token == address(this)) { _mint(pledge, amount); 
             consideration[pledge][batch] += amount; // redeemable
+            require(msg.sender == Moulinette, "!"); // authorisation
         }   else if (block.timestamp <= START + DAYS && batch < 16) {
             require(/*token == address(DAI) || token == address(SDAI)
             || token == address(FRAX) || token == address(FRAX) || */
@@ -349,7 +347,7 @@ contract Quid is ERC20,
             ICollection(F8N).transferFrom(
                 address(this), from, LAMBO
             ); uint QD = draw(from, GRIEVANCES); 
-            mint(QD, from, address(USDE)); 
+            mint(from, QD, address(USDE)); 
             // TODO mint(QD / 2, from, MO(Moulinette).DAI())
             if (START != 0) { // BACKEND / 8 wu tang...TODO
                 // uint random = uint(keccak256(
