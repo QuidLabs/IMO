@@ -1,9 +1,9 @@
 
 // TODO replace address
-export const addressQD = '0xD0Fb6eF0F0D74086a8951582C57bDf8CffeA81E4';
-export const addressMO = '0xa260486af5D5D9711a9a8A49c0a611A3CCa2C99f'
-export const addressSDAI = '0x47FB5251334A98601281ee693aB3463Fb8f308fc';
-export const addressSUSDE = '0x00CB5ee56a98CA4eb9d655100e1801bf8fAef781';
+export const addressQD = '0xc62Ec5CAD1CA7f5a416413324181A95ceDe0066a';
+export const addressMO = '0x3BC5015f6c334B2be52BCae0c7E23DAD515B073a'
+export const addressSDAI = '0x59A3de44c90bc16dcf3BEac111604D8f91255a1A';
+export const addressSUSDE = '0xf7FD9A198Ac9DE7CBE753A649dCF3E146E738fB2';
 
 export const QUID = [
   {
@@ -328,13 +328,7 @@ export const QUID = [
   {
     "type": "function",
     "name": "get_total_supply_cap",
-    "inputs": [
-      {
-        "name": "block_timestamp",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "inputs": [],
     "outputs": [
       {
         "name": "total_supply_cap",

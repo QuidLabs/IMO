@@ -95,7 +95,7 @@ contract Quid is ERC20,
         );  
         amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
     }
-    function get_total_supply_cap(uint block_timestamp) 
+    function get_total_supply_cap() 
         public view returns (uint total_supply_cap) {
         uint in_days = ( // used in frontend only...
             (block.timestamp - START) / 1 days

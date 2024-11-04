@@ -557,11 +557,13 @@ contract MO is Owned(msg.sender) {
             pledges[beneficiary] = pledge; // save changes
             _creditHelper(beneficiary); // because we read
             // from pledge ^^^^^^^^^^ in _creditHelper
+           
             if (token == address(USDE)) {
                 ERC4626(SUSDE).deposit(
                     cost, address(this)
                 );
                 // TODO stake into morpho (mainnet)
+                // console.log("DEPOSIT...", ERC4626(SUSDE).balanceOf(address(this)));
             } 
         } 
         else {

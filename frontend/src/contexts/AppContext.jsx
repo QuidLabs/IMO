@@ -72,7 +72,7 @@ export const AppContextProvider = ({ children }) => {
         setAccountTimestamp(Number(timestamp.toString()))
 
         const [totalSupplyCap] = await Promise.all([
-          quid.methods.get_total_supply_cap(timestamp).call(),
+          quid.methods.get_total_supply_cap().call(),
           quid.methods.totalSupply().call()
         ])
 
@@ -112,7 +112,8 @@ export const AppContextProvider = ({ children }) => {
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
 
         const balance = await susde.methods.balanceOf(addressMO).call()
-        const formattedTotalDeposited = formatUnits(balance, 18)
+        console.log("badgsdgsdf", balance)
+        const formattedTotalDeposited = formatUnits(balance.toString(), 18)
 
         const totalInfo = {
           total_dep: formattedTotalDeposited,

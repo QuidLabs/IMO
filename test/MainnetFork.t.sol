@@ -40,6 +40,7 @@ contract MainnetFork is Test {
     uint public half_a_rock = 500000000000000000000000; // $500k
     uint public rack = 1000000000000000000000; // $1000
     uint public bill = 100000000000000000000; // $100
+    uint public half_a_rack = 500000000000000000000; // $500
     uint public grant = 50000000000000000000; // $50
     uint public jackson_in_ETH = 1000000000000000; // $26
     
@@ -77,10 +78,10 @@ contract MainnetFork is Test {
         weth.approve(address(moulinette), type(uint256).max);
         USDe.approve(address(moulinette), type(uint256).max);
 
-        moulinette.deposit(User01, bill, address(USDe), false);
+        moulinette.deposit(User01, half_a_rack, address(USDe), false);
 
         uint minted = quid.balanceOf(User01);
-        assertEq(minted, bill);
+        assertEq(minted, half_a_rack);
 
         (quid_credit, 
          quid_debit) = moulinette.get_info(User01);
