@@ -57,10 +57,21 @@
   color: #928263;
 }
 
-.mint-availabilityMax {
+.checkbox-container{
+  display: flex;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  flex-direction: row;
+
+}
+
+.mint-availabilityMax {    
   font-size: 14px;
   line-height: 24px;
   color: #e0c89a;
+  margin-right: 10px;
+  margin-left: 2px;
 }
 
 .mint-inputContainer {
@@ -141,7 +152,6 @@
   position: relative;
   appearance: none;
   box-sizing: content-box;
-  margin: 8px 8px 0 0;
   overflow: hidden;
 
   // circle
@@ -348,11 +358,21 @@
   border: 2px solid #855807;
   pointer-events: none;
   position: absolute;
-  width: 135px;
   height: 50px;
   z-index: -2;
   top: -11.5px;
   transform: scale(0);
+  opacity: 0;
+}
+
+.mint-submit-hide {
+  display: flex;
+  color: #ffa300;
+  font-size: 36px;
+  min-width: 120px;
+  line-height: 24px;
+  font-family: "Road Rage";
+  justify-content: center;
   opacity: 0;
 }
 
@@ -530,6 +550,7 @@
 }
 
 .mint-dollarSign {
+  width: 100px;
   font-size: 64px;
   background: none;
   border: none;
