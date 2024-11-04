@@ -16,8 +16,8 @@ import "./Styles/Mint.scss"
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalSupply, setStorage, getDepositInfo, getWalletBalance,
-    addressQD, addressSDAI, account, connected, chooseButton, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
+  const { getTotalSupply, setStorage, getWalletBalance,
+    addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
   const [sdaiValue, setSdaiValue] = useState(0)
@@ -26,6 +26,10 @@ export const Mint = () => {
   const [beneficiary, setBeneficiary] = useState("")
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [startMsg, setStartMsg] = useState('')
+
+  const [insureStatus, setInsureStatus] = useState(true)
+
+  const [buttonSign, setSign] = useState('')
 
   const [isProcessing, setIsProcessing] = useState(false)
 
@@ -47,12 +51,18 @@ export const Mint = () => {
     setIsModalOpen(false)
     localStorage.setItem("hasAgreedToTerms", "true")
     buttonRef.current?.click()
-  },[])
+  }, [])
 
   const qdAmountToSdaiAmt = useCallback(async (qdAmount, delay = 0) => {
     const qdAmountBN = qdAmount ? qdAmount.toString() : 0
+<<<<<<< HEAD
     return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN).call() : 0
   },[quid])
+=======
+
+    return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN, currentTimestampBN).call() : 0
+  }, [quid])
+>>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
 
   useDebounce(
     mintValue,
@@ -95,12 +105,19 @@ export const Mint = () => {
   }, [setStorage])
 
   const handleEthSubmit = async () => {
+<<<<<<< HEAD
     const depInfo = await getDepositInfo()
       .then((numbers) => {
         return numbers
       })
 
     console.log("NUMBERS: ", depInfo)
+=======
+    //const depInfo = await getDepositInfo()
+    //  .then((numbers) => {
+    //    return numbers
+    //  })
+>>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
 
     const beneficiaryAccount = !isSameBeneficiary && beneficiary !== "" ? beneficiary : account
     const hasAgreedToTerms = localStorage.getItem("hasAgreedToTerms") === "true"
@@ -115,26 +132,34 @@ export const Mint = () => {
 
     //if (mintValue < depInfo.weth_eth_balance + depInfo.work_eth_balance) return setNotifications("error", "The amount should be more than bla-bla-bla")
 
-    const ballanceStatus = await getWalletBalance().then((balance) =>{
-      console.log(balance.eth)
-        if (Number(mintValue) > Number(balance.eth)) return true
-        else return false
-      })
+    const ballanceStatus = await getWalletBalance().then((balance) => {
+      if (Number(mintValue) > Number(balance.eth)) return true
+      else return false
+    })
 
+    if (ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
+
+<<<<<<< HEAD
     if(ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
+=======
+>>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
     try {
       const ethDepo = parseUnits(mintValue, 18)
       setIsProcessing(true)
       setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
       setMintValue("")
 
+<<<<<<< HEAD
       if (account){
+=======
+      if (account) {
+>>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
         await mo.methods.deposit(
-        beneficiaryAccount.toString(),
-        0,
-        '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', true).send({ from: account, value: ethDepo.toString() }
-        )
+          beneficiaryAccount.toString(),
+          0,
+          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', insureStatus).send({ from: account, value: ethDepo.toString() }
+          )
       }
 
       setNotifications("success", "Your deposite has been pending completed!", true)
@@ -151,8 +176,6 @@ export const Mint = () => {
   }
 
   const handleSdaiSubmit = async () => {
-    console.log("BUTTON CHOOSED: ", chooseButton.current)
-
     const beneficiaryAccount = !isSameBeneficiary && beneficiary !== "" ? beneficiary : account
     const hasAgreedToTerms = localStorage.getItem("hasAgreedToTerms") === "true"
 
@@ -225,13 +248,22 @@ export const Mint = () => {
 
   const handleSubmit = () => {
     if (chooseButton.current === "MINT") handleSdaiSubmit()
+<<<<<<< HEAD
     if (chooseButton.current === "DEBIT") handleEthSubmit()
+=======
+    if (chooseButton.current === "DEPOSITE") handleEthSubmit()
+>>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
   }
 
   const handleSetMaxValue = async () => {
     if (inputRef.current > totalSupplyCap) setMintValue(totalSupplyCap)
     else inputRef.current.focus()
   }
+
+  const handleInsure = useCallback(() => {
+    if(insureStatus) setInsureStatus(false)
+    else setInsureStatus(true)
+  },[insureStatus])
 
   useEffect(() => {
     if (quid) updateTotalSupply()
@@ -241,23 +273,28 @@ export const Mint = () => {
     if (account && connected && quid) setStartMsg('Terminal started. Mint is available!')
     else localStorage.setItem("consoleNotifications", JSON.stringify(''))
 
-    if (notifications[0] && !connected) setTimeout(()=> setStorage([]), 500)
+    if (notifications[0] && !connected) setTimeout(() => setStorage([]), 500)
 
   }, [updateTotalSupply, setStorage, account, connected, quid, notifications, isProcessing])
 
+  useEffect(() => {
+    if (chooseButton.current === "MINT" || chooseButton.current == null) setSign('QD')
+    else setSign('Ξ')
+  }, [chooseButton, swipeStatus])
+
   return (
-      <div className="mint">
-        <div className="mint-root" onSubmit={handleSubmit}>
-          <div className="mint-header">
-            <span className="mint-title">
-              <span className="mint-totalSupply">
-                <span style={{ fontWeight: 400, color: '#4ad300' }}>
-                  {totalSupplyCap ? numberWithCommas(totalSupplyCap) : 0}
-                  &nbsp;
-                </span>
-                QD mintable
+    <div className="mint">
+      <div className="mint-root" onSubmit={handleSubmit}>
+        <div className="mint-header">
+          <span className="mint-title">
+            <span className="mint-totalSupply">
+              <span style={{ fontWeight: 400, color: '#4ad300' }}>
+                {totalSupplyCap ? numberWithCommas(totalSupplyCap) : 0}
+                &nbsp;
               </span>
+              QD mintable
             </span>
+<<<<<<< HEAD
           </div>
           <div className="mint-inputContainer">
             <input
@@ -313,43 +350,110 @@ export const Mint = () => {
               buttonRef={buttonRef}
               isProcessing={isProcessing}
               handleSubmit={handleSubmit}
+=======
+          </span>
+        </div>
+        <div className="mint-inputContainer">
+          <input
+            type="text"
+            id="mint-input"
+            className="mint-input"
+            value={mintValue}
+            onChange={handleChangeValue}
+            placeholder="Mint amount"
+            ref={inputRef}
+>>>>>>> ae8d5b446ad46d1dc9b1e97cab91bdc7da9127d0
           />
-          {isSameBeneficiary ? null : (
-            <div className="mint-beneficiaryContainer">
-              <div className="mint-inputContainer">
+          <div className="mint-dollarSign">
+            <button className="mint-dollarSign" id="mint-button">
+              {buttonSign}
+            </button>
+          </div>
+          <button className="mint-maxButton" onClick={handleSetMaxValue} type="button">
+            Max
+            <Icon preserveAspectRatio="none" className="mint-maxButtonBackground" name="btn-bg" />
+          </button>
+        </div>
+        <div className="mint-sub">
+          <div className="mint-subLeft">
+            Cost in $
+            <strong>
+              {sdaiValue === 0 ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * mintValue))}
+            </strong>
+          </div>
+          {mintValue ? (
+            <div className="mint-subRight">
+              <strong style={{ color: "#02d802" }}>
+                ${numberWithCommas((+mintValue - sdaiValue).toFixed())}
+              </strong>
+              Future profit
+            </div>
+          ) : null}
+          <label className="checkbox-container">
+            {chooseButton.current === "MINT" || chooseButton.current == null ? null :
+              <>
                 <input
-                  name="beneficiary"
-                  type="text"
-                  className="mint-beneficiaryInput"
-                  onChange={(e) => setBeneficiary(e.target.value)}
-                  placeholder={account ? String(account) : ""}
+                  className="mint-checkBox"
+                  type="checkbox"
+                  checked={insureStatus}
+                  onChange={() => handleInsure()}
                 />
-                <label htmlFor="mint-input" className="mint-idSign">
-                  beneficiary
-                </label>
-              </div>
+                <span className="mint-availabilityMax">INSURING</span>
+              </>
+            }
+            <input
+              name="isBeneficiary"
+              className="mint-checkBox"
+              type="checkbox"
+              checked={isSameBeneficiary}
+              onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
+            />
+            <span className="mint-availabilityMax">to myself</span>
+          </label>
+        </div>
+        <Buttons
+          names={["WITHDRAW", "MINT", "DEPOSITE"]}
+          initialSlide={1}
+          buttonRef={buttonRef}
+          isProcessing={isProcessing}
+          handleSubmit={handleSubmit}
+        />
+        {isSameBeneficiary ? null : (
+          <div className="mint-beneficiaryContainer">
+            <div className="mint-inputContainer">
+              <input
+                name="beneficiary"
+                type="text"
+                className="mint-beneficiaryInput"
+                onChange={(e) => setBeneficiary(e.target.value)}
+                placeholder={account ? String(account) : ""}
+              />
+              <label htmlFor="mint-input" className="mint-idSign">
+                beneficiary
+              </label>
+            </div>
+          </div>
+        )}
+        <Modal open={isModalOpen} handleAgree={handleAgreeTerms} handleClose={handleCloseModal} />
+      </div>
+      <div className="mint-console" ref={consoleRef}>
+        <div className="mint-console-content">
+          {connected ? startMsg : "Connect your MetaMask..."}
+          {notifications ? notifications.map((notification, index) => (
+            <div
+              key={index}
+              className={`mint-console-line ${notification.severity}`}
+            >
+              {notification.message}
+            </div>
+          )) : null}
+          {isProcessing && (
+            <div className="mint-console-line info">
+              Processing<span className="processing-dots">...</span>
             </div>
           )}
-          <Modal open={isModalOpen} handleAgree={handleAgreeTerms} handleClose={handleCloseModal} />
-        </div>
-        <div className="mint-console" ref={consoleRef}>
-          <div className="mint-console-content">
-            {connected ? startMsg : "Connect your MetaMask..."}
-            {notifications ? notifications.map((notification, index) => (
-              <div
-                key={index}
-                className={`mint-console-line ${notification.severity}`}
-              >
-                {notification.message}
-              </div>
-            )) : null}
-            {isProcessing && (
-              <div className="mint-console-line info">
-                Processing<span className="processing-dots">...</span>
-              </div>
-            )}
-          </div>
         </div>
       </div>
+    </div>
   )
 }
