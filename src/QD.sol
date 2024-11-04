@@ -1,14 +1,13 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity =0.8.8; // EVM: london
-
+import "lib/forge-std/src/console.sol"; // TODO delete
+import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {Owned} from "lib/solmate/src/auth/Owned.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "./interfaces/IERC721.sol";
-
-// import "lib/forge-std/src/console.sol"; // TODO delete
-
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -23,7 +22,8 @@ interface ICollection is IERC721 {
 }
 import "./MOulinette.sol";
 contract Quid is ERC20,
-    IERC721Receiver {
+    IERC721Receiver,
+    Owned(msg.sender) {
     uint public AVG_ROI;
     uint public START;  
     // "Walked in the 
@@ -61,6 +61,12 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
+    ERC4626 public immutable SFRAX;
+    ERC4626 public immutable SUSDE;
+    ERC4626 public immutable SDAI;
+    ERC20 public immutable FRAX;
+    ERC20 public immutable USDE;
+    ERC20 public immutable DAI;
     address public Moulinette; // windmill
     address internal chainlink;
     uint constant WAD = 1e18; //
@@ -74,11 +80,25 @@ contract Quid is ERC20,
         require(currentBatch() > 0, "after");  
         _; 
     }
-    constructor(address _mo, address _link)
-        ERC20("QU!D", "QD", 18) {
-        deployed = block.timestamp;
-        Moulinette = _mo;
-        chainlink = _link;
+    constructor(address _mo, address _link,
+        address _usde, address _susde, 
+        address _frax, address _sfrax,
+        address _sdai, address _dai)
+        ERC20("QU!D", "QD", 18) { // 2024-26
+        deployed = block.timestamp; // 11/11
+        Moulinette = _mo; chainlink = _link;
+        USDE = ERC20(_usde); SUSDE = ERC4626(_susde);
+        FRAX = ERC20(_frax); SFRAX = ERC4626(_sfrax);
+        DAI = ERC20(_dai); SDAI = ERC4626(_susde);
+        // DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
+        // SDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
+        // FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
+        // SFRAX = 0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32;
+        // USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
+        // SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
+        USDE.approve(_susde,  type(uint256).max);
+        FRAX.approve(_sfrax,  type(uint256).max);
+        DAI.approve(_sdai,  type(uint256).max);
     }
     function _min(uint _a, uint _b) internal 
         pure returns (uint) { return (_a < _b) ?
@@ -205,12 +225,12 @@ contract Quid is ERC20,
                 while (K >= 1 && (
                     (SUM - WEIGHTS[K]) >= mid
                 )) { SUM -= WEIGHTS[K]; K -= 1; 
-                    // console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
+                    console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
                 }
             } else { 
                 while (SUM < mid) { 
                     K += 1; SUM += WEIGHTS[K];
-                    // console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
+                    console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
                 }
             } MO(Moulinette).setFee(K);
         }  else { SUM = 0; } // reset
@@ -231,8 +251,8 @@ contract Quid is ERC20,
             _burn(from, amount);
             // no _calculateMedian `to`
         } else { i = int(currentBatch()); 
-            // console.log("MedianTransferHelper...TO", 
-            //     balance_to, to_vote, this.balanceOf(to));
+            console.log("MedianTransferHelper...TO", 
+                balance_to, to_vote, this.balanceOf(to));
             _calculateMedian(balance_to, to_vote, 
                    this.balanceOf(to), to_vote);
         }   // loop from newest to oldest batch
@@ -248,19 +268,24 @@ contract Quid is ERC20,
                 amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        // console.log("MedianTransferHelper...FROM", 
-        //     balance_from, from_vote, this.balanceOf(from));
+        console.log("MedianTransferHelper...FROM", 
+            balance_from, from_vote, this.balanceOf(from));
         _calculateMedian(balance_from, from_vote, 
                this.balanceOf(from), from_vote);
     }
 
     function mint(uint amount, address pledge, 
-        address token) public onlyGenerators
-        returns (uint, uint) { uint batch = currentBatch();
-        if (token == address(this)) { _mint(pledge, 
-            amount); consideration[pledge][batch] += amount; 
+        address token) public 
+        returns (uint, uint) { 
+        uint batch = currentBatch();
+        if (token == address(this)) { 
+            _mint(pledge, amount); 
+            require(msg.sender == Moulinette, "!");
+            consideration[pledge][batch] += amount; // redeemable
         }   else if (block.timestamp <= START + DAYS && batch < 16) {
-
+            require(/*token == address(DAI) || token == address(SDAI)
+            || token == address(FRAX) || token == address(FRAX) || */
+            token == address(USDE) || token == address(SUSDE), "$");
             // parlay in vegas...we was in attendance
             // carry.credit burning QD... 
             
@@ -284,7 +309,16 @@ contract Quid is ERC20,
             Piscine[batch][in_days].debit += cost;
             Piscine[batch][43].credit += amount;  
             Piscine[batch][43].debit += cost;
-            return (cost, amount);
+            ERC20(token).transferFrom(
+            msg.sender, address(this), cost); // in $ 
+            MO(Moulinette).mint(pledge,cost, amount);
+            if (token == address(USDE)) {
+                ERC4626(SUSDE).deposit(
+                    cost, address(this)
+                );
+                // TODO stake into morpho (mainnet)
+                console.log("DEPOSIT...", ERC4626(SUSDE).totalAssets());
+            } 
         }
     }
 
@@ -314,10 +348,9 @@ contract Quid is ERC20,
             // TODO is approval necessary?
             ICollection(F8N).transferFrom(
                 address(this), from, LAMBO
-            ); uint qd = MO(Moulinette).draw(
-            from, GRIEVANCES); mint(qd, from, 
-                address(MO(Moulinette).USDE())); 
-            // TODO mint(qd / 2, from, MO(Moulinette).DAI())
+            ); uint QD = draw(from, GRIEVANCES); 
+            mint(QD, from, address(USDE)); 
+            // TODO mint(QD / 2, from, MO(Moulinette).DAI())
             if (START != 0) { // BACKEND / 8 wu tang...TODO
                 // uint random = uint(keccak256(
                 //     abi.encodePacked(_seed, 
@@ -342,11 +375,60 @@ contract Quid is ERC20,
             Pod memory day = Piscine[batch - 1][43];  
             AVG_ROI += FullMath.mulDiv(WAD, 
             day.credit - day.debit, day.debit);
-            // console.log("Restart...", batch, AVG_ROI);
+            console.log("Restart...", batch, AVG_ROI);
             MO(Moulinette).setMetrics(AVG_ROI / 
                 (DAYS / 1 days) * batch
             );  require(block.timestamp > START + DAYS &&
                     currentBatch() < 17, "can't restart");
         }  START = block.timestamp;            
+    }
+
+    function draw(address to, uint amount) 
+        public onlyGenerators returns (uint QD) { 
+            if (msg.sender == address(this)) { 
+            QD = MO(Moulinette).dollar_amt_to_qd_amt(
+                MO(Moulinette).capitalisation(
+                    0, false), amount / 2); 
+        to = owner; } else { require(msg.sender == address(this), "$"); }
+        if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
+            // uint reserveSDAI = ERC4626(SDAI).balanceOf(address(this));
+            uint reserveSUSDE = ERC4626(SUSDE).balanceOf(address(this));
+            // TODO does ^^^ return shares?
+            amount = _min(reserveSUSDE, amount);
+            // require(pledges[address(this)].carry.debit 
+            //     == reserveSDAI + reserveSUSDE, "don't add up");
+
+            // uint totalBalance = reserveSDAI + reserveSUSDE;
+            // uint newTotalBalance = totalBalance - amount;
+            // uint targetBalance = newTotalBalance / 2;
+
+            // uint withdrawFromSDAI = reserveSDAI > targetBalance ? 
+            //                         reserveSDAI - targetBalance : 0;
+            // uint withdrawFromSUSDE = reserveSUSDE > targetBalance ? 
+            //                          reserveSUSDE - targetBalance : 0;
+
+            // uint totalWithdrawn = withdrawFromSDAI + withdrawFromSUSDE;
+            // if (totalWithdrawn < amount) {
+            //     uint remainingAmount = amount - totalWithdrawn;
+            //     if (reserveSDAI - withdrawFromSDAI > remainingAmount / 2) {
+            //         withdrawFromSDAI += remainingAmount / 2;
+            //         remainingAmount -= remainingAmount / 2;
+            //     } else {
+            //         withdrawFromSDAI += reserveSDAI - withdrawFromSDAI;
+            //         remainingAmount -= reserveSDAI - withdrawFromSDAI;
+            //     }
+            //     if (reserveSUSDE - withdrawFromSUSDE > remainingAmount) {
+            //         withdrawFromSUSDE += remainingAmount;
+            //     } else {
+            //         withdrawFromSUSDE += reserveSUSDE - withdrawFromSUSDE;
+            //     }
+            // }
+            // ERC4626(SDAI).redeem(withdrawFromSDAI, to, address(this));
+            ERC4626(SUSDE).redeem(amount, to, address(this));
+            // redeem takes amount of sUSDe you want to turn into USDe. 
+            // withdraw specifies amount of USDe you wish to withdraw, 
+            // and will pull the required amount of sUSDe from sender. 
+            // TODO steps to withdraw from morpho (mainnet)
+        }
     }
 }

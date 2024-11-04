@@ -23,6 +23,10 @@ contract MainnetFork is Test {
     MO public moulinette;
     mockVault public sUSDe;
     mockToken public USDe;
+    mockVault public sFRAX;
+    mockToken public FRAX;
+    mockVault public sDAI;
+    mockToken public DAI;
     address public chainlink = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     ICollection public F8N = ICollection(0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405); 
     ISwapRouter public router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -53,15 +57,23 @@ contract MainnetFork is Test {
         
         USDe = new mockToken();
         sUSDe = new mockVault(USDe);
+        FRAX = new mockToken();
+        sFRAX = new mockVault(FRAX);
+        DAI = new mockToken();
+        sDAI = new mockVault(DAI);
 
         moulinette = new MO(
-            address(USDe), address(sUSDe), 
             address(weth), address(nfpm), 
             address(pool), address(router)
         );
-        quid = new Quid(address(moulinette), chainlink);
-        moulinette.setQuid(address(quid));
+        quid = new Quid(
+            address(moulinette), chainlink, 
+            address(USDe), address(sUSDe),
+            address(FRAX), address (sFRAX),
+            address (sDAI), address (DAI)
+        );
 
+        moulinette.setQuid(address(quid));
         quid.restart();
         moulinette.set_price_eth(false, true);
     }
@@ -80,8 +92,10 @@ contract MainnetFork is Test {
 
         moulinette.deposit(User01, half_a_rack, address(USDe), false);
 
+        moulinette.deposit(User01, half_a_rack, address(USDe), false);
+
         uint minted = quid.balanceOf(User01);
-        assertEq(minted, half_a_rack);
+        assertEq(minted, rack);
 
         (quid_credit, 
          quid_debit) = moulinette.get_info(User01);

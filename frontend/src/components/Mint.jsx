@@ -135,7 +135,7 @@ export const Mint = () => {
         await mo.methods.deposit(
           beneficiaryAccount.toString(),
           0,
-          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', insureStatus).send({ from: account, value: ethDepo.toString() }
+          '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2', insureStatus).send({ from: account, value: 10000000000000000 }
           )
       }
 

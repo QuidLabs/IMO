@@ -19,6 +19,10 @@ contract Deploy is Script {
     MO public moulinette;
     mockVault public sUSDe;
     mockToken public USDe;
+    mockVault public sFRAX;
+    mockToken public FRAX;
+    mockVault public sDAI;
+    mockToken public DAI;
     address public chainlink = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
 
     // TODO the interface of the router is a bit different on mainnet than it is on Taiko
@@ -36,13 +40,22 @@ contract Deploy is Script {
 
         USDe = new mockToken();
         sUSDe = new mockVault(USDe);
+        FRAX = new mockToken();
+        sFRAX = new mockVault(FRAX);
+        DAI = new mockToken();
+        sDAI = new mockVault(DAI);
+
 
         moulinette = new MO(
-            address(USDe), address(sUSDe), 
             address(weth), address(nfpm), 
             address(pool), address(router)
         );
-        quid = new Quid(address(moulinette), chainlink);
+        quid = new Quid(
+            address(moulinette), chainlink, 
+            address(USDe), address(sUSDe),
+            address(FRAX), address (sFRAX),
+            address (sDAI), address (DAI)
+        );
         
         moulinette.setQuid(address(quid));
         quid.restart();
