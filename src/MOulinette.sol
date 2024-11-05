@@ -491,29 +491,32 @@ contract MO is Owned(msg.sender) {
         } else { require(msg.value > 0, "ETH!"); }
         if (msg.value > 0) { amount += msg.value; 
             WETH9.deposit{ value: msg.value }(); 
-        }   if (long) { pledge.work.debit += amount; } // collateral 
-            else { uint price = _getPrice(); // insuring $ value of ETH
-                uint in_dollars = FullMath.mulDiv(price, amount, WAD);
-                uint deductible = FullMath.mulDiv(in_dollars, FEE, WAD);
-                // change deductible to be in units of ETH instead...
-                deductible = FullMath.mulDiv(WAD, deductible, price);
-                uint insured = amount - deductible; // in ETH
-                pledge.weth.debit += insured; // withdrawable
-                // by folding balance into pledge.work.debit...
-                pledges[address(this)].weth.debit += deductible;
-                pledges[address(this)].weth.credit += insured;
-                pledge.weth.credit += in_dollars - deductible;
-                require(pledges[address(this)].carry.debit >
-                    FullMath.mulDiv(
-                        pledges[address(this)].weth.credit, 
-                        price, WAD), "insuring too much"
-                );      
-            }   
-            pledges[beneficiary] = pledge; 
-            repackNFT(1, amount);
-            // 1 passed in to prevent
-            // division by zero, later
-            // it is decremented back 
+        }   
+        if (long) { pledge.work.debit += amount;
+            pledges[address(this)].work.credit += amount;
+        } 
+        else { uint price = _getPrice(); // insuring $ value of ETH
+            uint in_dollars = FullMath.mulDiv(price, amount, WAD);
+            uint deductible = FullMath.mulDiv(in_dollars, FEE, WAD);
+            // change deductible to be in units of ETH instead...
+            deductible = FullMath.mulDiv(WAD, deductible, price);
+            uint insured = amount - deductible; // in ETH
+            pledge.weth.debit += insured; // withdrawable
+            // by folding balance into pledge.work.debit...
+            pledges[address(this)].weth.debit += deductible;
+            pledges[address(this)].weth.credit += insured;
+            pledge.weth.credit += in_dollars - deductible;
+            require(pledges[address(this)].carry.debit >
+                FullMath.mulDiv(
+                    pledges[address(this)].weth.credit, 
+                    price, WAD), "insuring too much"
+            );      
+        }   
+        pledges[beneficiary] = pledge; 
+        repackNFT(1, amount);
+        // 1 passed in to prevent
+        // division by zero, later
+        // it is decremented back 
     }
 
     // "Entropy" comes from a Greek word for transformation; 

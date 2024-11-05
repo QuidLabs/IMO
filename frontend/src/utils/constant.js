@@ -1,5 +1,5 @@
 
-// TODO replace address
+
 export const addressQD = '0xE55B6A3167e8963993531e389Bf2B87A8B0D7545';
 export const addressMO = '0x3169F360b1701A08Dd87fc62DC1b0Cd5c195087b'
 export const addressSDAI = '0x015c52906b9d755Be413d5091cBB2587f0628fc1';

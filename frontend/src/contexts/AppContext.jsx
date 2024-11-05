@@ -163,8 +163,9 @@ export const AppContextProvider = ({ children }) => {
   const getDepositInfo = useCallback(async () => {
     try {
       if (connected && account && mo) {
-        const more_info = await mo.methods.get_more_info(addressMO).call()
+        const more_info = await mo.methods.get_more_info(account).call()
 
+        // TODO use formatUnits !!!
         const workEthBalance = (parseFloat(more_info[0]) / 1e18)
         const workUsdBalance = (parseFloat(more_info[1]) / 1e18)
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
@@ -176,7 +177,6 @@ export const AppContextProvider = ({ children }) => {
           weth_eth_balance: wethEthBalance,
           weth_usd_balance: wethUsdBalance,
         }
-
         return depoInfo
       }
     } catch (error) {
