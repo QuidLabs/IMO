@@ -116,11 +116,17 @@ contract Quid is ERC20,
         );  
         amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
     }
+    function get_total_deposits() 
+        public view returns (uint total) {
+        for (uint i = 0; i <= currentBatch(); i++) {
+            total += Piscine[i][43].debit;
+        }
+    }
     function get_total_supply_cap() 
-        public view returns (uint total_supply_cap) {
-        uint in_days = ( // used in frontend only...
+        public view returns (uint) {
+        uint in_days = ( // used in frontend...
             (block.timestamp - START) / 1 days
-        ) + 1; total_supply_cap = in_days * MAX_PER_DAY; 
+        ) + 1; return in_days * MAX_PER_DAY; 
     }
     function vote(uint new_vote) external 
         postLaunch { uint batch = currentBatch();

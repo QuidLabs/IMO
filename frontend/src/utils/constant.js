@@ -1,9 +1,9 @@
 
 // TODO replace address
-export const addressQD = '0x924a1b3d15549dbCE322F6c1308707E904Fac8c6';
-export const addressMO = '0x6898909dD8680d9BA4f5aaa9d77A66787Ceb1Fe8'
-export const addressSDAI = '0x8c285b15E2dB5Eb82a6896cA8Af6780176423902';
-export const addressSUSDE = '0xde2Af44EF018ac01283F8efADB4c84B5b3A8CAD6';
+export const addressQD = '0xE596B3814e5D641993879a8a2501a0e87BED5e63';
+export const addressMO = '0x0275f3376fE21E3F23703c3b27E0CAAD7993a176'
+export const addressSDAI = '0xeA769773BC8A5d9d5d11c7cB4a8991D1eB975E67';
+export const addressSUSDE = '0x1bC60730D91fC3479d65c69100BF55588d453b36';
 
 export const QUID = [
   {
@@ -459,11 +459,24 @@ export const QUID = [
   },
   {
     "type": "function",
+    "name": "get_total_deposits",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "total",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "get_total_supply_cap",
     "inputs": [],
     "outputs": [
       {
-        "name": "total_supply_cap",
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
       }
