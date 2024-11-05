@@ -91,12 +91,6 @@ contract Quid is ERC20,
         USDE = ERC20(_usde); SUSDE = ERC4626(_susde);
         FRAX = ERC20(_frax); SFRAX = ERC4626(_sfrax);
         DAI = ERC20(_dai); SDAI = ERC4626(_susde);
-        // DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
-        // SDAI = 0x83F20F44975D03b1b09e64809B757c47f942BEeA;
-        // FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
-        // SFRAX = 0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32;
-        // USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
-        // SUSDE = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
         USDE.approve(_susde,  type(uint256).max);
         FRAX.approve(_sfrax,  type(uint256).max);
         DAI.approve(_sdai,  type(uint256).max);
@@ -128,16 +122,17 @@ contract Quid is ERC20,
             (block.timestamp - START) / 1 days
         ) + 1; return in_days * MAX_PER_DAY; 
     }
-    function vote(uint new_vote) external 
-        postLaunch { uint batch = currentBatch();
-        if (batch < 16 && !hasVoted[msg.sender][batch]) {
+    function vote(uint new_vote) external { 
+        uint batch = currentBatch(); // 0-16
+        if (batch < 16 
+        && !hasVoted[msg.sender][batch]) {
             hasVoted[msg.sender][batch] = true;
             voters[batch].push(msg.sender);
         }
         uint old_vote = feeVotes[msg.sender];
         require(new_vote != old_vote &&
                 new_vote < 89, "bad vote"); 
-                // +11 max vote = 9.0% deductible
+        // +11 max vote = 9.0% deductible...
         feeVotes[msg.sender] = new_vote;
         uint stake = this.balanceOf(msg.sender);
         _calculateMedian(stake, new_vote, 
@@ -287,12 +282,9 @@ contract Quid is ERC20,
             consideration[pledge][batch] += amount; // redeemable
             require(msg.sender == Moulinette, "!"); // authorisation
         }   else if (block.timestamp <= START + DAYS && batch < 16) {
-            require(/*token == address(DAI) || token == address(SDAI)
-            || token == address(FRAX) || token == address(FRAX) || */
-            token == address(USDE) || token == address(SUSDE), "$");
-            // parlay in vegas...we was in attendance
-            // carry.credit burning QD... 
-            
+            require(token == address(DAI) || token == address(SDAI)
+            || token == address(FRAX) || token == address(FRAX) || 
+            token == address(USDE) || token == address(SUSDE), "$"); 
             uint in_days = ((block.timestamp - START) / 1 days);
             require(amount >= 10 * WAD, "mint more QD");
             require(Piscine[batch][43].credit + amount < 
@@ -302,8 +294,8 @@ contract Quid is ERC20,
             uint price = in_days * PENNY + START_PRICE;
             uint cost = _minAmount(pledge, token, 
                 FullMath.mulDiv(price, amount, WAD)
-            ); // _minAmount returns less than expected
-            // we calculate amount twice because maybe
+            ); // _minAmount may return less 
+            // so we calculate amount twice 
             amount = FullMath.mulDiv(WAD, cost, price); 
             consideration[pledge][batch] += amount;
             _mint(pledge, amount); // totalSupply++
@@ -359,7 +351,8 @@ contract Quid is ERC20,
                 //     abi.encodePacked(_seed, 
                 //     block.prevrandao))) 
                 // % voters[batch].length;
-                MO(Moulinette).setMetrics(AVG_ROI); 
+                // console.log("random....", random);
+                // MO(Moulinette).setMetrics(AVG_ROI); 
                 require(block.timestamp >= START + DAYS 
                 && batch < 17, "re-up"); // "like a boomerang
             } // ...I need a...^^^^^^ same level, same rebel
@@ -392,12 +385,13 @@ contract Quid is ERC20,
             QD = MO(Moulinette).dollar_amt_to_qd_amt(
                 MO(Moulinette).capitalisation(
                     0, false), amount / 2); 
-        to = owner; } else { require(msg.sender == address(this), "$"); }
+                                to = owner; 
+        } 
         if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
             // uint reserveSDAI = ERC4626(SDAI).balanceOf(address(this));
             uint reserveSUSDE = ERC4626(SUSDE).balanceOf(address(this));
             // TODO does ^^^ return shares?
-            amount = _min(reserveSUSDE, amount);
+            // amount = _min(reserveSUSDE, amount);
             // require(pledges[address(this)].carry.debit 
             //     == reserveSDAI + reserveSUSDE, "don't add up");
 
@@ -427,7 +421,7 @@ contract Quid is ERC20,
             //     }
             // }
             // ERC4626(SDAI).redeem(withdrawFromSDAI, to, address(this));
-            ERC4626(SUSDE).redeem(amount, to, address(this));
+            ERC4626(SUSDE).withdraw(amount, to, address(this));
             // redeem takes amount of sUSDe you want to turn into USDe. 
             // withdraw specifies amount of USDe you wish to withdraw, 
             // and will pull the required amount of sUSDe from sender. 

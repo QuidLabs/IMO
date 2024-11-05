@@ -83,7 +83,6 @@ contract MO is Owned(msg.sender) {
     // work as well as accountability for weth
     function setQuid(address _quid) external 
         onlyOwner {  QUID = Quid(_quid); 
-        // renounceOwnership();
     } 
     modifier onlyQuid {
         require(msg.sender 
@@ -483,7 +482,7 @@ contract MO is Owned(msg.sender) {
     }
 
     // allowing deposits on behalf of a benecifiary
-    // enables similar functionality to suretyship
+    // enables similar functionality to suretyship...
     function deposit(address beneficiary, // pledge
         uint amount, bool long) external payable { 
         Offer memory pledge = pledges[beneficiary];
@@ -491,7 +490,7 @@ contract MO is Owned(msg.sender) {
             msg.sender, address(this), amount);
         } else { require(msg.value > 0, "ETH!"); }
         if (msg.value > 0) { amount += msg.value; 
-            WETH9.deposit{value: msg.value }(); 
+            WETH9.deposit{ value: msg.value }(); 
         }   if (long) { pledge.work.debit += amount; } // collateral 
             else { uint price = _getPrice(); // insuring $ value of ETH
                 uint in_dollars = FullMath.mulDiv(price, amount, WAD);

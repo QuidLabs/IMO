@@ -1,9 +1,9 @@
 
 // TODO replace address
-export const addressQD = '0xE596B3814e5D641993879a8a2501a0e87BED5e63';
-export const addressMO = '0x0275f3376fE21E3F23703c3b27E0CAAD7993a176'
-export const addressSDAI = '0xeA769773BC8A5d9d5d11c7cB4a8991D1eB975E67';
-export const addressSUSDE = '0x1bC60730D91fC3479d65c69100BF55588d453b36';
+export const addressQD = '0xE55B6A3167e8963993531e389Bf2B87A8B0D7545';
+export const addressMO = '0x3169F360b1701A08Dd87fc62DC1b0Cd5c195087b'
+export const addressSDAI = '0x015c52906b9d755Be413d5091cBB2587f0628fc1';
+export const addressSUSDE = '0xf71E2515476563c5015eC217A9b65BC06dA71987';
 
 export const QUID = [
   {

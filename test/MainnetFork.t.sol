@@ -10,6 +10,7 @@ import "../src/interfaces/IERC721.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {WETH} from "../lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "../lib/solmate/src/tokens/ERC20.sol";
+// import {ERC4626} from "../lib/solmate/src/tokens/ERC4626.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
@@ -21,12 +22,17 @@ interface ICollection is IERC721 {
 contract MainnetFork is Test {
     Quid public quid;
     MO public moulinette;
+    
     mockVault public sUSDe;
     mockToken public USDe;
-    mockVault public sFRAX;
-    mockToken public FRAX;
-    mockVault public sDAI;
-    mockToken public DAI;
+    
+    ERC20 public DAI = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+    ERC4626 public SDAI = ERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
+    ERC20 public FRAX = ERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
+    ERC4626 public SFRAX = ERC4626(0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32);
+    // ERC20 public USDE = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
+    // ERC4626 SUSDE = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
+    
     address public chainlink = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     ICollection public F8N = ICollection(0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405); 
     ISwapRouter public router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -40,6 +46,18 @@ contract MainnetFork is Test {
     address public User03 = address(0x3);
     address public User04 = address(0x4);
     address public User05 = address(0x5);
+    address public User06 = address(0x6);
+    address public User07 = address(0x7);
+    address public User08 = address(0x8);
+    address public User09 = address(0x9);
+    address public User10 = address(0x10);
+    address public User11 = address(0x11);
+    address public User12 = address(0x12);
+    address public User13 = address(0x13);
+    address public User14 = address(0x14);
+    address public User15 = address(0x15);
+    address public User16 = address(0x16);
+    address public User17 = address(0x17);
 
     uint public half_a_rock = 500000000000000000000000; // $500k
     uint public rack = 1000000000000000000000; // $1000
@@ -57,10 +75,10 @@ contract MainnetFork is Test {
         
         USDe = new mockToken();
         sUSDe = new mockVault(USDe);
-        FRAX = new mockToken();
-        sFRAX = new mockVault(FRAX);
-        DAI = new mockToken();
-        sDAI = new mockVault(DAI);
+        // FRAX = new mockToken();
+        // sFRAX = new mockVault(FRAX);
+        // DAI = new mockToken();
+        // sDAI = new mockVault(DAI);
 
         moulinette = new MO(
             address(weth), address(nfpm), 
@@ -145,6 +163,13 @@ contract MainnetFork is Test {
             work_debit, work_credit, weth_debit
         );
         vm.stopPrank();
+
+        vm.startPrank(User01);
+
+        
+
+        vm.stopPrank();
+
     }
 
     /*
