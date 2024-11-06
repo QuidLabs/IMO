@@ -143,8 +143,8 @@ contract MO is Owned(msg.sender) {
         ); // composition of insurance capital:
         uint assets = collateral + deductibles + 
             // USDC (upscaled for precision)...
-            (pledge.work.debit * 1e12) + // USDe...
-             pledge.carry.debit; // not incl. yield
+            (pledge.work.debit * 1e12) + 
+            QUID.get_shares_value();
         // doesn't account for pledge.weth.credit,
         // which are liabilities (that are insured)
         uint total = QUID.totalSupply(); 
@@ -481,12 +481,10 @@ contract MO is Owned(msg.sender) {
         _creditHelper(to); // beneficiary...
     }
 
-    // allowing deposits on behalf of a benecifiary
-    // enables similar functionality to suretyship...
     function deposit(address beneficiary, // pledge
         uint amount, bool long) external payable { 
         Offer memory pledge = pledges[beneficiary];
-        if (amount > 0) {  WETH9.transferFrom(
+        if (amount > 0) { WETH9.transferFrom(
             msg.sender, address(this), amount);
         } else { require(msg.value > 0, "ETH!"); }
         if (msg.value > 0) { amount += msg.value; 
@@ -507,9 +505,9 @@ contract MO is Owned(msg.sender) {
             pledges[address(this)].weth.credit += insured;
             pledge.weth.credit += in_dollars - deductible;
             require(pledges[address(this)].carry.debit >
-                FullMath.mulDiv(
+                FullMath.mulDiv(price,
                     pledges[address(this)].weth.credit, 
-                    price, WAD), "insuring too much"
+                    WAD), "insuring too much"
             );      
         }   
         pledges[beneficiary] = pledge; 
@@ -521,7 +519,7 @@ contract MO is Owned(msg.sender) {
 
     // "Entropy" comes from a Greek word for transformation; 
     // Clausius interpreted as the magnitude of the degree 
-    // to which Pods be separate from each other: "so close
+    // to which things separate from each other: "so close
     // no matter how far...rage be in it like you couldn’t
     // believe, or work like I could've scarcely imagined;
     // if one isn’t satisfied, indulge the latter, ‘neath 
@@ -684,19 +682,21 @@ contract MO is Owned(msg.sender) {
         (uint160 sqrtPriceX96, int24 twap,,,,,) = POOL.slot0(); 
         uint128 liquidity; 
         if (LAST_TWAP_TICK != 0) { // not first _repack...
-            if (twap > UPPER_TICK || twap < LOWER_TICK) {
+            if ((twap > UPPER_TICK || twap < LOWER_TICK) && 
+            block.timestamp - pledges[address(this)].last > 1 hours) {
                 (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
                 (uint collected0, 
-                 uint collected1) = _withdrawAndCollect(liquidity); 
+                uint collected1) = _withdrawAndCollect(liquidity); 
                 amount0 += collected0; amount1 += collected1;
                 pledges[address(this)].weth.debit += collected1;
                 pledges[address(this)].work.debit += collected0;
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
+                pledges[address(this)].last = block.timestamp;
             }
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         (amount0, 
-         amount1) = _swap(amount0, amount1, sqrtPriceX96);
+        amount1) = _swap(amount0, amount1, sqrtPriceX96);
         (ID,,,) = NFPM.mint(
             INonfungiblePositionManager.MintParams({ token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
@@ -709,7 +709,7 @@ contract MO is Owned(msg.sender) {
             pledges[address(this)].weth.debit += collected1;
             pledges[address(this)].work.debit += collected0;
             (amount0, 
-             amount1) = _swap(amount0, amount1, sqrtPriceX96);
+            amount1) = _swap(amount0, amount1, sqrtPriceX96);
             NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp

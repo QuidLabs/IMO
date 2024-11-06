@@ -10,7 +10,7 @@ import "../src/interfaces/IERC721.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {WETH} from "../lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "../lib/solmate/src/tokens/ERC20.sol";
-// import {ERC4626} from "../lib/solmate/src/tokens/ERC4626.sol";
+import {ERC4626} from "../lib/solmate/src/tokens/ERC4626.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
@@ -87,8 +87,8 @@ contract MainnetFork is Test {
         quid = new Quid(
             address(moulinette), chainlink, 
             address(USDe), address(sUSDe),
-            address(FRAX), address (sFRAX),
-            address (sDAI), address (DAI)
+            address(FRAX), address (SFRAX),
+            address (SDAI), address (DAI)
         );
 
         moulinette.setQuid(address(quid));
@@ -120,6 +120,8 @@ contract MainnetFork is Test {
 
         quid.transfer(User02, grant);
         vm.stopPrank(); // exit User1 context
+
+        // TODO transfer back and verify that carry.debit before and after are the same
 
         // Simulate passage of time
         vm.warp(block.timestamp + 14 days);
@@ -164,12 +166,68 @@ contract MainnetFork is Test {
         );
         vm.stopPrank();
 
+
+
+        /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
+        /*                       LOTTERY TESTING                      */
+        /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
+
+
         vm.startPrank(User01);
 
-        
+        quid.vote(77);
 
         vm.stopPrank();
 
+
+        vm.startPrank(User01);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User02);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User03);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User04);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User05);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User06);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User07);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User08);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User09);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+
+
+        
     }
 
     /*

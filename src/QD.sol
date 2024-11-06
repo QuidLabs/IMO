@@ -43,6 +43,7 @@ contract Quid is ERC20,
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     // "16 bars keep the car running" ~ chamber music
+    mapping(address => uint) public vaultShares; 
     // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
@@ -122,6 +123,15 @@ contract Quid is ERC20,
             (block.timestamp - START) / 1 days
         ) + 1; return in_days * MAX_PER_DAY; 
     }
+
+    function get_shares_value() 
+        public view returns (uint) {
+        uint susde = ERC4626(SUSDE).convertToAssets(vaultShares[SUSDE]);
+        uint sfrax = ERC4626(SUSDE).convertToAssets(vaultShares[SFRAX]);
+        uint sdai = ERC4626(SUSDE).convertToAssets(vaultShares[SDAI]);
+        return susde + sfrax + sdai;
+    }
+
     function vote(uint new_vote) external { 
         uint batch = currentBatch(); // 0-16
         if (batch < 16 
@@ -255,8 +265,8 @@ contract Quid is ERC20,
         } else { i = int(currentBatch()); 
             console.log("MedianTransferHelper...TO", 
                 balance_to, to_vote, this.balanceOf(to));
-            _calculateMedian(balance_to, to_vote, 
-                   this.balanceOf(to), to_vote);
+            // _calculateMedian(balance_to, to_vote, 
+            //        this.balanceOf(to), to_vote);
         }   // loop from newest to oldest batch
         // until requested amount fulfilled...
         while (amount > 0 && i >= 0) { uint k = uint(i);
@@ -272,8 +282,8 @@ contract Quid is ERC20,
         }   require(amount == 0, "transfer");
         console.log("MedianTransferHelper...FROM", 
             balance_from, from_vote, this.balanceOf(from));
-        _calculateMedian(balance_from, from_vote, 
-               this.balanceOf(from), from_vote);
+        // _calculateMedian(balance_from, from_vote, 
+        //        this.balanceOf(from), from_vote);
     }
 
     function mint(address pledge, uint amount, address token) 
@@ -308,9 +318,9 @@ contract Quid is ERC20,
             if (token == address(USDE)) {
                 ERC20(token).transferFrom(
                 msg.sender, address(this), cost); // in $ 
-                ERC4626(SUSDE).deposit(
+                uint shares = ERC4626(SUSDE).deposit(
                     cost, address(this)
-                );
+                );  vaultShares[SUSDE] += shares;
                 // TODO stake into morpho (mainnet)
                 console.log("DEPOSIT...", ERC4626(SUSDE).totalAssets());
             } 
