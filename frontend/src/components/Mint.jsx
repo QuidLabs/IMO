@@ -17,7 +17,7 @@ export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
   const { getTotalSupply, setStorage, getWalletBalance,
-    addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
+    addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo } = useAppContext()
 
   const [mintValue, setMintValue] = useState("")
   const [sdaiValue, setSdaiValue] = useState(0)
@@ -89,7 +89,8 @@ export const Mint = () => {
 
     if (originalValue[0] === ".") originalValue = "0" + originalValue
 
-    if (regex.test(originalValue)) setMintValue(Number(originalValue).toFixed())
+    if (regex.test(originalValue) && chooseButton === "MINT") setMintValue(Number(originalValue).toFixed())
+      else if (regex.test(originalValue)) setMintValue(originalValue)
   }
 
   const setNotifications = useCallback((severity, message, status = false) => {
@@ -134,7 +135,7 @@ export const Mint = () => {
       if (account) {
         await mo.methods.deposit(
           beneficiaryAccount.toString(),
-          0, insureStatus).send({ from: account, value: ethDepo.toString() })
+          0, !insureStatus).send({ from: account, value: ethDepo.toString() })
       }
 
       setNotifications("success", "Your deposite has been pending completed!", true)
@@ -245,7 +246,7 @@ export const Mint = () => {
 
     if (notifications[0] && !connected) setTimeout(() => setStorage([]), 500)
 
-  }, [updateTotalSupply, setStorage, account, connected, quid, notifications, isProcessing])
+  }, [updateTotalSupply, setStorage, account, connected, quid, notifications, isProcessing, sdaiValue])
 
   useEffect(() => {
     if (chooseButton.current === "MINT" || chooseButton.current == null) setSign('QD')

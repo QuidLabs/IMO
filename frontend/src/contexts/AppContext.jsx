@@ -6,7 +6,7 @@ import { Web3Provider } from "@ethersproject/providers"
 
 import Web3 from "web3"
 
-import { QUID, SDAI,  MO, SUSDE, addressQD, addressSDAI, addressSUSDE, addressMO } from "../utils/constant"
+import { QUID, SDAI,  MO, addressQD, addressSDAI, addressMO } from "../utils/constant"
 
 const contextState = {
   connectToMetaMask: () => { },
@@ -44,7 +44,7 @@ export const AppContextProvider = ({ children }) => {
   const [SDAIbalance, setSdaiBalance] = useState(null)
 
   const [mo, setMO] = useState(null)
-  const [susde, setSusde] = useState(null)
+  //const [susde, setSusde] = useState(null)
 
   const [currentTimestamp, setAccountTimestamp] = useState(0)
 
@@ -124,7 +124,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.error("Error in updateInfo: ", error)
     }
-  }, [account, connected, quid, sdai, susde])
+  }, [account, connected, quid, sdai])
 
   const getUserInfo = useCallback(async () => {
     try {
@@ -244,18 +244,18 @@ export const AppContextProvider = ({ children }) => {
           const quidContract = new web3Instance.eth.Contract(QUID, addressQD)
           const moContract = new web3Instance.eth.Contract(MO, addressMO)
           const usdeContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
-          const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
+          //const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
 
           setMO(moContract)
           setQuid(quidContract)
           setSdai(usdeContract)
-          setSusde(susdeContract)
+          //setSusde(susdeContract)
         }
       }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [setAccount, setMO, setSdai, setSusde, setQuid, account, provider])
+  }, [setAccount, setMO, setSdai, setQuid, account, provider])
 
   const chooseButton = useRef(null)
 

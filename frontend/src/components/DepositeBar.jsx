@@ -43,19 +43,19 @@ export const DepositeBar = () => {
             <div className="summary-section">
                 <div className="summary-title">ETHerum's balance:</div>
                 <div className="summary-value">
-                    Ξ{connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(4))) : 0}
+                    Ξ{connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(2))) : 0}
                 </div>
             </div>
             <div className="summary-section">
                 <div className="summary-title">Current price</div>
                 <div className="summary-value">
-                    <span className="summary-value">${connected && account ? numberWithCommas(parseFloat(Number(price).toFixed(2))) : 0}</span>
+                    <span className="summary-value">${connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
                 </div>
             </div>
             <div className="summary-section">
                 <div className="summary-title">Gain</div>
                 <div className="summary-value">
-                    {connected && account ? numberWithCommas(parseFloat(Number(gain).toFixed(4))) : 0}
+                    {connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}
                 </div>
             </div>
             <div className="summary-section">
