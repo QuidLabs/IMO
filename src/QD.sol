@@ -184,7 +184,7 @@ contract Quid is ERC20,
         }
     }
 
-    function burn(address from, uint value) public
+    function turn(address from, uint value) public
         onlyGenerators { MO(Moulinette).transferHelper(
             from, address(0), value); _transferHelper(
             from, address(0), value); // burn shouldn't 
@@ -342,9 +342,9 @@ contract Quid is ERC20,
                         USDE.transferFrom(msg.sender, address(this), cost); 
                         shares = SUSDE.deposit(cost, address(this));  
                         vaultShares[address(SUSDE)] += shares; 
-                        IMorpho(MORPHO).supplyCollateral(
+                        IMorpho(MORPHO).supply(
                             IMorpho((MORPHO)).idToMarketParams(ID), 
-                            amount, address(this), ""); 
+                            amount, 0, address(this), ""); 
                     }}} address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
                     address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
@@ -420,6 +420,17 @@ contract Quid is ERC20,
         if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
             // uint reserveSDAI = ERC4626(SDAI).balanceOf(address(this));
             uint reserveSUSDE = ERC4626(SUSDE).balanceOf(address(this));
+             function withdraw(uint256 amountUsdc) external onlyAuthorizedCaller {
+        morpho.withdraw(
+            morpho.idToMarketParams(depositUSDCmId),
+            amountUsdc,
+            0,
+            address(this),
+            msg.sender
+        );
+    }
+
+
             // TODO does ^^^ return shares?
             // amount = _min(reserveSUSDE, amount);
             // require(pledges[address(this)].carry.debit 

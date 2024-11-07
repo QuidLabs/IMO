@@ -329,8 +329,8 @@ contract MO is Owned(msg.sender) {
                                 share, WAD);
         } 
         console.log("AbsorbInRedeem...", absorb);
-        QUID.burn(msg.sender, amount);
-        // helper function called by burn
+        QUID.turn(msg.sender, amount);
+        // helper function called by turn
         // handles PLEDGE.CARRY.CREDIT-- 
         amount = qd_amt_to_dollar_amt(
             capitalisation(0, false),
@@ -353,7 +353,6 @@ contract MO is Owned(msg.sender) {
             
             console.log("USDCinRedeem...", usdc);
             bool sell = third > (pledges[address(this)].work.debit * 1e12);
-
             if (sell) { amount = FullMath.mulDiv(WAD,
                 (third - (usdc * 1e12)), QUID.getPrice());
                 console.log("SellInRedeem...", amount);
@@ -372,7 +371,7 @@ contract MO is Owned(msg.sender) {
                 amount1 -= amount;
                 console.log("RedeemWETH...", amount);
             }
-            if (amount0 >= usdc) { 
+            if (amount0 >= usdc) { // TODO only USDC
                 token0.transfer(msg.sender, usdc);
                 amount0 -= usdc;
                 console.log("RedeemUSDC...", usdc);
@@ -442,8 +441,11 @@ contract MO is Owned(msg.sender) {
                 token1.transfer(msg.sender, transfer);
                 amount1 -= transfer;
             }     
-        }   pledges[msg.sender] = pledge;
             repackNFT(amount0, amount1);
+        }   
+        pledges[msg.sender] = pledge;
+
+            
     }
 
     function mint(address to, // used by ERC20.mint
@@ -609,7 +611,7 @@ contract MO is Owned(msg.sender) {
             state.cap = capitalisation(state.repay, true);
             amount = _min(dollar_amt_to_qd_amt(state.cap, 
                 state.repay), QUID.balanceOf(beneficiary)
-            );  QUID.burn(beneficiary, amount);
+            );  QUID.turn(beneficiary, amount);
             amount = qd_amt_to_dollar_amt(state.cap, amount);
             // subtract the $ value of QD
             pledge.work.credit -= amount;
