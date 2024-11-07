@@ -420,16 +420,11 @@ contract Quid is ERC20,
         if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
             uint reserveSUSDE = ERC4626(SUSDE).balanceOf(address(this));
             require(amount <= get_shares_value(), "SUSDE");
-            IMorpho(MORPHO).withdraw(IMorpho((MORPHO)).idToMarketParams(ID),
+            (uint susde, ) = IMorpho(MORPHO).withdraw(
+                IMorpho((MORPHO)).idToMarketParams(ID),
                     amount, 0, address(this), msg.sender);
-    }
-
-
-            // TODO does ^^^ return shares?
-            // amount = _min(reserveSUSDE, amount);
             // require(pledges[address(this)].carry.debit 
             //     == reserveSDAI + reserveSUSDE, "don't add up");
-
             // uint totalBalance = reserveSDAI + reserveSUSDE;
             // uint newTotalBalance = totalBalance - amount;
             // uint targetBalance = newTotalBalance / 2;
@@ -456,11 +451,7 @@ contract Quid is ERC20,
             //     }
             // }
             // ERC4626(SDAI).redeem(withdrawFromSDAI, to, address(this));
-            ERC4626(SUSDE).withdraw(amount, to, address(this));
-            // redeem takes amount of sUSDe you want to turn into USDe. 
-            // withdraw specifies amount of USDe you wish to withdraw, 
-            // and will pull the required amount of sUSDe from sender. 
-            // TODO steps to withdraw from morpho (mainnet)
+            ERC4626(SUSDE).withdraw(susde, to, address(this));
         }
     }
 }
