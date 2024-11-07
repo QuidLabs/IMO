@@ -1,6 +1,7 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity =0.8.8; // EVM: london
+import {Quid} from "./QD.sol"; // ERC777
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {Owned} from "lib/solmate/src/auth/Owned.sol";
@@ -13,7 +14,6 @@ import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 
-import {Quid} from "./QD.sol";
 contract MO is Owned(msg.sender) {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
@@ -30,7 +30,6 @@ contract MO is Owned(msg.sender) {
     int24 internal UPPER_TICK; 
     int24 internal LOWER_TICK;
     uint internal _ETH_PRICE; // TODO delete
-
     IUniswapV3Pool POOL; ISwapRouter ROUTER; 
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
