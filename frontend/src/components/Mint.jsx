@@ -47,7 +47,7 @@ export const Mint = () => {
 
   const handlePrice = useCallback(async (status) =>{
     try {
-      await mo.methods.set_price_eth(status, false).send({ from:account })
+      await quid.methods.set_price_eth(status, false).send({ from:account })
       .then(async (value) => {
         const priceCall = await quid.methods.getPrice().call()
         .then((value) => {
@@ -58,7 +58,7 @@ export const Mint = () => {
     } catch (error) {
       console.error("Test's pricing error", error)
     }
-  },[account, mo, quid])
+  },[account, quid])
 
   const calculatePrice = useCallback((num) => {
     try {
