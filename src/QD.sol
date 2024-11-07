@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity =0.8.8; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
+
+import {IMorpho, Id, Position} from "./interfaces/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
@@ -63,12 +65,15 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
+    bytes32 public constant marketId = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
+    IMorpho public immutable MORPHO;
     ERC4626 public immutable SFRAX;
     ERC4626 public immutable SUSDE;
     ERC4626 public immutable SDAI;
     ERC20 public immutable FRAX;
     ERC20 public immutable USDE;
     ERC20 public immutable DAI;
+    uint internal _ETH_PRICE; // TODO delete
     address public Moulinette; // windmill
     address internal chainlink;
     uint constant WAD = 1e18; //
@@ -89,6 +94,7 @@ contract Quid is ERC20,
         ERC20("QU!D", "QD", 18) { // 2024-26
         deployed = block.timestamp; // 11/11
         Moulinette = _mo; chainlink = _link;
+        MORPHO = IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
         USDE = ERC20(_usde); SUSDE = ERC4626(_susde);
         FRAX = ERC20(_frax); SFRAX = ERC4626(_sfrax);
         DAI = ERC20(_dai); SDAI = ERC4626(_susde);
@@ -119,16 +125,24 @@ contract Quid is ERC20,
     }
     function get_total_supply_cap() 
         public view returns (uint) {
+        uint batch = currentBatch();
         uint in_days = ( // used in frontend...
             (block.timestamp - START) / 1 days
-        ) + 1; return in_days * MAX_PER_DAY; 
+        ) + 1; return in_days * MAX_PER_DAY -
+               Piscine[batch][43].credit; 
     }
 
     function get_shares_value() 
         public view returns (uint) {
-        uint susde = ERC4626(SUSDE).convertToAssets(vaultShares[SUSDE]);
-        uint sfrax = ERC4626(SUSDE).convertToAssets(vaultShares[SFRAX]);
-        uint sdai = ERC4626(SUSDE).convertToAssets(vaultShares[SDAI]);
+        uint susde = SUSDE.convertToAssets(
+            vaultShares[address(SUSDE)]
+        );
+        uint sfrax = SFRAX.convertToAssets(
+            vaultShares[address(SFRAX)]
+        );
+        uint sdai = SDAI.convertToAssets(
+            vaultShares[address(SDAI)]
+        );
         return susde + sfrax + sdai;
     }
 
@@ -193,10 +207,21 @@ contract Quid is ERC20,
             to, value); super.transferFrom(from, 
             to, value);
     }
-    
+
+    function set_price_eth(bool up,
+        bool refresh) external { 
+        if (refresh) { _ETH_PRICE = 0;
+            _ETH_PRICE = getPrice();
+        }   else { uint delta = _ETH_PRICE / 5;
+            _ETH_PRICE = up ? _ETH_PRICE + delta 
+                              : _ETH_PRICE - delta;
+        } // TODO remove this testing fu
+    }
     function getPrice() public 
-        view returns 
-        (uint price) {
+        view returns (uint price) {
+        if (_ETH_PRICE > 0) { 
+            return _ETH_PRICE;
+        }
         (, int priceAnswer,, 
         uint timeStamp,) = AggregatorV3Interface(chainlink).latestRoundData();
         uint8 answerDigits = AggregatorV3Interface(chainlink).decimals();
@@ -314,15 +339,16 @@ contract Quid is ERC20,
             Piscine[batch][in_days].debit += cost;
             Piscine[batch][43].credit += amount;  
             Piscine[batch][43].debit += cost;
+            // TODO charge 20bps on the cost
             MO(Moulinette).mint(pledge, cost, amount);
             if (token == address(USDE)) {
-                ERC20(token).transferFrom(
-                msg.sender, address(this), cost); // in $ 
-                uint shares = ERC4626(SUSDE).deposit(
+                USDE.transferFrom(msg.sender, 
+                address(this), cost); // in $ 
+                uint shares = SUSDE.deposit(
                     cost, address(this)
-                );  vaultShares[SUSDE] += shares;
+                );  vaultShares[address(SUSDE)] += shares;
                 // TODO stake into morpho (mainnet)
-                console.log("DEPOSIT...", ERC4626(SUSDE).totalAssets());
+                console.log("DEPOSIT...", SUSDE.totalAssets());
             } 
         }
     }
@@ -353,7 +379,8 @@ contract Quid is ERC20,
             // TODO is approval necessary?
             ICollection(F8N).transferFrom(
                 address(this), from, LAMBO
-            ); uint QD = draw(from, GRIEVANCES); 
+            ); 
+            uint QD = draw(from, GRIEVANCES); 
             mint(from, QD, address(USDE)); 
             // TODO mint(QD / 2, from, MO(Moulinette).DAI())
             if (START != 0) { // BACKEND / 8 wu tang...TODO
@@ -392,6 +419,7 @@ contract Quid is ERC20,
     function draw(address to, uint amount) 
         public onlyGenerators returns (uint QD) { 
             if (msg.sender == address(this)) { 
+            // TODO _min(rake, GRIEVANCES);
             QD = MO(Moulinette).dollar_amt_to_qd_amt(
                 MO(Moulinette).capitalisation(
                     0, false), amount / 2); 

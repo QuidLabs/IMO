@@ -60,7 +60,7 @@ contract Deploy is Script {
         
         moulinette.setQuid(address(quid));
         quid.restart();
-        moulinette.set_price_eth(false, true);
+        quid.set_price_eth(false, true);
         
         console.log("Quid address...", address(quid));
         console.log("USDe address...", address(USDe));

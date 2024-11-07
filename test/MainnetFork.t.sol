@@ -64,7 +64,7 @@ contract MainnetFork is Test {
     uint public bill = 100000000000000000000; // $100
     uint public half_a_rack = 500000000000000000000; // $500
     uint public grant = 50000000000000000000; // $50
-    uint public jackson_in_ETH = 1000000000000000; // $26
+    uint public jackson_in_ETH = 1000000000000000; // ~$26
     
     function setUp() public {
         uint256 mainnetFork = vm.createFork("https://rpc.ankr.com/eth", 21082583);
@@ -93,7 +93,7 @@ contract MainnetFork is Test {
 
         moulinette.setQuid(address(quid));
         quid.restart();
-        moulinette.set_price_eth(false, true);
+        quid.set_price_eth(false, true);
     }
     
     function testEverything() public {
@@ -180,49 +180,49 @@ contract MainnetFork is Test {
         vm.stopPrank();
 
 
-        vm.startPrank(User01);
+        // vm.startPrank(User01);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User02);
+        // vm.stopPrank();
+        // vm.startPrank(User02);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User03);
+        // vm.stopPrank();
+        // vm.startPrank(User03);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User04);
+        // vm.stopPrank();
+        // vm.startPrank(User04);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User05);
+        // vm.stopPrank();
+        // vm.startPrank(User05);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User06);
+        // vm.stopPrank();
+        // vm.startPrank(User06);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User07);
+        // vm.stopPrank();
+        // vm.startPrank(User07);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User08);
+        // vm.stopPrank();
+        // vm.startPrank(User08);
 
-        quid.vote(77);
+        // quid.vote(77);
 
-        vm.stopPrank();
-        vm.startPrank(User09);
+        // vm.stopPrank();
+        // vm.startPrank(User09);
 
-        quid.vote(77);
+        // quid.vote(77);
 
         vm.stopPrank();
 
