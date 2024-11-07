@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity >=0.5.0;
 
-type Id is bytes32;
 
 struct MarketParams {
     address loanToken;
@@ -322,7 +321,7 @@ interface IMorphoStaticTyping is IMorphoBase {
     /// @dev Warning: For `feeRecipient`, `supplyShares` does not contain the accrued shares since the last interest
     /// accrual.
     function position(
-        Id id,
+        bytes32 id,
         address user
     )
         external
@@ -339,7 +338,7 @@ interface IMorphoStaticTyping is IMorphoBase {
     /// @dev Warning: `totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last interest
     /// accrual.
     function market(
-        Id id
+        bytes32 id
     )
         external
         view
@@ -356,7 +355,7 @@ interface IMorphoStaticTyping is IMorphoBase {
     /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
     /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
     function idToMarketParams(
-        Id id
+        bytes32 id
     )
         external
         view
@@ -378,7 +377,7 @@ interface IMorpho is IMorphoBase {
     /// @dev Warning: For `feeRecipient`, `p.supplyShares` does not contain the accrued shares since the last interest
     /// accrual.
     function position(
-        Id id,
+        bytes32 id,
         address user
     ) external view returns (Position memory p);
 
@@ -387,12 +386,12 @@ interface IMorpho is IMorphoBase {
     /// @dev Warning: `m.totalBorrowAssets` does not contain the accrued interest since the last interest accrual.
     /// @dev Warning: `m.totalSupplyShares` does not contain the accrued shares by `feeRecipient` since the last
     /// interest accrual.
-    function market(Id id) external view returns (Market memory m);
+    function market(bytes32 id) external view returns (Market memory m);
 
     /// @notice The market params corresponding to `id`.
     /// @dev This mapping is not used in Morpho. It is there to enable reducing the cost associated to calldata on layer
     /// 2s by creating a wrapper contract with functions that take `id` as input instead of `marketParams`.
     function idToMarketParams(
-        Id id
+        bytes32 id
     ) external view returns (MarketParams memory);
 }

@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity =0.8.8; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
-
-import {IMorpho, Id, Position} from "./interfaces/IMorpho.sol";
+import {IMorpho, Position} from "./interfaces/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
@@ -45,7 +44,8 @@ contract Quid is ERC20,
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     // "16 bars keep the car running" ~ chamber music
-    mapping(address => uint) public vaultShares; 
+    mapping(address => uint) public vaultShares; // $
+    // re-deposited staked stablecoins in a basket...
     // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
@@ -65,19 +65,17 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
-    bytes32 public constant marketId = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
-    IMorpho public immutable MORPHO;
-    ERC4626 public immutable SFRAX;
     ERC4626 public immutable SUSDE;
-    ERC4626 public immutable SDAI;
-    ERC20 public immutable FRAX;
     ERC20 public immutable USDE;
-    ERC20 public immutable DAI;
-    uint internal _ETH_PRICE; // TODO delete
+    // ERC4626 public immutable SFRAX;
+    // ERC20 public immutable FRAX;
+    // ERC4626 public immutable SDAI;
+    // ERC20 public immutable DAI; 
+    uint internal _ETH_PRICE; // TODO 
     address public Moulinette; // windmill
     address internal chainlink;
-    uint constant WAD = 1e18; //
-    modifier onlyGenerators { //
+    uint constant WAD = 1e18;
+    modifier onlyGenerators { 
         address sender = msg.sender;
         require(sender == Moulinette ||
                 sender == address(this), "!");
@@ -94,14 +92,15 @@ contract Quid is ERC20,
         ERC20("QU!D", "QD", 18) { // 2024-26
         deployed = block.timestamp; // 11/11
         Moulinette = _mo; chainlink = _link;
-        MORPHO = IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
         USDE = ERC20(_usde); SUSDE = ERC4626(_susde);
-        FRAX = ERC20(_frax); SFRAX = ERC4626(_sfrax);
-        DAI = ERC20(_dai); SDAI = ERC4626(_susde);
-        USDE.approve(_susde,  type(uint256).max);
-        FRAX.approve(_sfrax,  type(uint256).max);
-        DAI.approve(_sdai,  type(uint256).max);
+        // FRAX = ERC20(_frax); SFRAX = ERC4626(_sfrax);
+        // DAI = ERC20(_dai); SDAI = ERC4626(_susde);
+        // USDE.approve(_susde,  type(uint256).max);
+        // FRAX.approve(_sfrax,  type(uint256).max);
+        // DAI.approve(_sdai, type(uint256).max);
+        SUSDE.approve(MORPHO, type(uint256).max);
     }
+    
     function _min(uint _a, uint _b) internal 
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
@@ -117,8 +116,8 @@ contract Quid is ERC20,
         );  
         amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
     }
-    function get_total_deposits() 
-        public view returns (uint total) {
+    function get_total_deposits() public 
+        view returns (uint total) {
         for (uint i = 0; i <= currentBatch(); i++) {
             total += Piscine[i][43].debit;
         }
@@ -136,14 +135,11 @@ contract Quid is ERC20,
         public view returns (uint) {
         uint susde = SUSDE.convertToAssets(
             vaultShares[address(SUSDE)]
-        );
-        uint sfrax = SFRAX.convertToAssets(
+        ); /* uint sfrax = SFRAX.convertToAssets(
             vaultShares[address(SFRAX)]
-        );
-        uint sdai = SDAI.convertToAssets(
-            vaultShares[address(SDAI)]
-        );
-        return susde + sfrax + sdai;
+        );  uint sdai = SDAI.convertToAssets(
+            vaultShares[address(SDAI)]  
+        ); */ return susde; // + sfrax + sdai; TODO
     }
 
     function vote(uint new_vote) external { 
@@ -159,8 +155,8 @@ contract Quid is ERC20,
         // +11 max vote = 9.0% deductible...
         feeVotes[msg.sender] = new_vote;
         uint stake = this.balanceOf(msg.sender);
-        _calculateMedian(stake, new_vote, 
-                         stake, old_vote);
+        _calculateMedian(stake, old_vote,
+                         stake, new_vote);
     }
     function currentBatch() 
         public view returns (uint batch) {
@@ -242,8 +238,8 @@ contract Quid is ERC20,
      *  in the same range range(0, len(Weights)) such that 
      *  sum(Weights[0:k]) > sum(Weights) / 2
      */ 
-    function _calculateMedian(uint new_stake, uint new_vote, 
-        uint old_stake, uint old_vote) internal { 
+    function _calculateMedian(uint old_stake, uint old_vote,
+        uint new_stake, uint new_vote) internal { 
         if (old_vote != 17 && old_stake != 0) { 
             WEIGHTS[old_vote] -= _min(
                 WEIGHTS[old_vote], old_stake
@@ -290,8 +286,8 @@ contract Quid is ERC20,
         } else { i = int(currentBatch()); 
             console.log("MedianTransferHelper...TO", 
                 balance_to, to_vote, this.balanceOf(to));
-            // _calculateMedian(balance_to, to_vote, 
-            //        this.balanceOf(to), to_vote);
+            // _calculateMedian(this.balanceOf(to), to_vote,
+            //                     balance_to, to_vote);
         }   // loop from newest to oldest batch
         // until requested amount fulfilled...
         while (amount > 0 && i >= 0) { uint k = uint(i);
@@ -307,58 +303,55 @@ contract Quid is ERC20,
         }   require(amount == 0, "transfer");
         console.log("MedianTransferHelper...FROM", 
             balance_from, from_vote, this.balanceOf(from));
-        // _calculateMedian(balance_from, from_vote, 
-        //        this.balanceOf(from), from_vote);
+        // _calculateMedian(this.balanceOf(from), from_vote, 
+        //                     balance_from, from_vote);
     }
 
     function mint(address pledge, uint amount, address token) 
-        public /*returns (uint, uint)*/ { uint batch = currentBatch();
-        if (token == address(this)) { _mint(pledge, amount); 
-            consideration[pledge][batch] += amount; // redeemable
-            require(msg.sender == Moulinette, "!"); // authorisation
-        }   else if (block.timestamp <= START + DAYS && batch < 16) {
-            require(token == address(DAI) || token == address(SDAI)
-            || token == address(FRAX) || token == address(FRAX) || 
-            token == address(USDE) || token == address(SUSDE), "$"); 
-            uint in_days = ((block.timestamp - START) / 1 days);
-            require(amount >= 10 * WAD, "mint more QD");
-            require(Piscine[batch][43].credit + amount < 
-                    (in_days + 1) * MAX_PER_DAY, "cap"); 
-            // Yesterday's price is NOT today's price,
-            // and when I think I'm running low, you're 
-            uint price = in_days * PENNY + START_PRICE;
-            uint cost = _minAmount(pledge, token, 
-                FullMath.mulDiv(price, amount, WAD)
-            ); // _minAmount may return less 
-            // so we calculate amount twice 
-            amount = FullMath.mulDiv(WAD, cost, price); 
-            consideration[pledge][batch] += amount;
-            _mint(pledge, amount); // totalSupply++
-            consideration[pledge][batch] += amount; 
-            Piscine[batch][in_days].credit += amount;
-            Piscine[batch][in_days].debit += cost;
-            Piscine[batch][43].credit += amount;  
-            Piscine[batch][43].debit += cost;
-            // TODO charge 20bps on the cost
-            MO(Moulinette).mint(pledge, cost, amount);
-            if (token == address(USDE)) {
-                USDE.transferFrom(msg.sender, 
-                address(this), cost); // in $ 
-                uint shares = SUSDE.deposit(
-                    cost, address(this)
-                );  vaultShares[address(SUSDE)] += shares;
-                // TODO stake into morpho (mainnet)
-                console.log("DEPOSIT...", SUSDE.totalAssets());
-            } 
-        }
-    }
-
-    address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
-    // I have a ratchet tattoo that says AK47 so this reloads the clip...
-    /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20:
-     * @dev Safe transfer `tokenId` token from `from` to `address(this)`, 
-     * checking that recipient prevent tokens from being forever locked.
-     * - `tokenId` token must exist and be owned by `from`
+        public returns (uint cost, uint shares) { 
+            uint batch = currentBatch();
+            if (token == address(this)) { _mint(pledge, amount); 
+                consideration[pledge][batch] += amount; // redeemable
+                require(msg.sender == Moulinette, "!"); // authorisation
+            }   else if (block.timestamp <= START + DAYS && batch < 16) {
+                    require( /* token == address(DAI) || token == address(SDAI)
+                    || token == address(FRAX) || token == address(FRAX) || */ 
+                    token == address(USDE) || token == address(SUSDE), "$"); 
+                    uint in_days = ((block.timestamp - START) / 1 days);
+                    require(amount >= 10 * WAD, "mint more QD");
+                    require(Piscine[batch][43].credit + amount < 
+                            (in_days + 1) * MAX_PER_DAY, "cap"); 
+                    // Yesterday's price is NOT today's price,
+                    // and when I think I'm running low, you're 
+                    uint price = in_days * PENNY + START_PRICE;
+                    cost = _minAmount(pledge, token, 
+                        FullMath.mulDiv(price, amount, 
+                        WAD)); // _minAmount may return less 
+                    // so we must calculate amount twice here...
+                    amount = FullMath.mulDiv(WAD, cost, price); 
+                    consideration[pledge][batch] += amount;
+                    _mint(pledge, amount); // totalSupply++
+                    consideration[pledge][batch] += amount; 
+                    Piscine[batch][in_days].credit += amount;
+                    Piscine[batch][in_days].debit += cost;
+                    Piscine[batch][43].credit += amount;  
+                    Piscine[batch][43].debit += cost;
+                    // TODO charge 20bps on the cost
+                    MO(Moulinette).mint(pledge, cost, amount);
+                    if (token == address(USDE)) {
+                        USDE.transferFrom(msg.sender, address(this), cost); 
+                        shares = SUSDE.deposit(cost, address(this));  
+                        vaultShares[address(SUSDE)] += shares; 
+                        IMorpho(MORPHO).supplyCollateral(
+                            IMorpho((MORPHO)).idToMarketParams(ID), 
+                            amount, address(this), ""); 
+                    }}} address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
+                    address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
+    /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch 
+     * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
+    recipient prevent tokens from being forever locked.
+    * - `tokenId` token must exist and be owned by `from`
      * - If the caller is not `from`, it must have been allowed 
      *   to move this token by either {approve} or {setApprovalForAll}.
      * - {onERC721Received} is called after a safeTransferFrom...
@@ -421,9 +414,8 @@ contract Quid is ERC20,
             if (msg.sender == address(this)) { 
             // TODO _min(rake, GRIEVANCES);
             QD = MO(Moulinette).dollar_amt_to_qd_amt(
-                MO(Moulinette).capitalisation(
-                    0, false), amount / 2); 
-                                to = owner; 
+                MO(Moulinette).capitalisation(0, false), 
+                    amount / 2); to = owner; 
         } 
         if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
             // uint reserveSDAI = ERC4626(SDAI).balanceOf(address(this));

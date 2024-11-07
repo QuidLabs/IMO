@@ -273,7 +273,6 @@ contract MO is Owned(msg.sender) {
             adjustedIncrease += 10; 
         } 
     }
-
     function _swap(uint amount0, uint amount1, 
         uint160 sqrtPriceX96) internal returns 
         (uint, uint) { uint price = QUID.getPrice();
@@ -291,32 +290,25 @@ contract MO is Owned(msg.sender) {
                 int(amount0 * 1e12) // minus
             ) / int(2 * price / 1e18); 
             if (selling > 0) {
-                amount1 -= uint(selling);
-                amount0 += ROUTER.exactInput(
+                amount1 -= uint(selling); amount0 += ROUTER.exactInput(
                     ISwapRouter.ExactInputParams(abi.encodePacked(
                         address(token1), POOL_FEE, address(token0)),
                         address(this), block.timestamp, uint(selling), 0));
-            } else { 
-                selling *= int(price) / 1e30;
-                amount0 -= uint(selling);
-                amount1 += ROUTER.exactInput(
-                    ISwapRouter.ExactInputParams(abi.encodePacked(
-                        address(token0), POOL_FEE, address(token1)),
+            } else {    selling *= int(price) / 1e30; amount0 -= uint(selling);
+                amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
+                    abi.encodePacked(address(token0), POOL_FEE, address(token1)),
                         address(this), block.timestamp, uint(selling), 0));
-            } 
-            currentRatio = amount1 / amount0;
+            } currentRatio = amount1 / amount0;
         }   return (amount0, amount1); 
-    }   
-
-    // call in QD's worth (обнал sans liabilities)
-    // calculates the coverage absorption for each 
-    // insurer by first determining their share %
-    // and then adjusting based on average ROI...
-    // (insurers w/ higher avg. ROI absorb more) 
-    // "you never count your money while you're
-    // sittin' at the table...there'll be time
-    // enough for countin'...when,"
-    function redeem(uint amount) 
+    }   // call in QD's worth (обнал sans liabilities)
+        // calculates the coverage absorption for each 
+        // insurer by first determining their share %
+        // and then adjusting based on average ROI...
+        // (insurers w/ higher avg. ROI absorb more) 
+        // "you never count your money while you're
+        // sittin' at the table...there'll be time
+        // enough for countin'...when,"
+    function redeem(uint amount) // QD
         external returns (uint absorb) {
         amount = _min(QUID.matureBalanceOf(msg.sender),
         amount); // % share over the overall balance...
@@ -412,8 +404,7 @@ contract MO is Owned(msg.sender) {
                              pledge.work.debit, WAD);
             uint buffered = debit - (debit / 5);
             require(buffered >= pledge.work.credit, "CR");
-            amount = _min(amount, 
-            buffered - pledge.work.credit);
+            amount = _min(amount, buffered - pledge.work.credit);
             if (amount > 0) { 
                 pledge.work.credit += amount;
                 amount = dollar_amt_to_qd_amt(
@@ -465,7 +456,6 @@ contract MO is Owned(msg.sender) {
         pledges[to].carry.credit += minted; 
         _creditHelper(to); // beneficiary...
     }
-
     function deposit(address beneficiary, // pledge
         uint amount, bool long) external payable { 
         Offer memory pledge = pledges[beneficiary];
@@ -493,13 +483,10 @@ contract MO is Owned(msg.sender) {
                 (FullMath.mulDiv(pledges[address(this)].weth.credit, 
                     price, WAD) + FullMath.mulDiv(price,
                     pledges[address(this)].work.credit / 2, 
-                    WAD)), "insuring too much");      
-        }   
-        pledges[beneficiary] = pledge; 
-        repackNFT(1, amount);
-        // 1 passed in to prevent
-        // division by zero, later
-        // it is decremented back 
+                    WAD)), "insuring too much"); // 1:1...     
+        }           pledges[beneficiary] = pledge; // 💿
+        repackNFT(1, amount); // 1 passed in to prevent
+        // division by zero, later it is decremented back 
     }
 
     // "Entropy" comes from a Greek word for transformation; 
@@ -511,8 +498,8 @@ contract MO is Owned(msg.sender) {
     // the halo of a street-lamp, I turn my straddle to
     // the cold and damp...know when to hold 'em...know 
     // when to..." 
-    function fold(address beneficiary, // amount is...
-        uint amount, bool sell) external { // in ETH
+    function fold(address beneficiary, // amount is
+        uint amount, bool sell) external payable { 
         FoldState memory state; state.price = QUID.getPrice();
         // call in collateral that's insured, or liquidate;
         // if there is an insured event, QD may be minted,
@@ -539,7 +526,7 @@ contract MO is Owned(msg.sender) {
                 }
                 console.log("FoldRepayNoLiquidate...", state.repay);
             }   
-        } if (amount > 0) { // claim ETH amount that's been insured
+        } if (amount > 0 && pledge.weth.debit > 0) { // repossesion...
             state.collat = FullMath.mulDiv(amount, state.price, WAD);
             state.average_price = FullMath.mulDiv(WAD, 
                 pledge.weth.credit, pledge.weth.debit
@@ -601,9 +588,13 @@ contract MO is Owned(msg.sender) {
             // if we were to deduct actual value instead
             // that could be taken advantage of (increased
             // payouts with each subsequent call to fold)... 
-            console.log("FoldDeductible...", amount, state.deductible);
-            pledge.work.debit -= state.deductible;
-            // if sell true, pledge doesn't get any ETH back
+            console.log(
+                "FoldDeductible...", amount, 
+                state.deductible
+            );
+            pledge.work.debit = (msg.value +
+            pledge.work.debit) - state.deductible;
+            // if sell true...pledge doesn't get any ETH back...
             pledges[address(this)].work.credit -= state.deductible;
             pledges[address(this)].weth.debit += state.deductible;  
 
@@ -636,10 +627,11 @@ contract MO is Owned(msg.sender) {
                     console.log("FoldLiquidate", amount);
                     // "It's like inch by inch, and step by 
                     // step, I'm closin' in on your position
-                    // and [eviction] is my mission..."
+                    // and [eviction] is my mission"
                     // Euler’s disk 💿 erasure code
                     pledge.work.credit -= amount; 
                     pledge.last = block.timestamp;
+
                 } else { // "it don't get no better than this, you catch my [dust]"
                     // otherwise we run into a vacuum leak (infinite contraction)
                     pledges[address(this)].weth.debit += pledge.work.debit;
