@@ -64,13 +64,13 @@ export const Header = () => {
       <div className="header-summaryEl">
         <div className="header-summaryElTitle">Deposited</div>
         <div className="header-summaryElValue">
-          ${numberWithCommas(Number(actualUsd).toFixed(2))}
+          ${numberWithCommas(Number(actualUsd).toFixed())}
         </div>
       </div>
       <div className="header-summaryEl">
         <div className="header-summaryElTitle">Minted QD</div>
         <div className="header-summaryElValue">
-          {numberWithCommas(Number(actualAmount).toFixed(2))}
+          {numberWithCommas(Number(actualAmount).toFixed())}
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { Web3Provider } from "@ethersproject/providers"
 
 import Web3 from "web3"
 
-import { QUID, SDAI,  MO, SUSDE, addressQD, addressSDAI, addressSUSDE, addressMO } from "../utils/constant"
+import { QUID, SDAI,  MO, addressQD, addressSDAI, addressMO } from "../utils/constant"
 
 const contextState = {
   connectToMetaMask: () => { },
@@ -16,11 +16,13 @@ const contextState = {
   getUserInfo: () => { },
   getDepositInfo: () => { },
   getTotalSupply: () => { },
+  getWalletBalance: () => { },
   setNotifications: () => { },
   setStorage: () => { },
   resetAccounts: () => { },
-  choiseButton: () => {},
+  choiseButton: () => { },
   setSwipe: () => { },
+  setCurrentPrice: () => { },
   swipeStatus: false,
   chooseButton: null,
   account: "",
@@ -28,7 +30,8 @@ const contextState = {
   connecting: false,
   provider: {},
   sdk: {},
-  web3: {}
+  web3: {},
+  addressMO
 }
 
 const AppContext = createContext(contextState)
@@ -42,9 +45,10 @@ export const AppContextProvider = ({ children }) => {
 
   const [QDbalance, setQdBalance] = useState(null)
   const [SDAIbalance, setSdaiBalance] = useState(null)
+  const [currentPrice, setCurrentPrice] = useState(null)
 
   const [mo, setMO] = useState(null)
-  const [susde, setSusde] = useState(null)
+  //const [susde, setSusde] = useState(null)
 
   const [currentTimestamp, setAccountTimestamp] = useState(0)
 
@@ -72,8 +76,7 @@ export const AppContextProvider = ({ children }) => {
         setAccountTimestamp(Number(timestamp.toString()))
 
         const [totalSupplyCap] = await Promise.all([
-          quid.methods.get_total_supply_cap().call(),
-          quid.methods.totalSupply().call()
+          quid.methods.get_total_supply_cap().call()
         ])
 
         const totalCapInt = totalSupplyCap ? parseInt(formatUnits(totalSupplyCap, 18)) : null
@@ -124,7 +127,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.error("Error in updateInfo: ", error)
     }
-  }, [account, connected, quid, sdai, susde])
+  }, [account, connected, quid, sdai])
 
   const getUserInfo = useCallback(async () => {
     try {
@@ -160,11 +163,11 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [account, connected, currentTimestamp, quid, mo])
 
-  const getDepositInfo = useCallback(async () => {
+  const getDepositInfo = useCallback(async (addres = account) => {
     try {
       if (connected && account && mo) {
-        const more_info = await mo.methods.get_more_info(account).call()
-
+        const more_info = await mo.methods.get_more_info(addres).call()
+        const priceCall = await quid.methods.getPrice().call()
         // TODO use formatUnits !!! everywhere you use ParseFloat
         // but here try to use BigNumber arithmetic in the future
         const workEthBalance = (parseFloat(more_info[0]) / 1e18)
@@ -172,18 +175,21 @@ export const AppContextProvider = ({ children }) => {
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
         const wethUsdBalance = (parseFloat(more_info[3]) / 1e18)
 
+        const ethPrice = (parseFloat(priceCall) / 1e18)
+
         const depoInfo = {
           work_eth_balance: workEthBalance,
           work_usd_balance: workUsdBalance,
           weth_eth_balance: wethEthBalance,
           weth_usd_balance: wethUsdBalance,
+          ethPrice: ethPrice
         }
         return depoInfo
       }
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
     }
-  }, [account, connected, mo])
+  }, [account, connected, mo, quid])
 
   const getSdai = useCallback(async () => {
     try {
@@ -245,18 +251,18 @@ export const AppContextProvider = ({ children }) => {
           const quidContract = new web3Instance.eth.Contract(QUID, addressQD)
           const moContract = new web3Instance.eth.Contract(MO, addressMO)
           const usdeContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
-          const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
+          //const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
 
           setMO(moContract)
           setQuid(quidContract)
           setSdai(usdeContract)
-          setSusde(susdeContract)
+          //setSusde(susdeContract)
         }
       }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [setAccount, setMO, setSdai, setSusde, setQuid, account, provider])
+  }, [setAccount, setMO, setSdai, setQuid, account, provider])
 
   const chooseButton = useRef(null)
 
@@ -294,12 +300,14 @@ export const AppContextProvider = ({ children }) => {
         getQdBalance,
         setNotifications,
         setStorage,
+        setCurrentPrice,
         setMO,
         account,
         addressMO,
         connected,
         connecting,
         currentTimestamp,
+        currentPrice,
         provider,
         sdk,
         quid,
