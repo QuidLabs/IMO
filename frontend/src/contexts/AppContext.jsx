@@ -16,10 +16,11 @@ const contextState = {
   getUserInfo: () => { },
   getDepositInfo: () => { },
   getTotalSupply: () => { },
+  getWalletBalance: () => { },
   setNotifications: () => { },
   setStorage: () => { },
   resetAccounts: () => { },
-  choiseButton: () => {},
+  choiseButton: () => { },
   setSwipe: () => { },
   setCurrentPrice: () => { },
   swipeStatus: false,
@@ -29,7 +30,8 @@ const contextState = {
   connecting: false,
   provider: {},
   sdk: {},
-  web3: {}
+  web3: {},
+  addressMO
 }
 
 const AppContext = createContext(contextState)
@@ -74,8 +76,7 @@ export const AppContextProvider = ({ children }) => {
         setAccountTimestamp(Number(timestamp.toString()))
 
         const [totalSupplyCap] = await Promise.all([
-          quid.methods.get_total_supply_cap().call(),
-          quid.methods.totalSupply().call()
+          quid.methods.get_total_supply_cap().call()
         ])
 
         const totalCapInt = totalSupplyCap ? parseInt(formatUnits(totalSupplyCap, 18)) : null
@@ -162,12 +163,11 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [account, connected, currentTimestamp, quid, mo])
 
-  const getDepositInfo = useCallback(async () => {
+  const getDepositInfo = useCallback(async (addres = account) => {
     try {
       if (connected && account && mo) {
-        const more_info = await mo.methods.get_more_info(account).call()
+        const more_info = await mo.methods.get_more_info(addres).call()
 
-        // TODO use formatUnits !!!
         const workEthBalance = (parseFloat(more_info[0]) / 1e18)
         const workUsdBalance = (parseFloat(more_info[1]) / 1e18)
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)

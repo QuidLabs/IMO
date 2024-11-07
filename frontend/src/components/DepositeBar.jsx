@@ -5,7 +5,7 @@ import { numberWithCommas } from "../utils/number-with-commas"
 import "./Styles/MintBar.scss"
 
 export const DepositeBar = () => {
-    const { getDepositInfo, resetAccounts, 
+    const { getDepositInfo, resetAccounts,
         account, connected, quid, sdai, addressQD, notifications } = useAppContext()
 
     const [totalDeposited, setTotalDeposited] = useState("")
@@ -49,19 +49,19 @@ export const DepositeBar = () => {
             <div className="summary-section">
                 <div className="summary-title">USDai's owed:</div>
                 <div className="summary-value">
-                    <span className="summary-value">${connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
+                    ${connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(2))) : 0}
                 </div>
             </div>
             <div className="summary-section">
                 <div className="summary-title">ETHerum's insured:</div>
                 <div className="summary-value">
-                    {connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}
+                    <span className="summary-value">${connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
                 </div>
             </div>
             <div className="summary-section">
                 <div className="summary-title">USDai's value of the insured:</div>
                 <div className="summary-value">
-                ${connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(2))) : 0}
+                    {connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}
                 </div>
             </div>
         </div>
