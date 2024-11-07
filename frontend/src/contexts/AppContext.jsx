@@ -168,7 +168,8 @@ export const AppContextProvider = ({ children }) => {
       if (connected && account && mo) {
         const more_info = await mo.methods.get_more_info(addres).call()
         const priceCall = await quid.methods.getPrice().call()
-
+        // TODO use formatUnits !!! everywhere you use ParseFloat
+        // but here try to use BigNumber arithmetic in the future
         const workEthBalance = (parseFloat(more_info[0]) / 1e18)
         const workUsdBalance = (parseFloat(more_info[1]) / 1e18)
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
