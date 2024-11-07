@@ -29,7 +29,6 @@ contract MO is Owned(msg.sender) {
     int24 internal LAST_TWAP_TICK;
     int24 internal UPPER_TICK; 
     int24 internal LOWER_TICK;
-
     uint internal _ETH_PRICE; // TODO delete
 
     IUniswapV3Pool POOL; ISwapRouter ROUTER; 
