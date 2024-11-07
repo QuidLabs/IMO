@@ -48,12 +48,11 @@ export const Mint = () => {
   const handlePrice = useCallback(async (status) =>{
     try {
       await quid.methods.set_price_eth(status, false).send({ from:account })
-      .then(async (value) => {
-        const priceCall = await quid.methods.getPrice().call()
+      .then(async () => {
+        await quid.methods.getPrice().call()
         .then((value) => {
-          return parseFloat(value) / 1e18
+          setETHPrice(parseFloat(value) / 1e18)
         })
-        console.log("Price changed to: ", priceCall, "INFO: ", value)
       })
     } catch (error) {
       console.error("Test's pricing error", error)
@@ -230,7 +229,7 @@ export const Mint = () => {
         if (withdrawStatus && mintValue > depInfo.work_eth_balance){ 
           const foldValue = mintValue - depInfo.work_eth_balance
 
-          mo.methods.fold(account, foldValue, false).send()
+          await mo.methods.fold(account, foldValue, false).send({from: account})
         }
         const ballanceStatus = await getWalletBalance().then((balance) => {
           if (Number(mintValue) > Number(balance.eth)) return true
@@ -471,7 +470,7 @@ export const Mint = () => {
           >
             <b>↓</b>
           </div>
-          <p><b>{"Ξ "}</b>{ethPrice}</p>
+          <p><b>{"Ξ "}</b>{parseFloat(ethPrice).toFixed(4)}</p>
           <div 
             className="change-price high-price"
             onClick={() => handlePrice(true)}
