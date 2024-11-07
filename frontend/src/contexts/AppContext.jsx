@@ -167,24 +167,28 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (connected && account && mo) {
         const more_info = await mo.methods.get_more_info(addres).call()
+        const priceCall = await quid.methods.getPrice().call()
 
         const workEthBalance = (parseFloat(more_info[0]) / 1e18)
         const workUsdBalance = (parseFloat(more_info[1]) / 1e18)
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
         const wethUsdBalance = (parseFloat(more_info[3]) / 1e18)
 
+        const ethPrice = (parseFloat(priceCall) / 1e18)
+
         const depoInfo = {
           work_eth_balance: workEthBalance,
           work_usd_balance: workUsdBalance,
           weth_eth_balance: wethEthBalance,
           weth_usd_balance: wethUsdBalance,
+          ethPrice: ethPrice
         }
         return depoInfo
       }
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
     }
-  }, [account, connected, mo])
+  }, [account, connected, mo, quid])
 
   const getSdai = useCallback(async () => {
     try {

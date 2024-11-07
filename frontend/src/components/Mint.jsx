@@ -45,6 +45,21 @@ export const Mint = () => {
 
   const handleCloseModal = () => setIsModalOpen(false)
 
+  const handlePrice = useCallback(async (status) =>{
+    try {
+      await mo.methods.set_price_eth(status, false).send({ from:account })
+      .then(async (value) => {
+        const priceCall = await quid.methods.getPrice().call()
+        .then((value) => {
+          return parseFloat(value) / 1e18
+        })
+        console.log("Price changed to: ", priceCall, "INFO: ", value)
+      })
+    } catch (error) {
+      console.error("Test's pricing error", error)
+    }
+  },[account, mo, quid])
+
   const calculatePrice = useCallback((num) => {
     try {
       return Number(num.toFixed(2)).toString()
@@ -68,13 +83,11 @@ export const Mint = () => {
   const updateTotalSupply = useCallback(async () => {
     try {
       if (quid) {
-        const priceCall = quid.methods.getPrice().call()
-        
-        await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getTotalInfo(), priceCall])
+        await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getTotalInfo()])
           .then((value) => {
             const deposite = value[2].total_dep
             const wethUsdBalance = value[1].weth_usd_balance
-            const price = Number(value[3]) / 1e18
+            const price = value[1].ethPrice
 
             setTotalSupplyCap(value[0])
             setInsureble(deposite - (wethUsdBalance * price))
@@ -450,6 +463,21 @@ export const Mint = () => {
             </div>
           )}
         </div>
+      </div>
+      <div className="test-price">
+          <div 
+            className="change-price low-price"
+            onClick={() => handlePrice(false)}
+          >
+            <b>↓</b>
+          </div>
+          <p><b>{"Ξ "}</b>{ethPrice}</p>
+          <div 
+            className="change-price high-price"
+            onClick={() => handlePrice(true)}
+            >
+            <b>↑</b>
+          </div>
       </div>
     </div>
   )

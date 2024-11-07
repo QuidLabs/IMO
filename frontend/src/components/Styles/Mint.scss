@@ -722,3 +722,44 @@ input:checked + .slider:before {
 .slider.round:before {
   border-radius: 50%;
 }
+
+.test-price {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.45;
+  height: 25px;
+
+  p {
+    font-size: 24px;
+    margin-right: 10px;
+    margin-left: 10px;
+    color: #02d802
+    
+  }
+
+  b { 
+    color:#055309
+  }
+
+  .low-price {
+    b{
+      color:#ced107
+    }
+  }
+
+
+  .high-price {
+    b{
+      color:#ced107
+    }
+  }
+
+  .change-price{
+    cursor: pointer;  
+    b {
+      font-size: 24px;
+    }
+  }
+}
