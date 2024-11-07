@@ -371,8 +371,7 @@ contract Quid is ERC20,
             uint batch = currentBatch() - 1;
             // TODO is approval necessary?
             ICollection(F8N).transferFrom(
-                address(this), from, LAMBO
-            ); 
+                address(this), from, LAMBO); 
             uint QD = draw(from, GRIEVANCES); 
             mint(from, QD, address(USDE)); 
             // TODO mint(QD / 2, from, MO(Moulinette).DAI())
@@ -412,22 +411,17 @@ contract Quid is ERC20,
     function draw(address to, uint amount) 
         public onlyGenerators returns (uint QD) { 
             if (msg.sender == address(this)) { 
-            // TODO _min(rake, GRIEVANCES);
+            amount = _min(amount, FullMath.mulDiv(
+                get_shares_value(), PENNY * 2 / 10, 1));
             QD = MO(Moulinette).dollar_amt_to_qd_amt(
                 MO(Moulinette).capitalisation(0, false), 
                     amount / 2); to = owner; 
         } 
         if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
-            // uint reserveSDAI = ERC4626(SDAI).balanceOf(address(this));
             uint reserveSUSDE = ERC4626(SUSDE).balanceOf(address(this));
-             function withdraw(uint256 amountUsdc) external onlyAuthorizedCaller {
-        morpho.withdraw(
-            morpho.idToMarketParams(depositUSDCmId),
-            amountUsdc,
-            0,
-            address(this),
-            msg.sender
-        );
+            require(amount <= get_shares_value(), "SUSDE");
+            IMorpho(MORPHO).withdraw(IMorpho((MORPHO)).idToMarketParams(ID),
+                    amount, 0, address(this), msg.sender);
     }
 
 
