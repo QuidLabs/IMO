@@ -5,7 +5,7 @@ import { numberWithCommas } from "../utils/number-with-commas"
 import "./Styles/MintBar.scss"
 
 export const MintBar = () => {
-  const { getSales, getUserInfo, resetAccounts, 
+  const { getSales, getUserInfo, resetAccounts, setCurrentPrice,
     account, connected, currentTimestamp, quid, sdai, notifications, addressQD, SECONDS_IN_DAY } = useAppContext()
 
   const [smartContractStartTimestamp, setSmartContractStartTimestamp] = useState("")
@@ -36,6 +36,7 @@ export const MintBar = () => {
             setTotalDeposited(values[0].actualUsd)
             setTotalMinted(values[0].actualQD)
             setPrice(values[0].price)
+            setCurrentPrice(values[0].price)
 
             setMintPeriodDays(values[1].mintPeriodDays)
             setSmartContractStartTimestamp(values[1].smartContractStartTimestamp)
@@ -48,7 +49,7 @@ export const MintBar = () => {
     } catch (error) {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
     }
-  }, [calculateDays, getSales, getUserInfo, resetAccounts,
+  }, [calculateDays, getSales, getUserInfo, resetAccounts, setCurrentPrice,
     account, addressQD, connected, sdai, quid])
 
   useEffect(() => {

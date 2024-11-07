@@ -4,7 +4,6 @@ import { formatUnits, parseUnits } from "@ethersproject/units"
 import { Modal } from "./Modal"
 import { Icon } from "./Icon"
 
-import { useDebounce } from "../utils/use-debounce"
 import { numberWithCommas } from "../utils/number-with-commas"
 
 import { Buttons } from "./Adds/Buttons"
@@ -19,7 +18,7 @@ export const Mint = () => {
   const { getTotalSupply, setStorage, getWalletBalance,
     addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo } = useAppContext()
 
-  const [mintValue, setMintValue] = useState("")
+  const [mintValue, setMintValue] = useState(0)
   const [sdaiValue, setSdaiValue] = useState(0)
   const [totalSupplyCap, setTotalSupplyCap] = useState(0)
   const [isSameBeneficiary, setIsSameBeneficiary] = useState(true)
@@ -57,16 +56,7 @@ export const Mint = () => {
     const qdAmountBN = qdAmount ? qdAmount.toString() : 0
 
     return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN).call() : 0
-  },[quid])
-
-  useDebounce(
-    mintValue,
-    async () => {
-      if (parseInt(mintValue) > 0) setSdaiValue(currentPrice * 0.01)
-      else setSdaiValue(0)
-    },
-    500
-  )
+  }, [quid])
 
   const updateTotalSupply = useCallback(async () => {
     try {
@@ -79,7 +69,7 @@ export const Mint = () => {
     }
   }, [getTotalSupply, quid])
 
-  const handleChangeValue = (e) => {
+  const handleChangeValue = useCallback((e) => {
     const regex = /^\d*(\.\d*)?$|^$/
 
     let originalValue = e.target.value
@@ -89,9 +79,17 @@ export const Mint = () => {
 
     if (originalValue[0] === ".") originalValue = "0" + originalValue
 
-    if (regex.test(originalValue) && chooseButton === "MINT") setMintValue(Number(originalValue).toFixed())
-      else if (regex.test(originalValue)) setMintValue(originalValue)
-  }
+    if (regex.test(originalValue)) {
+      if (chooseButton === "MINT") {
+        setSdaiValue(currentPrice * 0.01)
+        setMintValue(Number(originalValue).toFixed())
+      }
+      else {
+        setMintValue(originalValue)
+        setSdaiValue(currentPrice * 0.01)
+      }
+    }
+  },[chooseButton, currentPrice])
 
   const setNotifications = useCallback((severity, message, status = false) => {
     setStorage(prevNotifications => [
@@ -203,10 +201,11 @@ export const Mint = () => {
 
       setNotifications("info", `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}`)
 
-      if (account) { await quid.methods.mint(
-        beneficiaryAccount.toString(),
-        qdAmount.toString(),
-        addressSDAI.toString(), false).send({ from: account })
+      if (account) {
+        await quid.methods.mint(
+          beneficiaryAccount.toString(),
+          qdAmount.toString(),
+          addressSDAI.toString(), false).send({ from: account })
       }
       setNotifications("success", "Your minting is pending!", true)
 
@@ -232,9 +231,9 @@ export const Mint = () => {
   }
 
   const handleInsure = useCallback(() => {
-    if(insureStatus) setInsureStatus(false)
+    if (insureStatus) setInsureStatus(false)
     else setInsureStatus(true)
-  },[insureStatus])
+  }, [insureStatus])
 
   useEffect(() => {
     if (quid) updateTotalSupply()
@@ -246,7 +245,7 @@ export const Mint = () => {
 
     if (notifications[0] && !connected) setTimeout(() => setStorage([]), 500)
 
-  }, [updateTotalSupply, setStorage, account, connected, quid, notifications, isProcessing, sdaiValue])
+  }, [updateTotalSupply, setStorage, account, connected, quid, notifications, isProcessing])
 
   useEffect(() => {
     if (chooseButton.current === "MINT" || chooseButton.current == null) setSign('QD')

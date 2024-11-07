@@ -21,6 +21,7 @@ const contextState = {
   resetAccounts: () => { },
   choiseButton: () => {},
   setSwipe: () => { },
+  setCurrentPrice: () => { },
   swipeStatus: false,
   chooseButton: null,
   account: "",
@@ -42,6 +43,7 @@ export const AppContextProvider = ({ children }) => {
 
   const [QDbalance, setQdBalance] = useState(null)
   const [SDAIbalance, setSdaiBalance] = useState(null)
+  const [currentPrice, setCurrentPrice] = useState(null)
 
   const [mo, setMO] = useState(null)
   //const [susde, setSusde] = useState(null)
@@ -293,12 +295,14 @@ export const AppContextProvider = ({ children }) => {
         getQdBalance,
         setNotifications,
         setStorage,
+        setCurrentPrice,
         setMO,
         account,
         addressMO,
         connected,
         connecting,
         currentTimestamp,
+        currentPrice,
         provider,
         sdk,
         quid,
