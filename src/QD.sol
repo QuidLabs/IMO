@@ -151,7 +151,6 @@ contract Quid is ERC20,
 
     function get_shares_value() 
         public view returns (uint) {
-        
         uint sdai = ERC4626(SDAI).convertToAssets(
             ERC4626(SDAI).balanceOf(address(this)));  
         uint sfrax = ERC4626(SFRAX).convertToAssets(
