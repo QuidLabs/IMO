@@ -46,7 +46,6 @@ contract Deploy is Script {
         DAI = new mockToken();
         sDAI = new mockVault(DAI);
 
-
         moulinette = new MO(
             address(weth), address(nfpm), 
             address(pool), address(router)

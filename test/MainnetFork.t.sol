@@ -30,8 +30,8 @@ contract MainnetFork is Test {
     ERC4626 public SDAI = ERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
     ERC20 public FRAX = ERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
     ERC4626 public SFRAX = ERC4626(0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32);
-    // ERC20 public USDE = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
-    // ERC4626 SUSDE = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
+    ERC20 public USDE = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
+    ERC4626 SUSDE = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
     
     address public chainlink = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     ICollection public F8N = ICollection(0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405); 
@@ -73,8 +73,8 @@ contract MainnetFork is Test {
         vm.deal(User01, 1_000_000 ether);
         vm.deal(User02, 1_000_000 ether);
         
-        USDe = new mockToken();
-        sUSDe = new mockVault(USDe);
+        // USDe = new mockToken();
+        // sUSDe = new mockVault(USDe);
         // FRAX = new mockToken();
         // sFRAX = new mockVault(FRAX);
         // DAI = new mockToken();
@@ -101,6 +101,8 @@ contract MainnetFork is Test {
         uint work_debit; uint work_credit;
         uint quid_debit; uint quid_credit;
 
+        // TODO simulate a large transfer from 
+        // large holder of USDe to the test account
         vm.startPrank(User01);
         USDe.mint();
         weth.deposit{value: 1_000_000 ether}();
@@ -173,61 +175,52 @@ contract MainnetFork is Test {
         /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
 
 
+
         vm.startPrank(User01);
 
         quid.vote(77);
 
         vm.stopPrank();
+        vm.startPrank(User02);
 
-
-        // vm.startPrank(User01);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User02);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User03);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User04);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User05);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User06);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User07);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User08);
-
-        // quid.vote(77);
-
-        // vm.stopPrank();
-        // vm.startPrank(User09);
-
-        // quid.vote(77);
+        quid.vote(77);
 
         vm.stopPrank();
+        vm.startPrank(User03);
 
+        quid.vote(77);
 
-        
+        vm.stopPrank();
+        vm.startPrank(User04);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User05);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User06);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User07);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User08);
+
+        quid.vote(77);
+
+        vm.stopPrank();
+        vm.startPrank(User09);
+
+        quid.vote(77);
+
+        vm.stopPrank();
     }
 
     /*

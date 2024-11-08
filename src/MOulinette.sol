@@ -3,9 +3,9 @@
 pragma solidity =0.8.8; // EVM: london
 import {Quid} from "./QD.sol"; // ERC777
 import "lib/forge-std/src/console.sol"; // TODO delete
-import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import {Owned} from "lib/solmate/src/auth/Owned.sol";
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
+import {Owned} from "lib/solmate/src/auth/Owned.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
@@ -72,6 +72,7 @@ contract MO is Owned(msg.sender) {
     struct Offer { Pod weth; Pod carry; Pod work;
     uint last; } // timestamp of last liquidate & 
     // % that's been liquidated (smaller over time)
+    // for address(this) it's time since NFPM.burn
     // work is like a checking account (credit can
     // be drawn against it) while weth is savings,
     // but it pays interest to the contract itself;
@@ -79,7 +80,7 @@ contract MO is Owned(msg.sender) {
     // they form an insured revolving credit line;
     // carry is relevant for redemption purposes.
     // fold() holds depositors accountable for 
-    // work as well as accountability for weth
+    // work, as well as accountability for weth
     function setQuid(address _quid) external 
         onlyOwner {  QUID = Quid(_quid); 
     } 
@@ -657,7 +658,6 @@ contract MO is Owned(msg.sender) {
     // voltage regulators watch the currents and control the 
     // relay (which turns on & off the alternator, if below 
     // or above 14 volts, respectively, re-charging battery)
-    // TODO setFee isn't abled // https://t.co/ebkPW4rjtO
     function repackNFT(uint amount0, uint amount1) public {
         (uint160 sqrtPriceX96, // Chainlink price used by swap
         int24 twap,,,,,) = POOL.slot0(); uint128 liquidity; 
