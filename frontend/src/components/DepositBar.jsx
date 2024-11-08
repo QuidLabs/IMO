@@ -4,7 +4,7 @@ import { numberWithCommas } from "../utils/number-with-commas"
 
 import "./Styles/MintBar.scss"
 
-export const DepositeBar = () => {
+export const DepositBar = () => {
     const { getDepositInfo, resetAccounts,
         account, connected, quid, sdai, addressQD, notifications } = useAppContext()
 

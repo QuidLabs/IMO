@@ -84,12 +84,12 @@ export const Mint = () => {
       if (quid) {
         await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getTotalInfo()])
           .then((value) => {
-            const deposite = value[2].total_dep
+            const deposit = value[2].total_dep
             const wethUsdBalance = value[1].weth_usd_balance
             const price = value[1].ethPrice
 
             setTotalSupplyCap(value[0])
-            setInsureble(deposite - (wethUsdBalance * price))
+            setInsureble(deposit - (wethUsdBalance * price))
             setETHPrice(price)
           })
       }
@@ -189,7 +189,7 @@ export const Mint = () => {
         setNotifications("success", "Your minting is pending!", true)
       }
 
-      if (button === "DEPOSITE") {
+      if (button === "DEPOSIT") {
         const depInfo = await getDepositInfo()
           .then((numbers) => {
             return numbers
@@ -215,7 +215,7 @@ export const Mint = () => {
             0, !insureStatus).send({ from: account, value: ethDepo.toString() })
         }
 
-        setNotifications("success", "Your deposite has been pending completed!", true)
+        setNotifications("success", "Your deposit has been pending completed!", true)
       }
 
       if (button === "WITHDRAW") {
@@ -238,9 +238,9 @@ export const Mint = () => {
 
         if (withdrawStatus && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
-        const depositeBuffer = ethPrice * depInfo.work_eth_balance - depInfo.work_usd_balance
+        const depositBuffer = ethPrice * depInfo.work_eth_balance - depInfo.work_usd_balance
 
-        if (!withdrawStatus && sdaiValue > depositeBuffer) return setNotifications("error", "Input amount shouldn't be more than insurable")
+        if (!withdrawStatus && sdaiValue > depositBuffer) return setNotifications("error", "Input amount shouldn't be more than insurable")
 
         const withDrawValue = parseUnits(mintValue, 18).toString()
         setIsProcessing(true)
@@ -307,9 +307,9 @@ export const Mint = () => {
     if (chooseButton.current === "MINT" || chooseButton.current == null) {
       setSign('QD')
       setPlaceHolder('Mint amount')
-    } else if (chooseButton.current === "DEPOSITE") {
+    } else if (chooseButton.current === "DEPOSIT") {
       setSign('Ξ')
-      setPlaceHolder('Deposite amount')
+      setPlaceHolder('Deposit amount')
     } else if (chooseButton.current === "WITHDRAW" && !withdrawStatus) {
       setSign('QD')
       setPlaceHolder('Withdraw amount')
@@ -393,7 +393,7 @@ export const Mint = () => {
                 <span className="mint-availabilityMax">INSURING</span>
               </>
             }
-            {chooseButton.current === "MINT" || chooseButton.current == null || chooseButton.current === "DEPOSITE" ?
+            {chooseButton.current === "MINT" || chooseButton.current == null || chooseButton.current === "DEPOSIT" ?
               <>
                 <input
                   name="isBeneficiary"
@@ -421,7 +421,7 @@ export const Mint = () => {
           </label>
         </div>
         <Buttons
-          names={["WITHDRAW", "MINT", "DEPOSITE"]}
+          names={["WITHDRAW", "MINT", "DEPOSIT"]}
           initialSlide={1}
           buttonRef={buttonRef}
           isProcessing={isProcessing}

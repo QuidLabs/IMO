@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { useAppContext } from "../../contexts/AppContext"
 
-import { DepositeBar } from "../DepositeBar"
+import { DepositBar } from "../DepositBar"
 import { MintBar } from "../MintBar"
 
 import 'swiper/css'
@@ -33,7 +33,7 @@ export function SideBar() {
                 <MintBar />
             </SwiperSlide>
             <SwiperSlide>
-                <DepositeBar />
+                <DepositBar />
             </SwiperSlide>
         </Swiper>
     )
