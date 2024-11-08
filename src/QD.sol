@@ -44,7 +44,7 @@ contract Quid is ERC20,
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     // "16 bars keep the car running" ~ chamber music
-    mapping(address => uint) public vaultShares; // $
+    mapping(address => address) public vaults; // $
     // re-deposited staked stablecoins in a basket...
     // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
@@ -92,11 +92,11 @@ contract Quid is ERC20,
         ERC20("QU!D", "QD", 18) { // 2024-26
         deployed = block.timestamp; // 11/11
         Moulinette = _mo; chainlink = _link;
-        USDE = _usde; SUSDE = _susde;
-        FRAX = _frax; SFRAX = _sfrax;
-        SDAI = _sdai; DAI = _dai;
+        SDAI = _sdai; DAI = _dai; vaults[DAI] = SDAI;
         ERC20(DAI).approve(_sdai, type(uint256).max);
+        FRAX = _frax; SFRAX = _sfrax; vaults[FRAX] = SFRAX;
         ERC20(FRAX).approve(_sfrax,  type(uint256).max);
+        USDE = _usde; SUSDE = _susde; vaults[USDE] = SUSDE;
         ERC20(USDE).approve(_susde,  type(uint256).max);
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     }
@@ -125,9 +125,8 @@ contract Quid is ERC20,
                     usd = _min(amount, 
                     ERC20(token).balanceOf(from));
                     ERC20(token).transferFrom(from, address(this), usd);
-                    amount = ERC4626(token).deposit(usd, address(this));
-        }           vaultShares[token] += amount; require(isDollar, "$");
-        require(amount > 0, "insufficient balance");
+                    amount = ERC4626(vaults[token]).deposit(usd, address(this));
+        }           require(isDollar && amount > 0, "insufficient balance");
     }
     function qd_amt_to_dollar_amt(uint qd_amt) public 
         view returns (uint amount) { uint in_days = (
@@ -152,10 +151,14 @@ contract Quid is ERC20,
 
     function get_shares_value() 
         public view returns (uint) {
-        uint susde = ERC4626(SUSDE).convertToAssets(vaultShares[SUSDE]); 
-        uint sfrax = ERC4626(SFRAX).convertToAssets(vaultShares[SFRAX]);
-        uint sdai = ERC4626(SDAI).convertToAssets(vaultShares[SDAI]);  
-        return susde + sfrax + sdai; 
+        
+        uint sdai = ERC4626(SDAI).convertToAssets(
+            ERC4626(SDAI).balanceOf(address(this)));  
+        uint sfrax = ERC4626(SFRAX).convertToAssets(
+            ERC4626(SFRAX).balanceOf(address(this)));
+        uint susde = ERC4626(SUSDE).convertToAssets(
+            ERC4626(SUSDE).balanceOf(address(this))); 
+        return sdai + sfrax + susde; 
     }
 
     function vote(uint new_vote) external { 

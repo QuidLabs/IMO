@@ -22,16 +22,12 @@ interface ICollection is IERC721 {
 contract MainnetFork is Test {
     Quid public quid;
     MO public moulinette;
-    
-    mockVault public sUSDe;
-    mockToken public USDe;
-    
-    ERC20 public DAI = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
-    ERC4626 public SDAI = ERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
-    ERC20 public FRAX = ERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
-    ERC4626 public SFRAX = ERC4626(0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32);
-    ERC20 public USDE = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
-    ERC4626 SUSDE = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
+    mockToken public DAI; // = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
+    mockVault public SDAI; // = ERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
+    mockToken public FRAX; // = ERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
+    mockVault public SFRAX; // = ERC4626(0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32);
+    mockToken public USDE; // = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
+    mockVault public SUSDE; // = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
     
     address public chainlink = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
     ICollection public F8N = ICollection(0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405); 
@@ -73,12 +69,12 @@ contract MainnetFork is Test {
         vm.deal(User01, 1_000_000 ether);
         vm.deal(User02, 1_000_000 ether);
         
-        // USDe = new mockToken();
-        // sUSDe = new mockVault(USDe);
-        // FRAX = new mockToken();
-        // sFRAX = new mockVault(FRAX);
-        // DAI = new mockToken();
-        // sDAI = new mockVault(DAI);
+        USDE = new mockToken();
+        SUSDE = new mockVault(USDE);
+        FRAX = new mockToken();
+        SFRAX = new mockVault(FRAX);
+        DAI = new mockToken();
+        SDAI = new mockVault(DAI);
 
         moulinette = new MO(
             address(weth), address(nfpm), 
@@ -86,7 +82,7 @@ contract MainnetFork is Test {
         );
         quid = new Quid(
             address(moulinette), chainlink, 
-            address(USDe), address(sUSDe),
+            address(USDE), address(SUSDE),
             address(FRAX), address (SFRAX),
             address (SDAI), address (DAI)
         );
@@ -104,14 +100,14 @@ contract MainnetFork is Test {
         // TODO simulate a large transfer from 
         // large holder of USDe to the test account
         vm.startPrank(User01);
-        USDe.mint();
+        USDE.mint();
         weth.deposit{value: 1_000_000 ether}();
 
         weth.approve(address(moulinette), type(uint256).max);
-        USDe.approve(address(quid), type(uint256).max);
+        USDE.approve(address(quid), type(uint256).max);
 
-        quid.mint(User01, half_a_rack, address(USDe));
-        quid.mint(User01, half_a_rack, address(USDe));
+        quid.mint(User01, half_a_rack, address(USDE));
+        quid.mint(User01, half_a_rack, address(USDE));
 
         uint minted = quid.balanceOf(User01);
         assertEq(minted, rack);
@@ -129,12 +125,12 @@ contract MainnetFork is Test {
         vm.warp(block.timestamp + 14 days);
         
         vm.startPrank(User02);
-        USDe.mint();
+        USDE.mint();
         weth.deposit{value: 1_000_000 ether}();
 
         weth.approve(address(moulinette), type(uint256).max);
-        USDe.approve(address(quid), type(uint256).max);
-        quid.mint(User02, bill, address(USDe));
+        USDE.approve(address(quid), type(uint256).max);
+        quid.mint(User02, bill, address(USDE));
 
         minted = quid.balanceOf(User02);
 

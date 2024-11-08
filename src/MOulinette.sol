@@ -367,14 +367,12 @@ contract MO is Owned(msg.sender) {
             (,, uint128 liquidity) = _liquidity(amount, usdc);
             (uint amount0, 
              uint amount1) = _withdrawAndCollect(liquidity);
-            if (amount1 >= amount) { 
+            if (amount1 >= amount) { amount1 -= amount;
                 token1.transfer(msg.sender, amount); 
-                amount1 -= amount;
                 console.log("RedeemWETH...", amount);
             }
-            if (amount0 >= usdc) { // TODO only USDC
+            if (amount0 >= usdc) { amount0 -= usdc;
                 token0.transfer(msg.sender, usdc);
-                amount0 -= usdc;
                 console.log("RedeemUSDC...", usdc);
             }  
             pledges[address(this)].carry.credit -= absorb; 
@@ -416,7 +414,7 @@ contract MO is Owned(msg.sender) {
                     price, WAD) + FullMath.mulDiv(price,
                     pledges[address(this)].work.credit / 2, 
                     WAD)), "over-encumbered");
-        } else { uint withdrawable; // uint of ETH...
+        } else { uint withdrawable;
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
                     pledge.work.debit, WAD
@@ -443,15 +441,12 @@ contract MO is Owned(msg.sender) {
                 amount1 -= transfer;
             }     
             repackNFT(amount0, amount1);
-        }   
-        pledges[msg.sender] = pledge;
-
-            
+        }   pledges[msg.sender] = pledge;
     }
 
     function mint(address to, // used by ERC20.mint
         uint cost, uint minted) public onlyQuid {
-         pledges[address(this)].carry.debit += cost;
+        pledges[address(this)].carry.debit += cost;
         // ^needed for tracking total capitalisation...
         pledges[to].carry.debit += cost; // contingent
         // variable for ROI as well as redemption,
@@ -668,8 +663,8 @@ contract MO is Owned(msg.sender) {
                 (uint collected0, 
                  uint collected1) = _withdrawAndCollect(liquidity); 
                 amount0 += collected0; amount1 += collected1;
-                pledges[address(this)].weth.debit += collected1;
-                pledges[address(this)].work.debit += collected0;
+                pledges[address(this)].weth.debit -= collected1;
+                pledges[address(this)].work.debit -= collected0;
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
                 pledges[address(this)].last = block.timestamp;
             }
@@ -677,6 +672,8 @@ contract MO is Owned(msg.sender) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         (amount0, 
         amount1) = _swap(amount0, amount1, sqrtPriceX96);
+        pledges[address(this)].weth.debit += amount1;
+        pledges[address(this)].work.debit += amount0;
         (ID,,,) = NFPM.mint(
             INonfungiblePositionManager.MintParams({ token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
@@ -686,15 +683,14 @@ contract MO is Owned(msg.sender) {
         } // else no need to repack NFT, only collect LP fees
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
-            pledges[address(this)].weth.debit += collected1;
-            pledges[address(this)].work.debit += collected0;
             (amount0, 
-            amount1) = _swap(amount0, amount1, sqrtPriceX96);
+            amount1) = _swap(amount0, 
+            amount1, sqrtPriceX96);
             NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp
-                )
-            );
+            )); pledges[address(this)].weth.debit += amount1;
+                pledges[address(this)].work.debit += amount0;
         }
     }
 }
