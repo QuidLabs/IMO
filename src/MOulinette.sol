@@ -581,9 +581,8 @@ contract MO is Owned(msg.sender) {
             if (state.collat > pledge.work.credit) { state.liquidate = false; } 
         }   // "things have gotten closer to the sun, and I've done things
             // in small doses, so don't think that I'm pushing you away"  
-            // "when iron spit, cats fold, infact get their life froze;
-            // IMO keep dropping [batches], each year...fold" ~ U-God 
-        if (state.liquidate && 
+            // "when iron spit, cats fold, infact they
+        if (state.liquidate && // get their life froze
             (block.timestamp - pledge.last > 1 hours)) {  
             state.cap = capitalisation(state.repay, true);
             amount = _min(dollar_amt_to_qd_amt(state.cap, 
@@ -663,10 +662,8 @@ contract MO is Owned(msg.sender) {
         } // else no need to repack NFT, only collect LP fees
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
-            (amount0, 
-            amount1) = _swap(amount0, 
-            amount1, sqrtPriceX96);
-            NFPM.increaseLiquidity(
+            (amount0, amount1) = _swap(
+            amount0, amount1, sqrtPriceX96); NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp
             )); pledges[address(this)].weth.debit += amount1;
