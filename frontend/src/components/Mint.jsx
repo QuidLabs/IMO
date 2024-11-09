@@ -12,25 +12,27 @@ import { useAppContext } from "../contexts/AppContext"
 
 import "./Styles/Mint.scss"
 
-const ChoiseBoxes = ({ type = false, status = true, boxType = true, currency = false, relation = "", onChange = () => { } }) => {
+const ChoiseBoxes = ({ type = false, status = true, boxType = true, currency = false, name="", relation = "", onChange = () => { } }) => {
   return (
     <>
       {currency && type ? null : boxType ? (
         <>
           <input
-            name="isBeneficiary"
+            id={`checkbox-${name}`}
+            name={name}
             className="mint-checkBox"
             type="checkbox"
             checked={status}
             onChange={() => onChange()}
           />
-          <span className="mint-availabilityMax">{relation}</span>
+          <label htmlFor={`checkbox-${name}`} className="mint-availabilityMax">{relation}</label>
         </>
       ) : (
         <>
           <span className="mint-switcher mint-availabilityMax"><b style={{ color: '#4ad300' }}>{relation}</b></span>
           <label className="switch">
             <input
+              name={name}
               type="checkbox"
               checked={status}
               onChange={() => onChange()}
@@ -446,6 +448,7 @@ export const Mint = () => {
                 status={insureStatus}
                 boxType={true}
                 currency={!chooseCurrency}
+                name={"insure"}
                 relation={"INSURING"}
                 onChange={handleInsure}
               /> : null
@@ -455,6 +458,7 @@ export const Mint = () => {
                 type={chooseButton.current === "MINT" || chooseButton.current == null ? false : !chooseCurrency}
                 status={isSameBeneficiary}
                 boxType={true}
+                name={"tomyself"}
                 currency={!chooseCurrency}
                 relation={"to myself"}
                 onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
@@ -464,6 +468,7 @@ export const Mint = () => {
               <ChoiseBoxes
                 status={chooseCurrency}
                 boxType={false}
+                name={"currency"}
                 relation={choiseCurrency}
                 onChange={handleWithdraw}
               /> : null
