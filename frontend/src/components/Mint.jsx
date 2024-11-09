@@ -421,13 +421,13 @@ export const Mint = () => {
               <>
                 Cost in $
                 <strong>
-                  {sdaiValue === 0 ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * mintValue))}
+                  {mintValue === "" ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * mintValue))}
                 </strong>
               </> : chooseButton.current === "DEPOSIT" && chooseCurrency ?
                 (<>
                 Cost for Ξ
                   <strong>
-                    {sdaiValue === 0 ? "ETH Amount" : transactionPrice}
+                    {mintValue === "" ? "ETH Amount" : transactionPrice}
                   </strong>
                 </>)
                 : null}
