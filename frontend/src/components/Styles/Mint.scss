@@ -91,6 +91,13 @@
   font-size: 108px;
   color: #54b420;
   user-select: none;
+
+  button {
+    width: 100px;
+    height: 100px;
+    background: none;
+    border: none;
+  }
 }
 
 .mint-idSign {
@@ -149,7 +156,6 @@
 }
 
 .mint-checkBox {
-  position: relative;
   appearance: none;
   box-sizing: content-box;
   overflow: hidden;
@@ -247,6 +253,7 @@
   align-items: center;
   justify-content: space-between;
   margin-top: 10px;
+  height: 30px;
 }
 
 .mint-subLeft {
@@ -672,7 +679,9 @@
   opacity: 0.5;
   pointer-events: none;
 }
-
+.mint-switcher {
+  width: 30px;
+}
 .switch {
   position: relative;
   display: inline-block;

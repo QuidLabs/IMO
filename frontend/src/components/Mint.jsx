@@ -12,14 +12,48 @@ import { useAppContext } from "../contexts/AppContext"
 
 import "./Styles/Mint.scss"
 
+const ChoiseBoxes = ({ type = false, status = true, boxType = true, currency = false, name="", relation = "", onChange = () => { } }) => {
+  return (
+    <>
+      {currency && type ? null : boxType ? (
+        <>
+          <input
+            id={`checkbox-${name}`}
+            name={name}
+            className="mint-checkBox"
+            type="checkbox"
+            checked={status}
+            onChange={() => onChange()}
+          />
+          <label htmlFor={`checkbox-${name}`} className="mint-availabilityMax">{relation}</label>
+        </>
+      ) : (
+        <>
+          <span className="mint-switcher mint-availabilityMax"><b style={{ color: '#4ad300' }}>{relation}</b></span>
+          <label className="switch">
+            <input
+              name={name}
+              type="checkbox"
+              checked={status}
+              onChange={() => onChange()}
+            />
+            <span className="slider round"></span>
+          </label>
+        </>
+      )}
+    </>
+  )
+}
+
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
   const { getTotalSupply, setStorage, getWalletBalance, getDepositInfo, getTotalInfo,
     addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
-  const [mintValue, setMintValue] = useState('')
+  const [inputValue, setInputValue] = useState('')
   const [sdaiValue, setSdaiValue] = useState('')
+
   const [totalSupplyCap, setTotalSupplyCap] = useState(0)
   const [isSameBeneficiary, setIsSameBeneficiary] = useState(true)
   const [beneficiary, setBeneficiary] = useState('')
@@ -27,10 +61,12 @@ export const Mint = () => {
   const [startMsg, setStartMsg] = useState('')
 
   const [insureStatus, setInsureStatus] = useState(true)
-  const [withdrawStatus, setWithdrawStatus] = useState(false)
+
+  const [chooseCurrency, setChooseCurrency] = useState(false)
   const [choiseCurrency, setCurrency] = useState('QUID')
 
   const [ethPrice, setETHPrice] = useState(0)
+  const [transactionPrice, setTransactionPrice] = useState('')
 
   const [insureble, setInsureble] = useState('')
 
@@ -45,19 +81,19 @@ export const Mint = () => {
 
   const handleCloseModal = () => setIsModalOpen(false)
 
-  const handlePrice = useCallback(async (status) =>{
+  const handlePrice = useCallback(async (status) => {
     try {
-      await quid.methods.set_price_eth(status, false).send({ from:account })
-      .then(async () => {
-        await quid.methods.getPrice().call()
-        .then((value) => {
-          setETHPrice(parseFloat(value) / 1e18)
+      await quid.methods.set_price_eth(status, false).send({ from: account })
+        .then(async () => {
+          await quid.methods.getPrice().call()
+            .then((value) => {
+              setETHPrice(parseFloat(value) / 1e18)
+            })
         })
-      })
     } catch (error) {
       console.error("Test's pricing error", error)
     }
-  },[account, quid])
+  }, [account, quid])
 
   const calculatePrice = useCallback((num) => {
     try {
@@ -66,6 +102,19 @@ export const Mint = () => {
       console.error(error)
     }
   }, [])
+
+  const calculateEthTransaction = useCallback(async () => {
+    try {
+      await mo.methods.FEE().call()
+      .then((value) => {
+        const ethPrice = (Number(value) / 1e18) * inputValue 
+        
+        setTransactionPrice(ethPrice.toFixed(4))
+      })
+    } catch (error) {
+      console.error(error)
+    }
+  }, [mo, inputValue])
 
   const handleAgreeTerms = useCallback(async () => {
     setIsModalOpen(false)
@@ -109,16 +158,16 @@ export const Mint = () => {
     if (originalValue[0] === ".") originalValue = "0" + originalValue
 
     if (regex.test(originalValue)) {
-      if (chooseButton === "MINT") {
+      if (chooseButton === "MINT" || !chooseCurrency) {
         setSdaiValue(currentPrice * 0.01)
-        setMintValue(Number(originalValue).toFixed())
+        setInputValue(Number(originalValue).toFixed())
       }
       else {
-        setMintValue(originalValue)
+        setInputValue(originalValue)
         setSdaiValue(currentPrice * 0.01)
       }
     }
-  }, [chooseButton, currentPrice])
+  }, [chooseButton, currentPrice, chooseCurrency])
 
   const setNotifications = useCallback((severity, message, status = false) => {
     setStorage(prevNotifications => [
@@ -126,6 +175,10 @@ export const Mint = () => {
       { severity: severity, message: message, status: status }
     ])
   }, [setStorage])
+
+//================================================================================================
+// -------------------------- STARTING TRANSFERS TERMINAL METHOD ---------------------------------
+//================================================================================================
 
   const terminalStarting = async (button) => {
     const beneficiaryAccount = !isSameBeneficiary && beneficiary !== "" ? beneficiary : account
@@ -137,24 +190,37 @@ export const Mint = () => {
 
     if (!account) return setNotifications("error", "Please connect your wallet")
 
-    if (!mintValue.length) return setNotifications("error", "Please enter amount")
+    if (!inputValue.length) return setNotifications("error", "Please enter amount")
 
-    const balance = async () => {
+    const depInfo = await getDepositInfo()
+      .then((numbers) => {
+        return numbers
+      })
+
+    const ballanceStatus = await getWalletBalance().then((balance) => {
+      if (Number(inputValue) > Number(balance.eth)) return true
+      else return false
+    })
+
+    //By default the weth and work ballance are equals zero, so cindition for DEBIT/WITHDRAW will not work with this values
+    //const depositBuffer = ethPrice * depInfo.work_eth_balance - depInfo.work_usd_balance
+
+    const sDAIbalance = async () => {
       if (sdai) return Number(formatUnits(await sdai.methods.balanceOf(account).call(), 18))
     }
 
     try {
       if (button === "MINT") {
-        if (mintValue < 50) return setNotifications("error", "The amount should be more than 50")
+        if (inputValue < 50) return setNotifications("error", "The amount should be more than 50")
 
-        if (mintValue > totalSupplyCap) return setNotifications("error", "The amount should be less than the maximum mintable QD")
+        if (inputValue > totalSupplyCap) return setNotifications("error", "The amount should be less than the maximum mintable QD")
 
-        if (sdaiValue > (await balance())) return setNotifications("error", "Cost shouldn't be more than your sDAI balance")
+        if (inputValue > (await sDAIbalance())) return setNotifications("error", "Cost shouldn't be more than your sDAI balance")
 
-        const qdAmount = parseUnits(mintValue, 18)
+        const qdAmount = parseUnits(inputValue, 18)
         setIsProcessing(true)
         setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
-        setMintValue("")
+        setInputValue("")
 
         const sdaiAmount = await qdAmountToSdaiAmt(qdAmount, DELAY)
         const sdaiString = sdaiAmount ? sdaiAmount.toString() : 0
@@ -178,7 +244,7 @@ export const Mint = () => {
 
         const allowanceBeforeMinting = await sdai.methods.allowance(account, addressQD).call()
 
-        setNotifications("info", `Start minting:\nQD amount: ${mintValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}`)
+        setNotifications("info", `Start minting:\nQD amount: ${inputValue}\nCurrent account: ${account}\nAllowance: ${formatUnits(allowanceBeforeMinting, 18)}`)
 
         if (account) {
           await quid.methods.mint(
@@ -190,70 +256,65 @@ export const Mint = () => {
       }
 
       if (button === "DEPOSIT") {
-        const depInfo = await getDepositInfo()
-          .then((numbers) => {
-            return numbers
-        })
+        if (!chooseCurrency && inputValue > (await sDAIbalance())) return setNotifications("error", "Cost shouldn't be more than your sDAI balance")
 
-        if (mintValue > depInfo.weth_eth_balance + depInfo.work_eth_balance) return setNotifications("error", "The amount should be less than the insureble value.")
+        if (!chooseCurrency && inputValue > insureble) return setNotifications("error", "The amount shouldn't be more than insurable")
 
-        const ballanceStatus = await getWalletBalance().then((balance) => {
-          if (Number(mintValue) > Number(balance.eth)) return true
-          else return false
-        })
+        if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
-        if (ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
+        // depositeBuffer using for this condition
+        //if (chooseCurrency && inputValue > depositBuffer) return setNotifications("error", "The amount shouldn't be more than work and weth balance")
 
-        const ethDepo = parseUnits(mintValue, 18)
+        const valueDepo = parseUnits(inputValue, 18).toString()
+
         setIsProcessing(true)
         setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
-        setMintValue("")
+        setInputValue("")
 
-        if (account) {
+        if (account && chooseCurrency) {
           await mo.methods.deposit(
             beneficiaryAccount.toString(),
-            0, !insureStatus).send({ from: account, value: ethDepo.toString() })
+            0, !insureStatus).send({ from: account, value: valueDepo })
+        }
+
+        if (account && !chooseCurrency) {
+          const matureBallance = await quid.methods.matureBalanceOf(account).call()
+          .then(value => {
+            const mature = parseFloat(value) / 1e18
+            return mature 
+          }) 
+
+          if(inputValue <= matureBallance) await mo.methods.redeem(valueDepo).send({from: account})
+          else await quid.methods.transfer(valueDepo).send({ from: account })
         }
 
         setNotifications("success", "Your deposit has been pending completed!", true)
       }
 
       if (button === "WITHDRAW") {
-        const depInfo = await getDepositInfo()
-          .then((numbers) => {
-            return numbers
-        })
+        if (!chooseCurrency && inputValue > (await sDAIbalance())) return setNotifications("error", "Cost shouldn't be more than your sDAI balance")
 
-        if (withdrawStatus && (mintValue > depInfo.weth_eth_balance + depInfo.work_eth_balance)) return setNotifications("error", "The withdraw amount should be less than the insureble value.")
+        if (!chooseCurrency && inputValue > insureble) return setNotifications("error", "The amount shouldn't be more than insurable")
 
-        if (withdrawStatus && mintValue > depInfo.work_eth_balance){ 
-          const foldValue = mintValue - depInfo.work_eth_balance
+        if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
-          await mo.methods.fold(account, foldValue, false).send({from: account})
+        if (chooseCurrency && inputValue > depInfo.work_eth_balance) {
+          const foldValue = inputValue - depInfo.work_eth_balance
+
+          await mo.methods.fold(account, foldValue, false).send({ from: account })
         }
-        const ballanceStatus = await getWalletBalance().then((balance) => {
-          if (Number(mintValue) > Number(balance.eth)) return true
-          else return false
-        })
 
-        if (withdrawStatus && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
-
-        const depositBuffer = ethPrice * depInfo.work_eth_balance - depInfo.work_usd_balance
-
-        if (!withdrawStatus && sdaiValue > depositBuffer) return setNotifications("error", "Input amount shouldn't be more than insurable")
-
-        const withDrawValue = parseUnits(mintValue, 18).toString()
+        const withDrawValue = parseUnits(inputValue, 18).toString()
         setIsProcessing(true)
         setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
-        setMintValue("")
+        setInputValue("")
 
         if (account) {
-          await mo.methods.withdraw(withDrawValue, !withdrawStatus).send({from: account})
-          
+          await mo.methods.withdraw(withDrawValue, !chooseCurrency).send({ from: account })
+
           setNotifications("success", "The withdraw has been pending completed!", true)
         }
       }
-
     } catch (err) {
       const er = "MO::mint: supply cap exceeded"
       const msg = err.error?.message === er || err.message === er ? "Please wait for more QD to become mintable..." : err.error?.message || err.message
@@ -261,16 +322,20 @@ export const Mint = () => {
       setNotifications("error", msg)
     } finally {
       setIsProcessing(false)
-      setMintValue("")
+      setInputValue("")
     }
   }
+
+//================================================================================================
+// -------------------------- THE END OF WALLET TERMINAL METHOD ----------------------------------
+//================================================================================================
 
   const handleSubmit = () => {
     terminalStarting(chooseButton.current)
   }
 
   const handleSetMaxValue = async () => {
-    if (inputRef.current > totalSupplyCap) setMintValue(totalSupplyCap)
+    if (inputRef.current > totalSupplyCap) setInputValue(totalSupplyCap)
     else inputRef.current.focus()
   }
 
@@ -281,15 +346,15 @@ export const Mint = () => {
 
 
   const handleWithdraw = useCallback(() => {
-    if (withdrawStatus) {
-      setWithdrawStatus(false)
+    if (chooseCurrency) {
+      setChooseCurrency(false)
       setCurrency("QUID")
     }
     else {
-      setWithdrawStatus(true)
-      setCurrency("ETHERUM")
+      setChooseCurrency(true)
+      setCurrency("ETH")
     }
-  }, [withdrawStatus])
+  }, [chooseCurrency])
 
   useEffect(() => {
     if (quid) updateTotalSupply()
@@ -308,16 +373,21 @@ export const Mint = () => {
       setSign('QD')
       setPlaceHolder('Mint amount')
     } else if (chooseButton.current === "DEPOSIT") {
-      setSign('Ξ')
+      if (!chooseCurrency) setSign('QD')
+      else {
+        calculateEthTransaction()
+        setSign('Ξ')
+      }
+
       setPlaceHolder('Deposit amount')
-    } else if (chooseButton.current === "WITHDRAW" && !withdrawStatus) {
+    } else if (chooseButton.current === "WITHDRAW" && !chooseCurrency) {
       setSign('QD')
       setPlaceHolder('Withdraw amount')
     } else {
       setSign('Ξ')
       setPlaceHolder('Withdraw amount')
     }
-  }, [chooseButton, swipeStatus, withdrawStatus])
+  }, [calculateEthTransaction, chooseButton, swipeStatus, chooseCurrency])
 
   return (
     <div className="mint">
@@ -351,14 +421,14 @@ export const Mint = () => {
             type="text"
             id="mint-input"
             className="mint-input"
-            value={mintValue}
+            value={inputValue}
             onChange={handleChangeValue}
             placeholder={placeHolder}
             ref={inputRef}
           />
           <div className="mint-dollarSign">
-            <button className="mint-dollarSign" id="mint-button">
-              {buttonSign}
+            <button id="mint-button">
+              <div>{buttonSign}</div>
             </button>
           </div>
           <button className="mint-maxButton" onClick={handleSetMaxValue} type="button">
@@ -368,55 +438,60 @@ export const Mint = () => {
         </div>
         <div className="mint-sub">
           <div className="mint-subLeft">
-            Cost in $
-            <strong>
-              {sdaiValue === 0 ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * mintValue))}
-            </strong>
+            { chooseButton.current === "MINT" || chooseButton.current == null?
+              <>
+                Cost in $
+                <strong>
+                  {inputValue === "" || inputValue === "0" ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * inputValue))}
+                </strong>
+              </> : chooseButton.current === "DEPOSIT" && chooseCurrency ?
+                (<>
+                Cost for Ξ
+                  <strong>
+                    {inputValue === "" || inputValue === "0" ? "ETH Amount" : transactionPrice}
+                  </strong>
+                </>)
+                : null}
           </div>
-          {mintValue && (chooseButton.current === "MINT" || chooseButton.current == null) ? (
+          {inputValue && inputValue !== "0" && (chooseButton.current === "MINT" || chooseButton.current == null) ? (
             <div className="mint-subRight">
               <strong style={{ color: "#02d802" }}>
-                ${numberWithCommas((+mintValue - sdaiValue).toFixed())}
+                ${numberWithCommas((+inputValue - sdaiValue).toFixed())}
               </strong>
               Future profit
             </div>
           ) : null}
           <label className="checkbox-container">
-            {chooseButton.current === "MINT" || chooseButton.current == null || chooseButton.current === "WITHDRAW" ? null :
-              <>
-                <input
-                  className="mint-checkBox"
-                  type="checkbox"
-                  checked={insureStatus}
-                  onChange={() => handleInsure()}
-                />
-                <span className="mint-availabilityMax">INSURING</span>
-              </>
+            {chooseButton.current === "DEPOSIT" ?
+              <ChoiseBoxes
+                type={!chooseCurrency}
+                status={insureStatus}
+                boxType={true}
+                currency={!chooseCurrency}
+                name={"insure"}
+                relation={"INSURING"}
+                onChange={handleInsure}
+              /> : null
             }
             {chooseButton.current === "MINT" || chooseButton.current == null || chooseButton.current === "DEPOSIT" ?
-              <>
-                <input
-                  name="isBeneficiary"
-                  className="mint-checkBox"
-                  type="checkbox"
-                  checked={isSameBeneficiary}
-                  onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
-                />
-                <span className="mint-availabilityMax">to myself</span>
-              </> : null
+              <ChoiseBoxes
+                type={chooseButton.current === "MINT" || chooseButton.current == null ? false : !chooseCurrency}
+                status={isSameBeneficiary}
+                boxType={true}
+                name={"tomyself"}
+                currency={!chooseCurrency}
+                relation={"to myself"}
+                onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
+              /> : null
             }
-            {chooseButton.current === "WITHDRAW" ?
-              <>
-                <span className="mint-availabilityMax"><b style={{ color: '#4ad300' }}>{choiseCurrency}</b></span>
-                <label className="switch">
-                  <input
-                    type="checkbox"
-                    checked={withdrawStatus}
-                    onChange={() => handleWithdraw()}
-                  />
-                  <span className="slider round"></span>
-                </label>
-              </> : null
+            {chooseButton.current === "WITHDRAW" || chooseButton.current === "DEPOSIT" ?
+              <ChoiseBoxes
+                status={chooseCurrency}
+                boxType={false}
+                name={"currency"}
+                relation={choiseCurrency}
+                onChange={handleWithdraw}
+              /> : null
             }
           </label>
         </div>
@@ -464,19 +539,19 @@ export const Mint = () => {
         </div>
       </div>
       <div className="test-price">
-          <div 
-            className="change-price low-price"
-            onClick={() => handlePrice(false)}
-          >
-            <b>↓</b>
-          </div>
-          <p><b>{"Ξ "}</b>{parseFloat(ethPrice).toFixed(4)}</p>
-          <div 
-            className="change-price high-price"
-            onClick={() => handlePrice(true)}
-            >
-            <b>↑</b>
-          </div>
+        <div
+          className="change-price low-price"
+          onClick={() => handlePrice(false)}
+        >
+          <b>↓</b>
+        </div>
+        <p><b>{"Ξ "}</b>{parseFloat(ethPrice).toFixed(4)}</p>
+        <div
+          className="change-price high-price"
+          onClick={() => handlePrice(true)}
+        >
+          <b>↑</b>
+        </div>
       </div>
     </div>
   )
