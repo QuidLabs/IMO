@@ -257,7 +257,7 @@ export const Mint = () => {
 
         if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
-        const ethDepo = parseUnits(mintValue, 18)
+        const valueDepo = parseUnits(mintValue, 18)
         setIsProcessing(true)
         setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
         setMintValue("")
@@ -265,11 +265,11 @@ export const Mint = () => {
         if (account && chooseCurrency) {
           await mo.methods.deposit(
             beneficiaryAccount.toString(),
-            0, !insureStatus).send({ from: account, value: ethDepo.toString() })
+            0, !insureStatus).send({ from: account, value: valueDepo.toString() })
         }
 
         if (account && !chooseCurrency) {
-          await quid.methods.transfer(addressMO, ethDepo.toString()).send({ from: account })
+          await mo.methods.redeem(valueDepo.toString()).send({from: account})
         }
 
         setNotifications("success", "Your deposit has been pending completed!", true)
