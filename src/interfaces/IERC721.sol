@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: AGPL-3.0-or-later
 // OpenZeppelin Contracts (last updated v5.1.0) (token/ERC721/IERC721.sol)
 
-pragma solidity =0.8.8;
+pragma solidity 0.8.25;
 
 /**
  * @dev Interface of the ERC-165 standard, as defined in the

@@ -1,6 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.8;
 
+pragma solidity 0.8.25;
 import {Script} from "../lib/forge-std/src/Script.sol";
 import {mockVault} from "../src/mockVault.sol";
 import {mockToken} from "../src/mockToken.sol";
@@ -58,7 +57,6 @@ contract Deploy is Script {
         );
         
         moulinette.setQuid(address(quid));
-        quid.restart();
         quid.set_price_eth(false, true);
         
         console.log("Quid address...", address(quid));

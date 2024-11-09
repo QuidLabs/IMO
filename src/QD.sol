@@ -1,6 +1,6 @@
 
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity =0.8.8; // EVM: london
+pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {IMorpho, Position} from "./interfaces/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
@@ -44,8 +44,6 @@ contract Quid is ERC20,
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     // "16 bars keep the car running" ~ chamber music
-    mapping(address => address) public vaults; // $
-    // re-deposited staked stablecoins in a basket...
     // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
@@ -54,7 +52,10 @@ contract Quid is ERC20,
     // performance is recognised as reasonable duty or
     // tender (an unconditional offer to perform)...
     uint constant public MAX_PER_DAY = 777_777 * WAD;
-    uint[90] public WEIGHTS; // sum of weights... 
+
+    uint[90] public WEIGHTS; // sum of weights 
+    mapping(address => uint) internal perVault; 
+    mapping(address => address) internal vaults;
     mapping (address => bool[16]) public hasVoted;
     // when a token-holder votes for a fee, their
     // QD balance is applied to the total weights
@@ -65,12 +66,12 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
-    address public immutable SUSDE;
-    address public immutable USDE;
+    address public immutable DAI; 
+    address public immutable SDAI;
     address public immutable SFRAX;
     address public immutable FRAX;
-    address public immutable SDAI;
-    address public immutable DAI; 
+    address public immutable USDE;
+    address public immutable SUSDE;
     uint internal _ETH_PRICE; // TODO 
     address public Moulinette; // windmill
     address internal chainlink;
@@ -90,7 +91,8 @@ contract Quid is ERC20,
         address _frax, address _sfrax,
         address _sdai, address _dai)
         ERC20("QU!D", "QD", 18) { // 2024-26
-        deployed = block.timestamp; // 11/11
+        START = block.timestamp;            
+        deployed = START; // 11/11
         Moulinette = _mo; chainlink = _link;
         SDAI = _sdai; DAI = _dai; vaults[DAI] = SDAI;
         ERC20(DAI).approve(_sdai, type(uint256).max);
@@ -111,34 +113,30 @@ contract Quid is ERC20,
         if (token == address(SDAI)
         || token == address(SFRAX) 
         || token == address(SUSDE) ) {
-            isDollar = true;
-            usd =_min(amount, 
+            isDollar = true; usd =_min(amount, 
             ERC4626(token).convertToAssets(
             ERC4626(token).balanceOf(from)));
+            perVault[token] += usd;
             amount = ERC4626(token).convertToShares(usd);
-            ERC4626(token).transferFrom(msg.sender, 
-                address(this), amount); 
+            ERC4626(token).transferFrom(msg.sender, address(this), amount); 
         }   else if (token == address(DAI) ||
                     token == address(FRAX) || 
                     token == address(USDE)) {
-                    isDollar = true;
-                    usd = _min(amount, 
+                    isDollar = true; usd = _min(amount, 
                     ERC20(token).balanceOf(from));
+                    address vault = vaults[token];
+                    perVault[vault] += usd;
+                    
                     ERC20(token).transferFrom(from, address(this), usd);
-                    amount = ERC4626(vaults[token]).deposit(usd, address(this));
-        }           require(isDollar && amount > 0, "insufficient balance");
+                    amount = ERC4626(vault).deposit(usd, address(this));
+        }           require(isDollar && amount > 0 &&  perVault[SUSDE] >= 
+        (perVault[SDAI] + perVault[SFRAX] + perVault[SUSDE]) / 2, "$");
     }
     function qd_amt_to_dollar_amt(uint qd_amt) public 
         view returns (uint amount) { uint in_days = (
             (block.timestamp - START) / 1 days
-        );  
-        amount = (in_days * PENNY + START_PRICE) * qd_amt / WAD;
-    }
-    function get_total_deposits() public 
-        view returns (uint total) {
-        for (uint i = 0; i <= currentBatch(); i++) {
-            total += Piscine[i][43].debit;
-        }
+        );  amount = (in_days * PENNY
+            + START_PRICE) * qd_amt / WAD;
     }
     function get_total_supply_cap() 
         public view returns (uint) {
@@ -148,16 +146,15 @@ contract Quid is ERC20,
         ) + 1; return in_days * MAX_PER_DAY -
                Piscine[batch][43].credit; 
     }
-
-    function get_shares_value() 
+    function get_total_deposits() 
         public view returns (uint) {
-        uint sdai = ERC4626(SDAI).convertToAssets(
-            ERC4626(SDAI).balanceOf(address(this)));  
-        uint sfrax = ERC4626(SFRAX).convertToAssets(
-            ERC4626(SFRAX).balanceOf(address(this)));
-        uint susde = ERC4626(SUSDE).convertToAssets(
-            ERC4626(SUSDE).balanceOf(address(this))); 
-        return sdai + sfrax + susde; 
+        uint dai = _min(perVault[SDAI], ERC4626(
+            SDAI).maxWithdraw(address(this)));
+        uint frax = _min(perVault[SFRAX], ERC4626(
+            SFRAX).maxWithdraw(address(this)));
+        uint usde = _min(perVault[SUSDE], ERC4626(
+            SUSDE).maxWithdraw(address(this)));
+        return dai + frax + usde; 
     }
 
     function vote(uint new_vote) external { 
@@ -176,6 +173,7 @@ contract Quid is ERC20,
         _calculateMedian(stake, old_vote,
                          stake, new_vote);
     }
+
     function currentBatch() 
         public view returns (uint batch) {
         batch = (block.timestamp - deployed) / DAYS;
@@ -228,7 +226,7 @@ contract Quid is ERC20,
         }   else { uint delta = _ETH_PRICE / 5;
             _ETH_PRICE = up ? _ETH_PRICE + delta 
                               : _ETH_PRICE - delta;
-        } // TODO remove this testing fu
+        } // TODO remove this testing function...
     }
     function getPrice() public 
         view returns (uint price) {
@@ -296,7 +294,7 @@ contract Quid is ERC20,
         require(amount > WAD, "insufficient QD"); 
         int i; // must be int otherwise tx reverts
         // when we go below 0 in the while loop...
-        if (to == address(0)) { // TODO when regular cdp burn this is not the right path
+        if (to == address(0)) { 
             i = int(matureBatches()); 
             _burn(from, amount);
             // no _calculateMedian `to`
@@ -305,8 +303,7 @@ contract Quid is ERC20,
                 balance_to, to_vote, this.balanceOf(to));
             // _calculateMedian(this.balanceOf(to), to_vote,
             //                     balance_to, to_vote);
-        }   // loop from newest to oldest batch
-        // until requested amount fulfilled...
+        }   
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k];
             // console.log("TransferHelper...", amt);
@@ -341,7 +338,7 @@ contract Quid is ERC20,
                     cost = _minAmount(pledge, token, 
                         FullMath.mulDiv(price, amount, 
                         WAD)); // _minAmount may return less 
-                    // so we must calculate amount twice here...
+                    // so we must calculate amount twice here:
                     amount = FullMath.mulDiv(WAD, cost, price); 
                     consideration[pledge][batch] += amount;
                     _mint(pledge, amount); // totalSupply++
@@ -354,6 +351,7 @@ contract Quid is ERC20,
                     MO(Moulinette).mint(pledge, cost, amount);            
                 }
         } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
+        address constant FOLD = 0xA0766B65A4f7B1da79a1AF79aC695456eFa28644;
         address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
      bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch 
@@ -376,96 +374,80 @@ contract Quid is ERC20,
         require(data.length >= 32, "Insufficient data");
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
         if (tokenId == LAMBO && parker == address(this)) {
-            uint batch = currentBatch() - 1;
-            // TODO is approval necessary?
-            ICollection(F8N).transferFrom(
+            ICollection(F8N).approve(from, LAMBO);
+            ICollection(F8N).transferFrom( // return
                 address(this), from, LAMBO); 
-            uint QD = draw(from, GRIEVANCES); 
-            // TODO approve 
-            mint(from, QD, address(USDE)); 
-            // TODO mint(QD / 2, from, MO(Moulinette).DAI())
-            if (START != 0) { // BACKEND / 8 wu tang...TODO
-                // uint random = uint(keccak256(
-                //     abi.encodePacked(_seed, 
-                //     block.prevrandao))) 
-                // % voters[batch].length;
-                // console.log("random....", random);
-                // MO(Moulinette).setMetrics(AVG_ROI); 
-                require(block.timestamp >= START + DAYS 
-                && batch < 17, "re-up"); // "like a boomerang
-            } // ...I need a...^^^^^^ same level, same rebel
-            START = block.timestamp; // that never settled
-            consideration[from][batch] += BACKEND; // QD...
-            // in the frontend, we do transferFrom in order
-            // to receive NFT & pass in calldata for lotto
-        } return this.onERC721Received.selector; // TODO ^
-    }
+                draw(from, GRIEVANCES / 2); 
+                draw(FOLD, GRIEVANCES / 2); 
+                uint batch = currentBatch();
 
-    // TODO remove, testing only
-    function restart() public { 
-        if (START != 0) { uint batch = currentBatch();
             Pod memory day = Piscine[batch - 1][43];  
             AVG_ROI += FullMath.mulDiv(WAD, 
             day.credit - day.debit, day.debit);
-            console.log("Restart...", batch, AVG_ROI);
             MO(Moulinette).setMetrics(AVG_ROI / 
                 (DAYS / 1 days) * batch
-            );  require(block.timestamp > START + DAYS &&
-                    currentBatch() < 17, "can't restart");
-        }  START = block.timestamp;            
+            );
+            // TODO
+            console.log("Restart...", batch, AVG_ROI);
+                uint random = uint(keccak256(
+                    abi.encodePacked(_seed, 
+                    block.prevrandao))) 
+                % voters[batch].length;
+                console.log("random....", random);
+
+            require(block.timestamp >= START + DAYS 
+            && batch < 17, "re-up"); // "like a boomerang
+            // ...I need a...^^^^^^ same level, same rebel
+            START = block.timestamp; // that never settled
+            consideration[from][batch] += BACKEND; // QD
+            // in the frontend, safetransferFrom in order
+            // to receive NFT, pass in calldata for lotto
+        } return this.onERC721Received.selector; 
     }
 
     function draw(address to, uint amount) 
         public onlyGenerators returns (uint QD) { 
+            uint total = get_total_deposits();
             if (msg.sender == address(this)) { 
-            amount = _min(amount, FullMath.mulDiv(
-                get_shares_value(), PENNY * 2 / 10, 1));
-            QD = MO(Moulinette).dollar_amt_to_qd_amt(
-                MO(Moulinette).capitalisation(0, false), 
-                    amount / 2); to = owner; 
+            amount = _min(amount, 
+                FullMath.mulDiv(total, 
+                    PENNY * 2 / 10, WAD));
         } 
         if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
-            uint reserveSUSDE = ERC4626(SUSDE).balanceOf(address(this));
-            require(amount <= get_shares_value(), "SUSDE");
+            uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SDAI], total), WAD);
+
+            uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SFRAX], total), WAD);
+
+            uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SUSDE], total), WAD);
+            require(amount <= total 
+            && (dai + frax + usde) <= amount, "cash imbalance");
+            if (dai > 0) {
+                ERC4626(SDAI).withdraw(dai, to, address(this));
+                perVault[SDAI] -= dai;
+            }
+            if (frax > 0) {
+                ERC4626(SFRAX).withdraw(frax, to, address(this));
+                perVault[SFRAX] -= frax;
+            }
+            if (usde > 0) {
+                ERC4626(SUSDE).withdraw(usde, to, address(this));
+                perVault[SUSDE] -= usde;
+            }
             // TODO uncomment and test after everything else
             /* (uint susde, ) = IMorpho(MORPHO).withdraw(
                 IMorpho((MORPHO)).idToMarketParams(ID),
                     amount, 0, address(this), msg.sender); */
                 // Morpho conditionally invoked through carry
                 // trade if staking reward of sUSDe is higher
-                // than cost to borrow DAI and stake as sDAI.
-            // ERC4626(SUSDE).redeem(susde, to, address(this));
-            ERC4626(SUSDE).withdraw(amount, to, address(this));
-            // TODO decrement respective quantities from vaultShares
-        
-            // require(pledges[address(this)].carry.debit 
-            //     == reserveSDAI + reserveSUSDE, "don't add up");
-            // uint totalBalance = reserveSDAI + reserveSUSDE;
-            // uint newTotalBalance = totalBalance - amount;
-            // uint targetBalance = newTotalBalance / 2;
-
-            // uint withdrawFromSDAI = reserveSDAI > targetBalance ? 
-            //                         reserveSDAI - targetBalance : 0;
-            // uint withdrawFromSUSDE = reserveSUSDE > targetBalance ? 
-            //                          reserveSUSDE - targetBalance : 0;
-
-            // uint totalWithdrawn = withdrawFromSDAI + withdrawFromSUSDE;
-            // if (totalWithdrawn < amount) {
-            //     uint remainingAmount = amount - totalWithdrawn;
-            //     if (reserveSDAI - withdrawFromSDAI > remainingAmount / 2) {
-            //         withdrawFromSDAI += remainingAmount / 2;
-            //         remainingAmount -= remainingAmount / 2;
-            //     } else {
-            //         withdrawFromSDAI += reserveSDAI - withdrawFromSDAI;
-            //         remainingAmount -= reserveSDAI - withdrawFromSDAI;
-            //     }
-            //     if (reserveSUSDE - withdrawFromSUSDE > remainingAmount) {
-            //         withdrawFromSUSDE += remainingAmount;
-            //     } else {
-            //         withdrawFromSUSDE += reserveSUSDE - withdrawFromSUSDE;
-            //     }
-            // }
-            // ERC4626(SDAI).redeem(withdrawFromSDAI, to, address(this));
+                // than cost to borrow DAI and stake as sDAI;
+                // needs logic to unwind and payoff debt if 
+                // the situation switches to the opposite...
+                // conditional invocation should also account
+                // for the capitalisation gap, this may be a 
+                // systemic lender of last resort bailout hook
         }
     }
 }
