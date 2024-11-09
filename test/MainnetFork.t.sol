@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity =0.8.8;
+pragma solidity 0.8.25; // evm: london
+import {Quid} from "../src/QD.sol";
+import {MO} from "../src/MOulinette.sol";
 
-import {Test} from "../lib/forge-std/src/Test.sol";
 import {mockVault} from "../src/mockVault.sol";
 import {mockToken} from "../src/mockToken.sol";
-import {MO} from "../src/MOulinette.sol";
-import {Quid} from "../src/QD.sol";
+
 import "../src/interfaces/IERC721.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
+import {Test} from "../lib/forge-std/src/Test.sol";
+
 import {WETH} from "../lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "../lib/solmate/src/tokens/ERC20.sol";
 import {ERC4626} from "../lib/solmate/src/tokens/ERC4626.sol";
-import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
+import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
-
 interface ICollection is IERC721 {
     function latestTokenId()
     external view returns (uint);
@@ -88,7 +89,6 @@ contract MainnetFork is Test {
         );
 
         moulinette.setQuid(address(quid));
-        quid.restart();
         quid.set_price_eth(false, true);
     }
     
@@ -99,8 +99,7 @@ contract MainnetFork is Test {
 
         // TODO simulate a large transfer from 
         // large holder of USDe to the test account
-        vm.startPrank(User01);
-        USDE.mint();
+        vm.startPrank(User01); USDE.mint();
         weth.deposit{value: 1_000_000 ether}();
 
         weth.approve(address(moulinette), type(uint256).max);
@@ -116,11 +115,26 @@ contract MainnetFork is Test {
          quid_debit) = moulinette.get_info(User01);
         console.log("User1...before transfer", quid_credit, quid_debit);
 
+        uint a; uint b; uint c; uint d;
+        (work_debit, work_credit, 
+         weth_debit, weth_credit) = moulinette.get_more_info(User01);
         quid.transfer(User02, grant);
         vm.stopPrank(); // exit User1 context
 
-        // TODO transfer back and verify that carry.debit before and after are the same
-
+        // transfer backward 
+        vm.startPrank(User02); 
+        quid.transfer(User01, grant);
+        vm.stopPrank();
+       
+        (a,b,c,d) = moulinette.get_more_info(User01);
+        // and verify that carry.debit
+        // before and after are the same
+        assertEq(a, work_debit);
+        assertEq(b, work_credit);
+        assertEq(c, weth_debit);
+        assertEq(d, weth_credit);
+        uint beforeBatch = quid.currentBatch();
+        
         // Simulate passage of time
         vm.warp(block.timestamp + 14 days);
         
@@ -164,68 +178,69 @@ contract MainnetFork is Test {
         );
         vm.stopPrank();
 
-
+        // TODO 
+        // assertEq(minted, rack);
 
         /*«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-«-*/
         /*                       LOTTERY TESTING                      */
         /*-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»-»*/
 
-
-
         vm.startPrank(User01);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User02);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User03);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User04);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User05);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User06);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User07);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User08);
-
         quid.vote(77);
-
         vm.stopPrank();
+        
         vm.startPrank(User09);
-
         quid.vote(77);
-
         vm.stopPrank();
+
+        vm.warp(block.timestamp + 34 days);
+
+        vm.startPrank(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4);
+        F8N.approve(address(quid), 16508);
+        vm.stopPrank();
+
+        uint avg_roi_before = quid.AVG_ROI();
+        vm.startPrank(address(quid));
+        bytes32 seed = 0xfecf91618d752d88c3c7ed03b6040823a43b4a88edd2372a0a07aa348780c85b;
+        F8N.safeTransferFrom(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4,
+            address(quid), 16508, abi.encode(seed));
+        vm.stopPrank();
+
+        uint avg_roi_after = quid.AVG_ROI();
+        uint afterBatch = quid.currentBatch();
+        assertNotEq(beforeBatch, afterBatch);
+        assertNotEq(avg_roi_before, avg_roi_after);
     }
 
     /*
-        vm.startPrank(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4);
-        F8N.approve(address(moulinette), 16508);
-        F8N.transferFrom(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4,
-            address(moulinette), 16508);
-        vm.stopPrank();
-
         assertGt(amountOut, 0);
 
          vm.expectRevert(FoldCaptiveStaking.AlreadyInitialized.selector);

@@ -1,6 +1,6 @@
 
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity =0.8.8; // EVM: london
+pragma solidity 0.8.25; // EVM: london
 import {Quid} from "./QD.sol"; // ERC777
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
@@ -144,7 +144,7 @@ contract MO is Owned(msg.sender) {
         uint assets = collateral + deductibles + 
             // USDC (upscaled for precision)...
             (pledge.work.debit * 1e12) + 
-            QUID.get_shares_value();
+            QUID.get_total_deposits();
         // doesn't account for pledge.weth.credit,
         // which are liabilities (that are insured)
         uint total = QUID.totalSupply(); 
@@ -160,10 +160,15 @@ contract MO is Owned(msg.sender) {
         address to, uint amount) onlyQuid 
         public { if (to == address(this)) { // burn
             uint credit = pledges[from].work.credit;
-            pledges[from].work.credit -= _min(
-                qd_amt_to_dollar_amt(
-                capitalisation(amount, true), 
-                amount), credit);
+            uint burn = _min(qd_amt_to_dollar_amt(
+                capitalisation(amount, true), amount), credit
+            );
+            pledges[from].work.credit -= burn;
+            uint remainder = burn - amount;
+            uint mature = QUID.matureBalanceOf(msg.sender);
+            if (remainder > 0 &&  mature > 0) {
+                _redeem(msg.sender, _min(mature, remainder));
+            }
         } else if (to != address(0)) {
             // percentage of carry.debit gets 
             // transferred over in proportion 
@@ -308,21 +313,20 @@ contract MO is Owned(msg.sender) {
         // (insurers w/ higher avg. ROI absorb more) 
         // "you never count your money while you're
         // sittin' at the table...there'll be time
-        // enough for countin'...when,"
-    function redeem(uint amount) // QD
-        external returns (uint absorb) {
-        amount = _min(QUID.matureBalanceOf(msg.sender),
-        amount); // % share over the overall balance...
-        console.log("AbsorbAmount...", amount);
+        // enough for countin'...when the dealin's done"
+    function _redeem(address who, uint amount) // QD
+        internal returns (uint absorb) {
+        console.log("RedeemAmount...", amount);
+        // % share over the overall balance...
         uint share = FullMath.mulDiv(WAD, amount, 
-                     QUID.balanceOf(msg.sender));
-        Offer storage pledge = pledges[msg.sender]; 
+                     QUID.balanceOf(who));
+        
         uint coverage = pledges[address(this)].carry.credit; 
         // maximum $ that pledge would absorb
         // if they redeemed all their QD...
         absorb = FullMath.mulDiv(coverage, 
             FullMath.mulDiv(WAD, 
-            pledge.carry.credit, SUM), WAD  
+            pledges[who].carry.credit, SUM), WAD  
         );  
         // if not 100% of the mature QD is
         if (WAD > share) { // being redeemed
@@ -380,6 +384,7 @@ contract MO is Owned(msg.sender) {
         } 
         else { pledges[address(this)].carry.credit -= amount; } // TODO wrong amount
             // else the entire amount being redeemed is consumed 
+        
     }
     
     // quid says if amount is QD...
@@ -598,10 +603,9 @@ contract MO is Owned(msg.sender) {
 
             state.collat = FullMath.mulDiv(pledge.work.debit, state.price, WAD);
             if (state.collat > pledge.work.credit) { state.liquidate = false; } 
-        }
-        // "things have gotten closer to the sun, and I've done 
-        // things in small doses, so don't think that I'm pushing 
-        // you away...when you're the one that I've kept closest"
+        }   // "things have gotten closer to the sun, and I've done things
+            // in small doses, so don't think that I'm pushing you away...  
+            // when iron spit...cats fold...infact get their life froze..."
         if (state.liquidate && 
             (block.timestamp - pledge.last > 1 hours)) {  
             state.cap = capitalisation(state.repay, true);
