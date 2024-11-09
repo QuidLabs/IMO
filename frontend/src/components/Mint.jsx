@@ -297,7 +297,6 @@ export const Mint = () => {
           setNotifications("success", "The withdraw has been pending completed!", true)
         }
       }
-
     } catch (err) {
       const er = "MO::mint: supply cap exceeded"
       const msg = err.error?.message === er || err.message === er ? "Please wait for more QD to become mintable..." : err.error?.message || err.message
@@ -421,13 +420,13 @@ export const Mint = () => {
               <>
                 Cost in $
                 <strong>
-                  {mintValue === "" ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * mintValue))}
+                  {mintValue === "" && mintValue === "0" ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * mintValue))}
                 </strong>
               </> : chooseButton.current === "DEPOSIT" && chooseCurrency ?
                 (<>
                 Cost for Ξ
                   <strong>
-                    {mintValue === "" ? "ETH Amount" : transactionPrice}
+                    {mintValue === "" && mintValue === "0" ? "ETH Amount" : transactionPrice}
                   </strong>
                 </>)
                 : null}
