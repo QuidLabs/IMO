@@ -64,7 +64,7 @@ export const Mint = () => {
   const [choiseCurrency, setCurrency] = useState('QUID')
 
   const [ethPrice, setETHPrice] = useState(0)
-  const [ethTransactionCost, setETHTransactionCost] = useState('')
+  const [transactionPrice, setTransactionPrice] = useState('')
 
   const [insureble, setInsureble] = useState('')
 
@@ -104,16 +104,15 @@ export const Mint = () => {
   const calculateEthTransaction = useCallback(async () => {
     try {
       await mo.methods.FEE().call()
-        .then((value) => {
-          console.log(Number / 1e18)
-          const ethPrice = (Number(value) / 1e18) * inputRef 
-
-          setETHTransactionCost(ethPrice)
-        })
+      .then((value) => {
+        const ethPrice = (Number(value) / 1e18) * mintValue 
+        
+        setTransactionPrice(ethPrice.toFixed(4))
+      })
     } catch (error) {
       console.error(error)
     }
-  }, [mo])
+  }, [mo, mintValue])
 
   const handleAgreeTerms = useCallback(async () => {
     setIsModalOpen(false)
@@ -426,8 +425,9 @@ export const Mint = () => {
                 </strong>
               </> : chooseButton.current === "DEPOSIT" && chooseCurrency ?
                 (<>
+                Cost for Ξ
                   <strong>
-                    {sdaiValue === 0 ? "ETH Amount" : numberWithCommas(ethTransactionCost)}
+                    {sdaiValue === 0 ? "ETH Amount" : transactionPrice}
                   </strong>
                 </>)
                 : null}
