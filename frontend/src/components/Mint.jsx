@@ -405,8 +405,8 @@ export const Mint = () => {
             ref={inputRef}
           />
           <div className="mint-dollarSign">
-            <button className="mint-dollarSign" id="mint-button">
-              {buttonSign}
+            <button id="mint-button">
+              <div>{buttonSign}</div>
             </button>
           </div>
           <button className="mint-maxButton" onClick={handleSetMaxValue} type="button">
@@ -452,7 +452,7 @@ export const Mint = () => {
             }
             {chooseButton.current === "MINT" || chooseButton.current == null || chooseButton.current === "DEPOSIT" ?
               <ChoiseBoxes
-                type={chooseButton.current === "MINT" ? false : !chooseCurrency}
+                type={chooseButton.current === "MINT" || chooseButton.current == null ? false : !chooseCurrency}
                 status={isSameBeneficiary}
                 boxType={true}
                 currency={!chooseCurrency}

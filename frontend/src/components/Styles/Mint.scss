@@ -91,6 +91,13 @@
   font-size: 108px;
   color: #54b420;
   user-select: none;
+
+  button {
+    width: 100px;
+    height: 100px;
+    background: none;
+    border: none;
+  }
 }
 
 .mint-idSign {
@@ -247,6 +254,7 @@
   align-items: center;
   justify-content: space-between;
   margin-top: 10px;
+  height: 30px;
 }
 
 .mint-subLeft {
