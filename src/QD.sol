@@ -52,8 +52,7 @@ contract Quid is ERC20,
     // performance is recognised as reasonable duty or
     // tender (an unconditional offer to perform)...
     uint constant public MAX_PER_DAY = 777_777 * WAD;
-
-    uint[90] public WEIGHTS; // sum of weights 
+    uint[90] public WEIGHTS; // sum of weights
     mapping(address => uint) internal perVault; 
     mapping(address => address) internal vaults;
     mapping (address => bool[16]) public hasVoted;
@@ -102,7 +101,6 @@ contract Quid is ERC20,
         ERC20(USDE).approve(_susde,  type(uint256).max);
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     }
-    
     function _min(uint _a, uint _b) internal 
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
@@ -118,15 +116,14 @@ contract Quid is ERC20,
             ERC4626(token).balanceOf(from)));
             perVault[token] += usd;
             amount = ERC4626(token).convertToShares(usd);
-            ERC4626(token).transferFrom(msg.sender, address(this), amount); 
+            ERC4626(token).transferFrom(msg.sender, 
+                            address(this), amount); 
         }   else if (token == address(DAI) ||
                     token == address(FRAX) || 
                     token == address(USDE)) {
                     isDollar = true; usd = _min(amount, 
                     ERC20(token).balanceOf(from));
-                    address vault = vaults[token];
-                    perVault[vault] += usd;
-                    
+                    address vault = vaults[token]; perVault[vault] += usd;
                     ERC20(token).transferFrom(from, address(this), usd);
                     amount = ERC4626(vault).deposit(usd, address(this));
         }           require(isDollar && amount > 0 &&  perVault[SUSDE] >= 
@@ -351,6 +348,7 @@ contract Quid is ERC20,
                     MO(Moulinette).mint(pledge, cost, amount);            
                 }
         } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
+        address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
         address constant FOLD = 0xA0766B65A4f7B1da79a1AF79aC695456eFa28644;
         address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
      bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
@@ -377,8 +375,9 @@ contract Quid is ERC20,
             ICollection(F8N).approve(from, LAMBO);
             ICollection(F8N).transferFrom( // return
                 address(this), from, LAMBO); 
-                draw(from, GRIEVANCES / 2); 
-                draw(FOLD, GRIEVANCES / 2); 
+                draw(from, GRIEVANCES / 3); 
+                draw(QUID, GRIEVANCES / 3); 
+                draw(FOLD, GRIEVANCES / 3); 
                 uint batch = currentBatch();
 
             Pod memory day = Piscine[batch - 1][43];  
@@ -412,8 +411,8 @@ contract Quid is ERC20,
             amount = _min(amount, 
                 FullMath.mulDiv(total, 
                     PENNY * 2 / 10, WAD));
-        } 
-        if (MO(Moulinette).capitalisation(0, false) > 100 && amount > 0) { 
+        }   require(amount > 0, "no thing");
+        if (MO(Moulinette).capitalisation(0, false) > 100) { 
             uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                         perVault[SDAI], total), WAD);
 
@@ -449,5 +448,5 @@ contract Quid is ERC20,
                 // for the capitalisation gap, this may be a 
                 // systemic lender of last resort bailout hook
         }
-    }
+    } else if (MO(Moulinette).capitalisation(0, false) < 57)
 }
