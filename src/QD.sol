@@ -19,7 +19,7 @@ interface IERC721Receiver {
 interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
-}
+} // http://42.fr Piscine
 import "./MOulinette.sol";
 contract Quid is ERC20,
     IERC721Receiver {
@@ -77,7 +77,7 @@ contract Quid is ERC20,
     modifier onlyGenerators { 
         address sender = msg.sender;
         require(sender == Moulinette ||
-                sender == address(this), "!");
+                sender == address(this), "!?");
         _;
     } // en.wiktionary.org/wiki/MOulinette 
     modifier postLaunch { // of the windmill
@@ -88,7 +88,7 @@ contract Quid is ERC20,
         address _usde, address _susde, 
         address _frax, address _sfrax,
         address _sdai, address _dai)
-        ERC20("QU!D", "QD", 18) { // 2024-26
+        ERC20("QU!D", "QD", 18) { // '24
         START = block.timestamp;            
         deployed = START; // 11/11
         SDAI = _sdai; DAI = _dai;
@@ -119,21 +119,21 @@ contract Quid is ERC20,
             perVault[token] += usd;
             amount = ERC4626(token).convertToShares(usd);
             ERC4626(token).transferFrom(msg.sender, 
-                            address(this), amount); 
-        }   else if (token == address(DAI) ||
-                    token == address(FRAX) || 
-                    token == address(USDE) ||
-                    token == USDC) {
-                    isDollar = true; usd = _min(amount, 
-                    ERC20(token).balanceOf(from));
-                    address vault = vaults[token]; 
-                    perVault[vault] += usd;
-                    if (vault != USDC) {
-                        ERC20(token).transferFrom(from, address(this), usd);
-                        amount = ERC4626(vault).deposit(usd, address(this));
-                    } else { ERC20(USDC).transferFrom(
-                                from, Moulinette, usd); } 
-            } require(isDollar && amount > 0, "$");
+                            address(this), amount); }  
+        else if (token == address(DAI) ||
+                token == address(FRAX) || 
+                token == address(USDE) ||
+                token == USDC) { // solvency capital
+                isDollar = true; usd = _min(amount, 
+                ERC20(token).balanceOf(from));
+                address vault = vaults[token]; 
+                perVault[vault] += usd;
+                if (vault != USDC) {
+                    ERC20(token).transferFrom(from, address(this), usd);
+                    amount = ERC4626(vault).deposit(usd, address(this));
+                } else { ERC20(USDC).transferFrom(
+                            from, Moulinette, usd); } 
+        } require(isDollar && amount > 0, "$");
     }
     function qd_amt_to_dollar_amt(uint qd_amt) public 
         view returns (uint amount) { uint in_days = (
@@ -329,7 +329,7 @@ contract Quid is ERC20,
             uint batch = currentBatch();
             if (token == address(this)) { _mint(pledge, amount); 
                 consideration[pledge][batch] += amount; // redeemable
-                require(msg.sender == Moulinette, "!"); // authorisation
+                require(msg.sender == Moulinette, "?!"); // authorisation
             }   else if (block.timestamp <= START + DAYS && batch < 16) {
                     uint in_days = ((block.timestamp - START) / 1 days);
                     require(amount >= 10 * WAD, "mint more QD");
@@ -378,9 +378,8 @@ contract Quid is ERC20,
         require(data.length >= 32, "Insufficient data");
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
         if (tokenId == LAMBO && parker == address(this)) {
-            ICollection(F8N).approve(from, LAMBO);
-            ICollection(F8N).transferFrom( // return
-                address(this), from, LAMBO); 
+            ICollection(F8N).transferFrom( // return NFT
+                address(this), QUID, LAMBO); 
                 draw(from, GRIEVANCES / 3); 
                 draw(QUID, GRIEVANCES / 3); 
                 draw(FOLD, GRIEVANCES / 3); 

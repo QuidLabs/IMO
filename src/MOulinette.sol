@@ -84,7 +84,7 @@ contract MO { // Modus Operandi...
         {  QUID = Quid(_quid); 
         require(QUID.Moulinette()
          == address(this), "42");
-    } // http://42.fr Piscine...
+    } 
     modifier onlyQuid {
         require(msg.sender 
             == address(QUID), 
@@ -283,8 +283,10 @@ contract MO { // Modus Operandi...
             sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
             TickMath.getSqrtPriceAtTick(UPPER_TICK), liquidity
         );  uint targetRatio = positionAmount1 / positionAmount0;
-        amount0 = _min(positionAmount0, token0.balanceOf(address(this)));
-        uint currentRatio = amount1 / amount0;
+        if (token0.balanceOf(address(this)) > 0) {
+            amount0 = _min(positionAmount0, 
+            token0.balanceOf(address(this)));
+        }   uint currentRatio = amount1 / amount0;
         if (currentRatio <= (targetRatio * 999) / 1000 
          || currentRatio >= (targetRatio * 1001) / 1000) {
             int selling = ( // some algebra...
@@ -300,7 +302,7 @@ contract MO { // Modus Operandi...
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
                         address(this), block.timestamp, uint(selling), 0));
-            } currentRatio = amount1 / amount0;
+            }   currentRatio = amount1 / amount0;
         }   return (amount0, amount1); 
     }   // call in QD's worth (обнал sans liabilities)
         // calculates the coverage absorption for each 
@@ -624,7 +626,7 @@ contract MO { // Modus Operandi...
         } LAST_TWAP_TICK = twap; if (liquidity > 0 || ID == 0) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         (amount0, 
-        amount1) = _swap(amount0, amount1, sqrtPriceX96);
+         amount1) = _swap(amount0, amount1, sqrtPriceX96);
         (ID,,,) = NFPM.mint(
             INonfungiblePositionManager.MintParams({ token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
@@ -635,7 +637,7 @@ contract MO { // Modus Operandi...
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
             (amount0, amount1) = _swap(
-            amount0, amount1, sqrtPriceX96); NFPM.increaseLiquidity(
+             amount0, amount1, sqrtPriceX96); NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp
             )); 
