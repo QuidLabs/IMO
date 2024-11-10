@@ -6,7 +6,6 @@ import {IMorpho, Position} from "./interfaces/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import {Owned} from "lib/solmate/src/auth/Owned.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 import "./interfaces/IERC721.sol";
 interface IERC721Receiver {
@@ -23,8 +22,7 @@ interface ICollection is IERC721 {
 }
 import "./MOulinette.sol";
 contract Quid is ERC20,
-    IERC721Receiver,
-    Owned(msg.sender) {
+    IERC721Receiver {
     uint public AVG_ROI;
     uint public START;  
     // "Walked in the 
@@ -65,6 +63,7 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
+    address public immutable USDC;
     address public immutable DAI; 
     address public immutable SDAI;
     address public immutable SFRAX;
@@ -92,12 +91,15 @@ contract Quid is ERC20,
         ERC20("QU!D", "QD", 18) { // 2024-26
         START = block.timestamp;            
         deployed = START; // 11/11
+        SDAI = _sdai; DAI = _dai;
+        FRAX = _frax; SFRAX = _sfrax; 
+         USDE = _usde; SUSDE = _susde;
         Moulinette = _mo; chainlink = _link;
-        SDAI = _sdai; DAI = _dai; vaults[DAI] = SDAI;
+        USDC = address(MO(Moulinette).token0());
+        vaults[USDC] = USDC; vaults[DAI] = SDAI;
+        vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
         ERC20(DAI).approve(_sdai, type(uint256).max);
-        FRAX = _frax; SFRAX = _sfrax; vaults[FRAX] = SFRAX;
         ERC20(FRAX).approve(_sfrax,  type(uint256).max);
-        USDE = _usde; SUSDE = _susde; vaults[USDE] = SUSDE;
         ERC20(USDE).approve(_susde,  type(uint256).max);
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     }
@@ -110,7 +112,7 @@ contract Quid is ERC20,
         bool isDollar = false;
         if (token == address(SDAI)
         || token == address(SFRAX) 
-        || token == address(SUSDE) ) {
+        || token == address(SUSDE)) {
             isDollar = true; usd =_min(amount, 
             ERC4626(token).convertToAssets(
             ERC4626(token).balanceOf(from)));
@@ -120,14 +122,18 @@ contract Quid is ERC20,
                             address(this), amount); 
         }   else if (token == address(DAI) ||
                     token == address(FRAX) || 
-                    token == address(USDE)) {
+                    token == address(USDE) ||
+                    token == USDC) {
                     isDollar = true; usd = _min(amount, 
                     ERC20(token).balanceOf(from));
-                    address vault = vaults[token]; perVault[vault] += usd;
-                    ERC20(token).transferFrom(from, address(this), usd);
-                    amount = ERC4626(vault).deposit(usd, address(this));
-        }           require(isDollar && amount > 0 &&  perVault[SUSDE] >= 
-        (perVault[SDAI] + perVault[SFRAX] + perVault[SUSDE]) / 2, "$");
+                    address vault = vaults[token]; 
+                    perVault[vault] += usd;
+                    if (vault != USDC) {
+                        ERC20(token).transferFrom(from, address(this), usd);
+                        amount = ERC4626(vault).deposit(usd, address(this));
+                    } else { ERC20(USDC).transferFrom(
+                                from, Moulinette, usd); } 
+            } require(isDollar && amount > 0, "$");
     }
     function qd_amt_to_dollar_amt(uint qd_amt) public 
         view returns (uint amount) { uint in_days = (
@@ -143,7 +149,7 @@ contract Quid is ERC20,
         ) + 1; return in_days * MAX_PER_DAY -
                Piscine[batch][43].credit; 
     }
-    function get_total_deposits() 
+    function get_total_deposits() // $ 
         public view returns (uint) {
         uint dai = _min(perVault[SDAI], ERC4626(
             SDAI).maxWithdraw(address(this)));
@@ -151,7 +157,7 @@ contract Quid is ERC20,
             SFRAX).maxWithdraw(address(this)));
         uint usde = _min(perVault[SUSDE], ERC4626(
             SUSDE).maxWithdraw(address(this)));
-        return dai + frax + usde; 
+        return dai + frax + usde + perVault[USDC]; 
     }
 
     function vote(uint new_vote) external { 
@@ -351,7 +357,7 @@ contract Quid is ERC20,
         address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
         address constant FOLD = 0xA0766B65A4f7B1da79a1AF79aC695456eFa28644;
         address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-     bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
+    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch 
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
     recipient prevent tokens from being forever locked.
@@ -422,31 +428,30 @@ contract Quid is ERC20,
             uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                         perVault[SUSDE], total), WAD);
             require(amount <= total 
-            && (dai + frax + usde) <= amount, "cash imbalance");
-            if (dai > 0) {
-                ERC4626(SDAI).withdraw(dai, to, address(this));
-                perVault[SDAI] -= dai;
+                && (dai + frax + usde) <= amount, "cash");
+            if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
+                address(this)); perVault[SDAI] -= dai;
             }
-            if (frax > 0) {
-                ERC4626(SFRAX).withdraw(frax, to, address(this));
-                perVault[SFRAX] -= frax;
+            if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
+                address(this)); perVault[SFRAX] -= frax;
             }
-            if (usde > 0) {
-                ERC4626(SUSDE).withdraw(usde, to, address(this));
-                perVault[SUSDE] -= usde;
+            if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
+                address(this)); perVault[SUSDE] -= usde;
             }
+            // USDC is never given out, always held in surplus for Uni
+        }   else if (MO(Moulinette).capitalisation(0, false) < 77) { 
             // TODO uncomment and test after everything else
             /* (uint susde, ) = IMorpho(MORPHO).withdraw(
-                IMorpho((MORPHO)).idToMarketParams(ID),
-                    amount, 0, address(this), msg.sender); */
-                // Morpho conditionally invoked through carry
-                // trade if staking reward of sUSDe is higher
-                // than cost to borrow DAI and stake as sDAI;
-                // needs logic to unwind and payoff debt if 
-                // the situation switches to the opposite...
-                // conditional invocation should also account
-                // for the capitalisation gap, this may be a 
-                // systemic lender of last resort bailout hook
+            IMorpho((MORPHO)).idToMarketParams(ID),
+                amount, 0, address(this), msg.sender); */
+            // Morpho conditionally invoked through carry
+            // trade if staking reward of sUSDe is higher
+            // than cost to borrow DAI and stake as sDAI;
+            // needs logic to unwind and payoff debt if 
+            // the situation switches to the opposite...
+            // conditional invocation should also account
+            // for the capitalisation gap, this may be a 
+            // systemic lender of last resort bailout hook
         }
-    } else if (MO(Moulinette).capitalisation(0, false) < 57)
+    }
 }

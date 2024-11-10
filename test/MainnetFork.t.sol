@@ -102,9 +102,7 @@ contract MainnetFork is Test {
         vm.startPrank(User01); USDE.mint();
         weth.deposit{value: 1_000_000 ether}();
 
-        weth.approve(address(moulinette), type(uint256).max);
         USDE.approve(address(quid), type(uint256).max);
-
         quid.mint(User01, half_a_rack, address(USDE));
         quid.mint(User01, half_a_rack, address(USDE));
 

@@ -8,8 +8,8 @@ today's," 46% `AVG_ROI`.
 
 Over time, retained fees  
 from ΞTH deployed into  
-hooks capitalise QD, as  
-well as [deductibles](https://github.com/QuidLabs/IMO/blob/main/contracts/MOulinette.sol#L800) do. 
+UniV3 adds solvency, as  
+well as deductibles do. 
 
 Hedged against 10% drops,  
 ΞTH insured can't exceed $  
@@ -29,7 +29,7 @@ maturity, when any holder
 
 may `redeem` 1 QD for $1.  
 Voting is incentivised by  
-8 x 55k QD, distributed  
+4 x 55k QD, distributed  
 16x `onERC721Received`.  
 
 - electric ignition system (nervous system):  

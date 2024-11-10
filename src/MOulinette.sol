@@ -4,7 +4,6 @@ pragma solidity 0.8.25; // EVM: london
 import {Quid} from "./QD.sol"; // ERC777
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
-import {Owned} from "lib/solmate/src/auth/Owned.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
@@ -14,7 +13,7 @@ import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 
-contract MO is Owned(msg.sender) {
+contract MO { // Modus Operandi...
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
     ERC20 public immutable token1;
@@ -82,8 +81,10 @@ contract MO is Owned(msg.sender) {
     // fold() holds depositors accountable for 
     // work, as well as accountability for weth
     function setQuid(address _quid) external 
-        onlyOwner {  QUID = Quid(_quid); 
-    } 
+        {  QUID = Quid(_quid); 
+        require(QUID.Moulinette()
+         == address(this), "42");
+    } // http://42.fr Piscine...
     modifier onlyQuid {
         require(msg.sender 
             == address(QUID), 
@@ -126,7 +127,6 @@ contract MO is Owned(msg.sender) {
         token1.approve(_router, type(uint256).max);
         token0.approve(_nfpm, type(uint256).max);
         token1.approve(_nfpm, type(uint256).max);
-       
     }
 
     // present value of the expected cash flows...
@@ -162,7 +162,7 @@ contract MO is Owned(msg.sender) {
             uint credit = pledges[from].work.credit;
             uint cap = capitalisation(amount, true); 
             uint burn = _min(qd_amt_to_dollar_amt(cap, amount), credit);
-            require(amount == dollar_amt_to_qd(cap, burn), "$");
+            require(amount <= dollar_amt_to_qd_amt(cap, burn), "$");
             pledges[from].work.credit -= burn;
         } else if (to != address(0)) {
             // percentage of carry.debit gets 
@@ -283,7 +283,8 @@ contract MO is Owned(msg.sender) {
             sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
             TickMath.getSqrtPriceAtTick(UPPER_TICK), liquidity
         );  uint targetRatio = positionAmount1 / positionAmount0;
-            uint currentRatio = amount1 / amount0;
+        amount0 = _min(positionAmount0, token0.balanceOf(address(this)));
+        uint currentRatio = amount1 / amount0;
         if (currentRatio <= (targetRatio * 999) / 1000 
          || currentRatio >= (targetRatio * 1001) / 1000) {
             int selling = ( // some algebra...
@@ -308,7 +309,6 @@ contract MO is Owned(msg.sender) {
         // (insurers w/ higher avg. ROI absorb more) 
         // "you never count your money while you're
         // sittin' at the table...there'll be time
-        // enough for countin'...when the dealin's done"
     function redeem(uint amount) // QD
         external returns (uint absorb) {
         // % share of overall balance...
@@ -338,32 +338,8 @@ contract MO is Owned(msg.sender) {
         // this is a collect call... 
         // do you accept the charges
         if (amount > absorb) {  amount -= absorb; 
-            // remainder is $ value to be released 
-            // after accounting for liabilities...
-            uint third = 3 * amount / 10; // $
-            
-            // 70% of amount from carry.debit...
-            QUID.draw(msg.sender, amount - third);
-            console.log("ThirdInRedeem...", third);
-
-    
-
-            if (sell) { amount = FullMath.mulDiv(WAD,
-                (third - (usdc * 1e12)), QUID.getPrice());
-                console.log("SellInRedeem...", amount);
-                amount = _min(amount, 
-                pledges[address(this)].weth.debit);
-                pledges[address(this)].work.debit = 0;
-                pledges[address(this)].weth.debit -= amount;
-            } else { amount = 0; // ETH being sent out...
-                pledges[address(this)].work.debit -= usdc; 
-            }
-            
-            (,, uint128 liquidity) = _liquidity(third / 1e12, 0);
-            (uint amount0, 
-             uint amount1) = _withdrawAndCollect(liquidity);
-            token0.transfer(msg.sender, amount0); 
-            amount0 -= usdc; repackNFT(amount0, amount1);
+            QUID.draw(msg.sender, amount);
+            pledges[address(this)].carry.credit -= amount;
         }   pledges[address(this)].carry.credit -= absorb;         
     }
     
@@ -398,7 +374,7 @@ contract MO is Owned(msg.sender) {
             require(pledges[address(this)].carry.debit > 
                 (FullMath.mulDiv(pledges[address(this)].weth.credit, 
                     price, WAD) + FullMath.mulDiv(price,
-                    pledges[address(this)].work.credit / 2, 
+                    pledges[address(this)].work.credit / 2, // TODO
                     WAD)), "over-encumbered");
         } else { uint withdrawable;
             if (pledge.work.credit > 0) {
@@ -422,7 +398,7 @@ contract MO is Owned(msg.sender) {
             (,, uint128 liquidity) = _liquidity(transfer, 0);
             (amount0, amount1) = _withdrawAndCollect(liquidity);
             console.log("WithdrawingETH...", transfer, amount0, amount1);
-            if (amount1 >= transfer) { token1.transfer(msg.sender, transfer);
+            if (amount1 >= transfer) { WETH9.transfer(msg.sender, transfer);
                 amount1 -= transfer; } repackNFT(amount0, amount1);
         }   pledges[msg.sender] = pledge;
     }
@@ -553,12 +529,10 @@ contract MO is Owned(msg.sender) {
                     console.log("FoldMinted...", state.minting, state.delta);
                     QUID.mint(beneficiary, state.minting, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
-                } 
-                else { state.deductible = 0; } // no mint = no charge  
-            } 
-            else if (!state.liquidate) { 
-                require(msg.sender == beneficiary, "auth"); 
-            } 
+                }   else { state.deductible = 0; } // no mint = no charge  
+            }   else if (!state.liquidate) { require(
+                msg.sender == beneficiary, "auth"); 
+            }   
             pledges[address(this)].weth.credit -= amount;
             // amount is no longer insured by the protocol
             pledge.weth.debit -= amount; // deduct amount
@@ -651,8 +625,6 @@ contract MO is Owned(msg.sender) {
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         (amount0, 
         amount1) = _swap(amount0, amount1, sqrtPriceX96);
-        pledges[address(this)].weth.debit += amount1;
-        pledges[address(this)].work.debit += amount0;
         (ID,,,) = NFPM.mint(
             INonfungiblePositionManager.MintParams({ token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
@@ -666,8 +638,8 @@ contract MO is Owned(msg.sender) {
             amount0, amount1, sqrtPriceX96); NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp
-            )); pledges[address(this)].weth.debit += amount1;
-                pledges[address(this)].work.debit += amount0;
-        }
+            )); 
+        }   pledges[address(this)].weth.debit += amount1;
+            pledges[address(this)].work.debit += amount0;
     }
 }
