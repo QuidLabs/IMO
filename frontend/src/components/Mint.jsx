@@ -300,8 +300,9 @@ export const Mint = () => {
 
         if (chooseCurrency && inputValue > depInfo.work_eth_balance) {
           const foldValue = inputValue - depInfo.work_eth_balance
+          const parseFold = parseFloat(foldValue, 18).toString()
 
-          await mo.methods.fold(account, foldValue, false).send({ from: account })
+          await mo.methods.fold(account, parseFold, false).send({ from: account })
         }
 
         const withDrawValue = parseUnits(inputValue, 18).toString()

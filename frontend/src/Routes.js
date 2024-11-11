@@ -5,7 +5,7 @@ import MaintPage from './pages/MainPage/MaintPage'
 
 export const useRoutes = () => (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<HomePage minValue={1} maxValue={9}/>} />
       <Route path="/Mint" element={<MaintPage />} />
     </Routes>
   )
