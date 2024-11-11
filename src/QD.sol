@@ -63,6 +63,7 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
+    mapping (address => bool) public winners; 
     address public immutable USDC;
     address public immutable DAI; 
     address public immutable SDAI;
@@ -379,9 +380,8 @@ contract Quid is ERC20,
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
         if (tokenId == LAMBO && ICollection(F8N).ownerOf(
             LAMBO) == address(this)) { address winner;  
-            uint cut = GRIEVANCES / 3; // $ 44 800
+            uint cut = GRIEVANCES / 3; // $ 44 800...
             Pod memory day = Piscine[batch - 1][43]; 
-            uint[4] memory used; // no duplicates...
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT
                      this.draw(QUID, cut); 
@@ -398,12 +398,9 @@ contract Quid is ERC20,
                     abi.encodePacked(_seed, 
                     block.prevrandao, i))) % 
                     voters[batch - 1].length; 
-                    bool repeat = false; // reset
-                for (uint j = 0; j < count; j++) {
-                    if (used[j] == random) {
-                       repeat = true; break; }
-                } if (!repeat) { used[count++] = random; 
                     winner = voters[batch - 1][random];
+                if (!winners[winner]) { 
+                    count += 1; winners[winner] == true;
                     backend -= cut; _mint(winner, cut);
                     consideration[winner][batch] += cut;
                 }

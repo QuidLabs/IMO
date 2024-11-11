@@ -1349,7 +1349,7 @@ export const QUID = [
   }
 ]
 
-export const SDAI = [
+export const USDE = [
   {
     "type": "constructor",
     "inputs": [],

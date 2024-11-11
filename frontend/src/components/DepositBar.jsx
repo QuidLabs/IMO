@@ -6,7 +6,7 @@ import "./Styles/MintBar.scss"
 
 export const DepositBar = () => {
     const { getDepositInfo, resetAccounts,
-        account, connected, quid, sdai, addressQD, notifications } = useAppContext()
+        account, connected, quid, usde, addressQD, notifications } = useAppContext()
 
     const [totalDeposited, setTotalDeposited] = useState("")
     const [totalMinted, setTotalMinted] = useState("")
@@ -15,7 +15,7 @@ export const DepositBar = () => {
 
     const updatingInfo = useCallback(async () => {
         try {
-            if (connected && account && quid && sdai && addressQD) {
+            if (connected && account && quid && usde && addressQD) {
                 await Promise.all([getDepositInfo()])
                     .then(value => {
                         setTotalDeposited(value[0].work_eth_balance)
@@ -28,7 +28,7 @@ export const DepositBar = () => {
             console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
         }
     }, [getDepositInfo, resetAccounts,
-        account, addressQD, connected, sdai, quid])
+        account, addressQD, connected, usde, quid])
 
     useEffect(() => {
         try {
@@ -41,25 +41,25 @@ export const DepositBar = () => {
     return (
         <div className={`summary-root`} >
             <div className="summary-section">
-                <div className="summary-title">ETHerum's deposited:</div>
+                <div className="summary-title">ETH pledged:</div>
                 <div className="summary-value">
                     Ξ{connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(2))) : 0}
                 </div>
             </div>
             <div className="summary-section">
-                <div className="summary-title">USDai's owed:</div>
+                <div className="summary-title">$ owed:</div>
                 <div className="summary-value">
                     ${connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(2))) : 0}
                 </div>
             </div>
             <div className="summary-section">
-                <div className="summary-title">ETHerum's insured:</div>
+                <div className="summary-title">ETH insured:</div>
                 <div className="summary-value">
                     <span className="summary-value">${connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
                 </div>
             </div>
             <div className="summary-section">
-                <div className="summary-title">USDai's value of the insured:</div>
+                <div className="summary-title">$ value of insured:</div>
                 <div className="summary-value">
                     {connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}
                 </div>
