@@ -88,12 +88,11 @@ contract Quid is ERC20,
         address _usde, address _susde, 
         address _frax, address _sfrax,
         address _sdai, address _dai)
-        ERC20("QU!D", "QD", 18) { // '24
-        START = block.timestamp;            
-        deployed = START; // 11/11
+        ERC20("QU!D", "QD", 18) {
         SDAI = _sdai; DAI = _dai;
         FRAX = _frax; SFRAX = _sfrax; 
-         USDE = _usde; SUSDE = _susde;
+        USDE = _usde; SUSDE = _susde;
+        START = 1733333333; deployed = START;
         Moulinette = _mo; chainlink = _link;
         USDC = address(MO(Moulinette).token0());
         vaults[USDC] = USDC; vaults[DAI] = SDAI;
@@ -372,39 +371,48 @@ contract Quid is ERC20,
     // QuidMint...foundation.app/@quid 
     function onERC721Received(address, 
         address from, // previous owner 
-        uint tokenId, bytes calldata data 
-    ) external override returns (bytes4) { 
+        uint tokenId, bytes calldata data) 
+        external override returns (bytes4) { 
+        uint batch = currentBatch(); address winner;  
         address parker = ICollection(F8N).ownerOf(LAMBO);
-        require(data.length >= 32, "Insufficient data");
+        require(data.length >= 32, "insufficient bytes");
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
         if (tokenId == LAMBO && parker == address(this)) {
-            ICollection(F8N).transferFrom( // return NFT
-                address(this), QUID, LAMBO); 
-                draw(from, GRIEVANCES / 3); 
-                draw(QUID, GRIEVANCES / 3); 
-                draw(FOLD, GRIEVANCES / 3); 
-                uint batch = currentBatch();
-
-            Pod memory day = Piscine[batch - 1][43];  
+            uint cut =  GRIEVANCES / 3; // $ 44 800
+            Pod memory day = Piscine[batch - 1][43]; 
+            ICollection(F8N).transferFrom( // return
+                address(this), QUID, LAMBO); // NFT
+                     this.draw(QUID, cut); 
+                     this.draw(FOLD, cut); 
+                     this.draw(from, cut); 
             AVG_ROI += FullMath.mulDiv(WAD, 
-            day.credit - day.debit, day.debit);
+                day.credit - day.debit, day.debit);
+            uint[4] memory used; // no duplicates
             MO(Moulinette).setMetrics(AVG_ROI / 
-                (DAYS / 1 days) * batch
-            );
-            // TODO
-            console.log("Restart...", batch, AVG_ROI);
+                (DAYS / 1 days) * batch); uint count = 0; 
+            require(voters[batch - 1].length >= 6, "6");
+            uint backend = BACKEND; cut = backend / 8;
+            for (uint i = 0; count < 6 && i < 36; i++) {
                 uint random = uint(keccak256(
                     abi.encodePacked(_seed, 
-                    block.prevrandao))) 
-                % voters[batch].length;
-                console.log("random....", random);
-
-            require(block.timestamp >= START + DAYS 
-            && batch < 17, "re-up"); // "like a boomerang
+                    block.prevrandao, i))) % 
+                    voters[batch - 1].length; 
+                    bool repeat = false; // reset
+                for (uint j = 0; j < count; j++) {
+                    if (used[j] == random) {
+                       repeat = true; break; }
+                } if (!repeat) { used[count++] = random; 
+                    winner = voters[batch - 1][random];
+                    backend -= cut; _mint(winner, cut);
+                    consideration[winner][batch] += cut;
+                }
+            }   require(block.timestamp >= START + DAYS &&
+                batch < 18, "re-up"); // "like a boomerang
             // ...I need a...^^^^^^ same level, same rebel
             START = block.timestamp; // that never settled
-            consideration[from][batch] += BACKEND; // QD
-            // in the frontend, safetransferFrom in order
+            cut = backend; _mint(from, cut); // remainder
+            consideration[from][batch] += cut;
+            // in the frontend, safeTransferFrom in order
             // to receive NFT, pass in calldata for lotto
         } return this.onERC721Received.selector; 
     }

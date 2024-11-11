@@ -522,8 +522,7 @@ contract MO { // Modus Operandi...
                     pledge.work.credit -= state.cap; 
                     state.minting -= state.cap; 
                     state.repay -= state.cap; 
-                }
-                state.cap = capitalisation(state.delta, false); 
+                }   state.cap = capitalisation(state.delta, false); 
                 if (state.minting > state.delta || state.cap > 77) { 
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
@@ -558,7 +557,7 @@ contract MO { // Modus Operandi...
         }   // "things have gotten closer to the sun, and I've done things
             // in small doses, so don't think that I'm pushing you away"  
             // "when iron spit, cats fold, infact they
-        if (state.liquidate && // get their life froze
+        if (state.liquidate && // get their life froze"
             (block.timestamp - pledge.last > 1 hours)) {  
             state.cap = capitalisation(state.repay, true);
             amount = _min(dollar_amt_to_qd_amt(state.cap, 
