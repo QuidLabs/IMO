@@ -49,7 +49,7 @@ export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
   const { getTotalSupply, setStorage, getWalletBalance, getDepositInfo, getTotalInfo,
-    addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
+    addressQD, addressUSDE, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [inputValue, setInputValue] = useState('')
   const [sdaiValue, setSdaiValue] = useState('')
@@ -250,7 +250,7 @@ export const Mint = () => {
           await quid.methods.mint(
             beneficiaryAccount.toString(),
             qdAmount.toString(),
-            addressSDAI.toString(), false).send({ from: account })
+            addressUSDE.toString(), false).send({ from: account })
         }
         setNotifications("success", "Your minting is pending!", true)
       }

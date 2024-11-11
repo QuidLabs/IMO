@@ -89,10 +89,11 @@ contract Quid is ERC20,
         address _frax, address _sfrax,
         address _sdai, address _dai)
         ERC20("QU!D", "QD", 18) {
+        START = block.timestamp; 
         SDAI = _sdai; DAI = _dai;
         FRAX = _frax; SFRAX = _sfrax; 
         USDE = _usde; SUSDE = _susde;
-        START = 1733333333; deployed = START;
+        /* START = 1733333333; */ deployed = START;
         Moulinette = _mo; chainlink = _link;
         USDC = address(MO(Moulinette).token0());
         vaults[USDC] = USDC; vaults[DAI] = SDAI;
@@ -452,13 +453,10 @@ contract Quid is ERC20,
             IMorpho((MORPHO)).idToMarketParams(ID),
                 amount, 0, address(this), msg.sender); */
             // Morpho conditionally invoked through carry
-            // trade if staking reward of sUSDe is higher
-            // than cost to borrow DAI and stake as sDAI;
+            // trade (if staking reward of sUSDe is lower
+            // than sDAI APY minus cost to borrow DAI...
             // needs logic to unwind and payoff debt if 
-            // the situation switches to the opposite...
-            // conditional invocation should also account
-            // for the capitalisation gap, this may be a 
-            // systemic lender of last resort bailout hook
+            // the situation switches to the opposite)
         }
     }
 }

@@ -6,7 +6,7 @@ import { Web3Provider } from "@ethersproject/providers"
 
 import Web3 from "web3"
 
-import { QUID, SDAI,  MO, addressQD, addressSDAI, addressMO } from "../utils/constant"
+import { QUID, SDAI,  MO, addressQD, addressUSDE, addressMO } from "../utils/constant"
 
 const contextState = {
   connectToMetaMask: () => { },
@@ -250,7 +250,7 @@ export const AppContextProvider = ({ children }) => {
           const web3Instance = new Web3(provider)
           const quidContract = new web3Instance.eth.Contract(QUID, addressQD)
           const moContract = new web3Instance.eth.Contract(MO, addressMO)
-          const usdeContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
+          const usdeContract = new web3Instance.eth.Contract(SDAI, addressUSDE)
           //const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
 
           setMO(moContract)
@@ -315,7 +315,7 @@ export const AppContextProvider = ({ children }) => {
         QDbalance,
         SDAIbalance,
         addressQD,
-        addressSDAI,
+        addressUSDE,
         notifications,
         mo,
         SECONDS_IN_DAY,
