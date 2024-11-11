@@ -60,7 +60,7 @@ export const Header = () => {
   }, [connectToMetaMask, updatedTotalInfo, getUserInfo, connected, notifications])
 
   const summary = (
-    <div className="header-summary">
+    <>
       <div className="header-summaryEl">
         <div className="header-summaryElTitle">Deposited</div>
         <div className="header-summaryElValue">
@@ -73,7 +73,7 @@ export const Header = () => {
           {numberWithCommas(Number(actualAmount).toFixed())}
         </div>
       </div>
-    </div>
+    </>
   )
 
   const balanceBlock = (
@@ -98,9 +98,11 @@ export const Header = () => {
       <div className="header-logoContainer">
         <a className="header-logo" href="/"> </a>
       </div>
-      {connected && account ? summary : null}
-      <div className="header-walletContainer">
+      <div className="header-summary">
+        {connected && account ? summary : null}
         {connected && account ? balanceBlock : null}
+      </div>
+      <div className="header-walletContainer">
         {connected ? (
           <div className="header-wallet">
             <button className="header-wallet" onClick={() => usdeToWallet()}>

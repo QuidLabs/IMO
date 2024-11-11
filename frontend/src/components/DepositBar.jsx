@@ -4,7 +4,7 @@ import { numberWithCommas } from "../utils/number-with-commas"
 
 import "./Styles/MintBar.scss"
 
-export const DepositBar = () => {
+export const DepositBar = ({address = null}) => {
     const { getDepositInfo, resetAccounts,
         account, connected, quid, usde, addressQD, notifications } = useAppContext()
 
@@ -16,7 +16,9 @@ export const DepositBar = () => {
     const updatingInfo = useCallback(async () => {
         try {
             if (connected && account && quid && usde && addressQD) {
-                await Promise.all([getDepositInfo()])
+                const setAddress = address ? address : account
+
+                await Promise.all([getDepositInfo(setAddress)])
                     .then(value => {
                         setTotalDeposited(value[0].work_eth_balance)
                         setTotalMinted(value[0].work_usd_balance)
@@ -28,7 +30,7 @@ export const DepositBar = () => {
             console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
         }
     }, [getDepositInfo, resetAccounts,
-        account, addressQD, connected, usde, quid])
+        account, addressQD, connected, usde, quid, address])
 
     useEffect(() => {
         try {

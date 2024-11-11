@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Link } from 'react-router-dom';
+//import { useState } from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
 
 import { NotificationList } from './components/NotificationList';
 import { Footer } from './components/Footer';
@@ -13,7 +13,7 @@ import './App.scss';
 
 function App() {
   const routes = useRoutes();
-  const [currentPage, setCurrentPage] = useState('home');
+  //const [currentPage, setCurrentPage] = useState('home');
   
   return (
     <NotificationProvider>
@@ -21,11 +21,11 @@ function App() {
       <Router>
         <div className="app-root">
           <Header/>
-          <nav>
+          {/**<nav>
             <Link to="/" onClick={() => setCurrentPage('home')}>Bridge</Link>
             <Link to="/Mint" onClick={() => setCurrentPage('mint')}>Insure</Link>
-          </nav>
-          <main className={`app-main ${currentPage}`}>
+          </nav>**/}
+          <main className={`app-main`}>
             <div className="app-container">
               {routes}
             </div>

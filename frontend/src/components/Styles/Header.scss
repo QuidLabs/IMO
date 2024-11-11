@@ -3,6 +3,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 10px 0 0;
+    margin: 30px 40px 0 85px;
   }
 
   .header-logoContainer {
@@ -22,12 +23,14 @@
   .header-summary {
     display: flex;
     margin: 0 -10px;
+    width: 100%;
     flex: 1 1 auto;
-    justify-content: space-around;
+    justify-content: center;
+    align-items: center;
   }
 
   .header-summaryEl {
-    margin: 0 10px;
+    margin: 0 50px;
   }
 
   .header-summaryElTitle {
@@ -62,9 +65,11 @@
     border: none;
     color: #fff;
     line-height: 20px;
-    font-size: 14px;
+    font-size: 18px;
     font-weight: 600;
     position: relative;
+    min-width: 100px;
+    align-items: center;
 
     &:hover>.header-walletBackground {
       opacity: 0;
@@ -76,11 +81,17 @@
   }
 
   .header-metamaskIcon {
+    width: 50px;
     display: block;
     font-size: 0;
     line-height: 0;
     user-select: none;
     pointer-events: none;
+
+    img{
+      width: 30px!important;
+      height: 30px;
+    }
   }
 
   .header-walletBackground {
