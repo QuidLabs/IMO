@@ -6,7 +6,7 @@ import "./Styles/MintBar.scss"
 
 export const MintBar = () => {
   const { getSales, getUserInfo, resetAccounts, setCurrentPrice,
-    account, connected, currentTimestamp, quid, sdai, notifications, addressQD, SECONDS_IN_DAY } = useAppContext()
+    account, connected, currentTimestamp, quid, usde, notifications, addressQD, SECONDS_IN_DAY } = useAppContext()
 
   const [smartContractStartTimestamp, setSmartContractStartTimestamp] = useState("")
   const [mintPeriodDays, setMintPeriodDays] = useState("")
@@ -30,7 +30,7 @@ export const MintBar = () => {
 
   const updatingInfo = useCallback(async () => {
     try {
-      if (connected && account && quid && sdai && addressQD) {
+      if (connected && account && quid && usde && addressQD) {
         await Promise.all([getUserInfo(), getSales(), calculateDays()])
           .then(values => {
             setTotalDeposited(values[0].actualUsd)
@@ -50,7 +50,7 @@ export const MintBar = () => {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
     }
   }, [calculateDays, getSales, getUserInfo, resetAccounts, setCurrentPrice,
-    account, addressQD, connected, sdai, quid])
+    account, addressQD, connected, usde, quid])
 
   useEffect(() => {
     try {
@@ -67,26 +67,26 @@ export const MintBar = () => {
         <div className="summary-value">{connected && days && account ? days : "⋈"}</div>
       </div>
       <div className="summary-section">
-        <div className="summary-title">Current price</div>
+        <div className="summary-title">QD price</div>
         <div className="summary-value">
           <span className="summary-value">{connected && account ? numberWithCommas(parseFloat(Number(price).toFixed(0))) : 0}</span>
           <span className="summary-cents"> Cents</span>
         </div>
       </div>
       <div className="summary-section">
-        <div className="summary-title">sDAI Deposited</div>
+        <div className="summary-title">$ Deposited</div>
         <div className="summary-value">
           ${connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(0))) : 0}
         </div>
       </div>
       <div className="summary-section">
-        <div className="summary-title">Gain</div>
+        <div className="summary-title">Gain in $</div>
         <div className="summary-value">
           {connected && account ? numberWithCommas(parseFloat(Number(gain).toFixed(0))) : 0}
         </div>
       </div>
       <div className="summary-section">
-        <div className="summary-title">My future QD</div>
+        <div className="summary-title">QD (future $)</div>
         <div className="summary-value">
           {connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(0))) : 0}
         </div>

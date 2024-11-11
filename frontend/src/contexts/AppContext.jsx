@@ -6,11 +6,11 @@ import { Web3Provider } from "@ethersproject/providers"
 
 import Web3 from "web3"
 
-import { QUID, SDAI,  MO, addressQD, addressSDAI, addressMO } from "../utils/constant"
+import { QUID, USDE,  MO, addressQD, addressUSDE, addressMO } from "../utils/constant"
 
 const contextState = {
   connectToMetaMask: () => { },
-  getSdai: () => { },
+  getUsde: () => { },
   getSales: () => { },
   getTotalInfo: () => { },
   getUserInfo: () => { },
@@ -41,10 +41,10 @@ export const AppContextProvider = ({ children }) => {
   const { sdk, connected, connecting, provider } = useSDK()
 
   const [quid, setQuid] = useState(null)
-  const [sdai, setSdai] = useState(null)
+  const [usde, setUsde] = useState(null)
 
   const [QDbalance, setQdBalance] = useState(null)
-  const [SDAIbalance, setSdaiBalance] = useState(null)
+  const [USDEbalance, setUsdeBalance] = useState(null)
   const [currentPrice, setCurrentPrice] = useState(null)
 
   const [mo, setMO] = useState(null)
@@ -91,7 +91,7 @@ export const AppContextProvider = ({ children }) => {
 
   const getSales = useCallback(async () => {
     try {
-      if (account && quid && sdai && addressQD && mo && addressMO) {
+      if (account && quid && usde && addressQD && mo && addressMO) {
         const days = await quid.methods.DAYS().call()
         const startDate = await quid.methods.START().call()
 
@@ -106,11 +106,11 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
     }
-  }, [account, sdai, quid, mo])
+  }, [account, usde, quid, mo])
 
   const getTotalInfo = useCallback(async () => {
     try {
-      if (connected && account && quid && sdai && addressQD) {
+      if (connected && account && quid && usde && addressQD) {
         const totalSupply = await quid.methods.totalSupply().call()
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
 
@@ -127,7 +127,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.error("Error in updateInfo: ", error)
     }
-  }, [account, connected, quid, sdai])
+  }, [account, connected, quid, usde])
 
   const getUserInfo = useCallback(async () => {
     try {
@@ -191,32 +191,32 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [account, connected, mo, quid])
 
-  const getSdai = useCallback(async () => {
+  const getUsde = useCallback(async () => {
     try {
-      if (account && sdai) await sdai.methods.mint(account).send({ from: account })
+      if (account && usde) await usde.methods.mint(account).send({ from: account })
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [account, sdai])
+  }, [account, usde])
 
   const getWalletBalance = useCallback(async () => {
     try {
-      if (sdai && account) {
-        const balance = await sdai.methods.balanceOf(account).call()
-        const formatSdaiBalance = (parseFloat(balance) / 1e18).toFixed(2)
+      if (usde && account) {
+        const balance = await usde.methods.balanceOf(account).call()
+        const formatUsdeBalance = (parseFloat(balance) / 1e18).toFixed(2)
 
-        setSdaiBalance(formatSdaiBalance)
+        setUsdeBalance(formatUsdeBalance)
 
         const ethersProvider = new Web3Provider(provider)
         const mainBalance = await ethersProvider.getBalance(account)
         const formatEthBalance = (parseFloat(mainBalance) / 1e18).toFixed(4)
 
-        return {sdai: formatSdaiBalance, eth: formatEthBalance}
+        return {usde: formatUsdeBalance, eth: formatEthBalance}
       }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [setSdaiBalance, account, provider, sdai])
+  }, [setUsdeBalance, account, provider, usde])
 
   const getQdBalance = useCallback(async () => {
     try {
@@ -250,19 +250,19 @@ export const AppContextProvider = ({ children }) => {
           const web3Instance = new Web3(provider)
           const quidContract = new web3Instance.eth.Contract(QUID, addressQD)
           const moContract = new web3Instance.eth.Contract(MO, addressMO)
-          const usdeContract = new web3Instance.eth.Contract(SDAI, addressSDAI)
+          const usdeContract = new web3Instance.eth.Contract(USDE, addressUSDE)
           //const susdeContract = new web3Instance.eth.Contract(SUSDE, addressSUSDE)
 
           setMO(moContract)
           setQuid(quidContract)
-          setSdai(usdeContract)
+          setUsde(usdeContract)
           //setSusde(susdeContract)
         }
       }
     } catch (error) {
       console.warn(`Failed to connect:`, error)
     }
-  }, [setAccount, setMO, setSdai, setQuid, account, provider])
+  }, [setAccount, setMO, setUsde, setQuid, account, provider])
 
   const chooseButton = useRef(null)
 
@@ -289,7 +289,7 @@ export const AppContextProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         connectToMetaMask,
-        getSdai,
+        getUsde,
         getTotalInfo,
         getUserInfo,
         getDepositInfo,
@@ -311,11 +311,11 @@ export const AppContextProvider = ({ children }) => {
         provider,
         sdk,
         quid,
-        sdai,
+        usde,
         QDbalance,
-        SDAIbalance,
+        USDEbalance,
         addressQD,
-        addressSDAI,
+        addressUSDE,
         notifications,
         mo,
         SECONDS_IN_DAY,

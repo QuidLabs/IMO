@@ -7,13 +7,13 @@ import "./Styles/Header.scss"
 
 export const Header = () => {
   const {
-    connectToMetaMask, getTotalInfo, getSdai, getWalletBalance, getUserInfo,
+    connectToMetaMask, getTotalInfo, getUsde, getWalletBalance, getUserInfo,
     account, connected, notifications
   } = useAppContext()
 
   const [actualAmount, setAmount] = useState(0)
   const [actualUsd, setUsd] = useState(0)
-  const [actualSdai, setSdai] = useState(0)
+  const [actualUsde, setUsde] = useState(0)
   const [actualEth, setEth] = useState(0)
 
   const handleConnectClick = useCallback(async () => {
@@ -32,7 +32,7 @@ export const Header = () => {
             setUsd(info[0].total_dep)
             setAmount(info[0].total_mint)
 
-            setSdai(info[1].sdai)
+            setUsde(info[1].usde)
             setEth(info[1].eth)
           }
         })
@@ -42,13 +42,13 @@ export const Header = () => {
   }, [getTotalInfo, getWalletBalance])
 
 
-  const sdaiToWallet = useCallback(async () => {
+  const usdeToWallet = useCallback(async () => {
     try {
-      if (connected) await Promise.all([getSdai()]).then(() => updatedTotalInfo())
+      if (connected) await Promise.all([getUsde()]).then(() => updatedTotalInfo())
     } catch (error) {
-      console.warn(`Failed to getting sdai on wallet:`, error)
+      console.warn(`Failed to getting usde on wallet:`, error)
     }
-  }, [getSdai, updatedTotalInfo, connected])
+  }, [getUsde, updatedTotalInfo, connected])
 
   useEffect(() => {
     if (connected) {
@@ -85,9 +85,9 @@ export const Header = () => {
         </div>
       </div>
       <div className="header-summaryEl">
-        <div className="header-summaryElTitle">sDAI balance</div>
+        <div className="header-summaryElTitle">USDe balance</div>
         <div className="header-summaryElValue">
-          ${numberWithCommas(parseFloat(Number(actualSdai).toFixed(2)))}
+          ${numberWithCommas(parseFloat(Number(actualUsde).toFixed(2)))}
         </div>
       </div>
     </>
@@ -103,8 +103,8 @@ export const Header = () => {
         {connected && account ? balanceBlock : null}
         {connected ? (
           <div className="header-wallet">
-            <button className="header-wallet" onClick={() => sdaiToWallet()}>
-              GET SDAI
+            <button className="header-wallet" onClick={() => usdeToWallet()}>
+              Mint USDe
             </button>
             <div className="header-metamaskIcon">
               <img
