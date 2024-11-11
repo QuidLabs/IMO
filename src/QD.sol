@@ -160,7 +160,6 @@ contract Quid is ERC20,
             SUSDE).maxWithdraw(address(this)));
         return dai + frax + usde + perVault[USDC]; 
     }
-
     function vote(uint new_vote) external { 
         uint batch = currentBatch(); // 0-16
         if (batch < 16 
@@ -177,7 +176,6 @@ contract Quid is ERC20,
         _calculateMedian(stake, old_vote,
                          stake, new_vote);
     }
-
     function currentBatch() 
         public view returns (uint batch) {
         batch = (block.timestamp - deployed) / DAYS;
@@ -391,8 +389,8 @@ contract Quid is ERC20,
             day.credit - day.debit, day.debit);
             MO(Moulinette).setMetrics(AVG_ROI / // 46% 
                 (DAYS / 1 days) * batch); uint count = 0; 
-            require(voters[batch - 1].length >= 6, "6");
             uint backend = BACKEND; cut = backend / 8;
+            require(voters[batch - 1].length >= 6, "6");
             for (uint i = 0; count < 6 && i < 16; i++) {
                 uint random = uint(keccak256(
                     abi.encodePacked(_seed, 
