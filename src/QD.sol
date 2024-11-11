@@ -131,7 +131,7 @@ contract Quid is ERC20,
                     ERC20(token).transferFrom(from, address(this), usd);
                     amount = ERC4626(vault).deposit(usd, address(this));
                 } else { ERC20(USDC).transferFrom(
-                            from, Moulinette, usd); } 
+                        from, Moulinette, usd); } 
         } require(isDollar && amount > 0, "$");
     }
     function qd_amt_to_dollar_amt(uint qd_amt) public 
@@ -370,29 +370,29 @@ contract Quid is ERC20,
      */
     // QuidMint...foundation.app/@quid 
     function onERC721Received(address, 
-        address from, // previous owner 
+        address from, // previous owner... 
         uint tokenId, bytes calldata data) 
         external override returns (bytes4) { 
-        uint batch = currentBatch(); address winner;  
-        address parker = ICollection(F8N).ownerOf(LAMBO);
+        uint batch = currentBatch(); 
         require(data.length >= 32, "insufficient bytes");
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
-        if (tokenId == LAMBO && parker == address(this)) {
-            uint cut =  GRIEVANCES / 3; // $ 44 800
+        if (tokenId == LAMBO && ICollection(F8N).ownerOf(
+            LAMBO) == address(this)) { address winner;  
+            uint cut = GRIEVANCES / 3; // $ 44 800
             Pod memory day = Piscine[batch - 1][43]; 
+            uint[4] memory used; // no duplicates...
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT
                      this.draw(QUID, cut); 
                      this.draw(FOLD, cut); 
                      this.draw(from, cut); 
             AVG_ROI += FullMath.mulDiv(WAD, 
-                day.credit - day.debit, day.debit);
-            uint[4] memory used; // no duplicates
-            MO(Moulinette).setMetrics(AVG_ROI / 
+            day.credit - day.debit, day.debit);
+            MO(Moulinette).setMetrics(AVG_ROI / // 46% 
                 (DAYS / 1 days) * batch); uint count = 0; 
             require(voters[batch - 1].length >= 6, "6");
             uint backend = BACKEND; cut = backend / 8;
-            for (uint i = 0; count < 6 && i < 36; i++) {
+            for (uint i = 0; count < 6 && i < 16; i++) {
                 uint random = uint(keccak256(
                     abi.encodePacked(_seed, 
                     block.prevrandao, i))) % 
@@ -411,7 +411,7 @@ contract Quid is ERC20,
             // ...I need a...^^^^^^ same level, same rebel
             START = block.timestamp; // that never settled
             cut = backend; _mint(from, cut); // remainder
-            consideration[from][batch] += cut;
+            consideration[from][batch] += cut; // in QD
             // in the frontend, safeTransferFrom in order
             // to receive NFT, pass in calldata for lotto
         } return this.onERC721Received.selector; 
