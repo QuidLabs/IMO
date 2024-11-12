@@ -34,7 +34,7 @@ contract MO { // Modus Operandi...
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
         bool liquidate; uint repay; uint collat; 
-    }   Quid QUID; // 
+    }   Quid QUID; // tethered to the MO contract
     function get_info(address who) view
         external returns (uint, uint) {
         Offer memory pledge = pledges[who];
@@ -59,8 +59,7 @@ contract MO { // Modus Operandi...
         uint debit; //  quantity of tokens pledged 
     } /* carry.credit = contribution to weighted...
     ...SUM of (QD / total QD) x (ROI / avg ROI) */
-    uint public SUM = 1; uint public AVG_ROI = 1; 
-    uint public liquidityUnderManagement; // UniV3
+    uint public SUM = 1; uint public AVG_ROI = 1;
     // formal contracts require a specific method of 
     // formation to be enforaceable; one example is
     // negotiable instruments like promissory notes 
@@ -115,6 +114,7 @@ contract MO { // Modus Operandi...
         public view returns (uint) { return (cap < 100) ? 
         FullMath.mulDiv(amt, cap, 100) : amt;
     }
+
     constructor(address _weth, address _nfpm, 
         address _pool, address _router) { 
         WETH9 = WETH(payable(_weth));
@@ -144,7 +144,7 @@ contract MO { // Modus Operandi...
         uint assets = collateral + deductibles + 
             // USDC (upscaled for precision)...
             (pledge.work.debit * 1e12) + 
-            QUID.get_total_deposits();
+            QUID.get_total_deposits(true);
         // doesn't account for pledge.weth.credit,
         // which are liabilities (that are insured)
         uint total = QUID.totalSupply(); 
@@ -188,7 +188,7 @@ contract MO { // Modus Operandi...
             _creditHelper(to); 
         }   _creditHelper(from); 
     }
-    function _creditHelper(address who) internal { 
+    function _creditHelper(address who) internal {
         uint credit = pledges[who].carry.credit;
         SUM -= _min(SUM, credit); // old_share--
         // may be zero if this is the first time 
@@ -215,6 +215,7 @@ contract MO { // Modus Operandi...
         SUM += credit; // update sum with new share
         console.log("CreditHelper...", credit, who);
     }
+
     function _liquidity(uint amount0, uint amount1) 
         internal returns (uint160, uint160, uint128) {
         uint160 sqrtPriceX96lower = TickMath.getSqrtPriceAtTick(LOWER_TICK);
@@ -254,8 +255,7 @@ contract MO { // Modus Operandi...
             result = input + (10 - remainder);
         } else { // round down instead...
             result = input - remainder;
-        }
-        // just here as sanity check
+        } // just here as sanity check
         if (result > 887220) { // max
             return 887220; 
         } else if (-887220 > result) { 
@@ -278,7 +278,7 @@ contract MO { // Modus Operandi...
         uint160 sqrtPriceX96) internal returns 
         (uint, uint) { uint price = QUID.getPrice();
         (,, uint128 liquidity) = _liquidity(amount0, amount1);
-        (uint positionAmount0, // target amounts for LP deposit...
+        (uint positionAmount0, // target amounts for LP deposit
          uint positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
             sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
             TickMath.getSqrtPriceAtTick(UPPER_TICK), liquidity
@@ -304,15 +304,19 @@ contract MO { // Modus Operandi...
                         address(this), block.timestamp, uint(selling), 0));
             }   currentRatio = amount1 / amount0;
         }   return (amount0, amount1); 
-    }   // call in QD's worth (обнал sans liabilities)
-        // calculates the coverage absorption for each 
-        // insurer by first determining their share %
-        // and then adjusting based on average ROI...
-        // (insurers w/ higher avg. ROI absorb more) 
-        // "you never count your money while you're
-        // sittin' at the table...there'll be time
+    }
+
+    // call in QD's worth (обнал sans liabilities)
+    // calculates the coverage absorption for each 
+    // insurer by first determining their share %
+    // and then adjusting based on average ROI...
+    // (insurers w/ higher avg. ROI absorb more) 
+    // "you never count your money while you're
+    // sittin' at the table...there'll be time
     function redeem(uint amount) // QD
         external returns (uint absorb) {
+        uint cap = capitalisation(0, false);
+        if (cap)
         // % share of overall balance...
         uint share = FullMath.mulDiv(WAD, 
             amount, _min(QUID.matureBalanceOf(
@@ -332,17 +336,26 @@ contract MO { // Modus Operandi...
         QUID.turn(msg.sender, amount);
         // helper function called by turn
         // handles PLEDGE.CARRY.CREDIT-- 
-        amount = qd_amt_to_dollar_amt(
-            capitalisation(0, false),
-            amount
-        );  
+        amount = qd_amt_to_dollar_amt(cap, amount);  
         console.log("AbsorbAmount...", amount);
         // this is a collect call... 
         // do you accept the charges
-        if (amount > absorb) {  amount -= absorb; 
+        if (amount > absorb) {  
+            amount -= absorb; 
             QUID.draw(msg.sender, amount);
             pledges[address(this)].carry.credit -= amount;
         }   pledges[address(this)].carry.credit -= absorb;         
+    }
+        
+    function mint(address to, // used by ERC20.mint
+        uint cost, uint minted) public onlyQuid {
+        pledges[address(this)].carry.debit += cost;
+        // ^needed for tracking total capitalisation...
+        pledges[to].carry.debit += cost; // contingent
+        // variable for ROI as well as redemption,
+        // carry.credit gets reset in _creditHelper
+        pledges[to].carry.credit += minted; 
+        _creditHelper(to); // beneficiary
     }
     
     // quid says if amount is QD...
@@ -365,8 +378,9 @@ contract MO { // Modus Operandi...
             }   uint debit = FullMath.mulDiv(price, 
                              pledge.work.debit, WAD);
             uint buffered = debit - (debit / 5);
-            require(buffered >= pledge.work.credit, "CR");
-            amount = _min(amount, buffered - pledge.work.credit);
+            require(buffered >= pledge.work.credit
+            && buffered > 0, "CR"); amount = _min(
+                amount, buffered - pledge.work.credit);
             if (amount > 0) { 
                 pledge.work.credit += amount;
                 amount = dollar_amt_to_qd_amt(
@@ -405,16 +419,6 @@ contract MO { // Modus Operandi...
         }   pledges[msg.sender] = pledge;
     }
 
-    function mint(address to, // used by ERC20.mint
-        uint cost, uint minted) public onlyQuid {
-        pledges[address(this)].carry.debit += cost;
-        // ^needed for tracking total capitalisation...
-        pledges[to].carry.debit += cost; // contingent
-        // variable for ROI as well as redemption,
-        // carry.credit gets reset in _creditHelper
-        pledges[to].carry.credit += minted; 
-        _creditHelper(to); // beneficiary...
-    }
     function deposit(address beneficiary, // pledge
         uint amount, bool long) external payable { 
         Offer memory pledge = pledges[beneficiary];
@@ -440,19 +444,19 @@ contract MO { // Modus Operandi...
                 (FullMath.mulDiv(pledges[address(this)].weth.credit, 
                     price, WAD) + FullMath.mulDiv(price * 90 / 100,
                     pledges[address(this)].work.credit, 
-                    WAD)), "insuring too much"); // 1:1...     
+                    WAD)), "insuring too much"); // 1:1     
         }           pledges[beneficiary] = pledge; // 💿
         repackNFT(1, amount); // 1 passed in to prevent
         // division by zero, later it is decremented back 
     }
-
+    
     // "Entropy" comes from a Greek word for transformation; 
     // Clausius interpreted as the magnitude of the degree 
     // to which things separate from each other: "so close
-    // no matter how far...rage be in it like you couldn’t
+    // no matter how far...love be in it like you couldn’t
     // believe, or work like I could've scarcely imagined;
     // if one isn’t satisfied, indulge the latter, ‘neath 
-    // the halo of a street-lamp, I turn my straddle to
+    // the halo of a street-lamp, I turn my [straddle] to
     // the cold and damp...know when to hold 'em...know 
     // when to..." 
     function fold(address beneficiary, // amount is
@@ -474,7 +478,7 @@ contract MO { // Modus Operandi...
             if (pledge.work.credit > state.collat) { // "or soon"
                 state.repay = pledge.work.credit - state.collat; 
                 state.repay += state.collat / 10; // you'll get
-                state.liquidate = true; // dropped, but not final
+                state.liquidate = true; // dropped, reversibly...
                 console.log("FoldRepayLiquidate...", state.repay);
             } else { // for using claimed coverage to payoff debt
                 state.delta = state.collat - pledge.work.credit;
@@ -562,8 +566,10 @@ contract MO { // Modus Operandi...
             state.cap = capitalisation(state.repay, true);
             amount = _min(dollar_amt_to_qd_amt(state.cap, 
                 state.repay), QUID.balanceOf(beneficiary)
-            );  QUID.turn(beneficiary, amount);
-            amount = qd_amt_to_dollar_amt(state.cap, amount);
+            );  QUID.turn(beneficiary, amount); // TODO fix
+            
+            amount = qd_amt_to_dollar_amt(
+                        state.cap, amount);
             // subtract the $ value of QD
             pledge.work.credit -= amount;
             console.log("FoldSalve...", amount); 
@@ -587,7 +593,7 @@ contract MO { // Modus Operandi...
                 } else { // "it don't get no better than this, you catch my [dust]"
                     // otherwise we run into a vacuum leak (infinite contraction)
                     pledges[address(this)].weth.debit += pledge.work.debit;
-                    pledges[address(this)].carry.credit += pledge.work.credit;
+                     pledges[address(this)].carry.credit += pledge.work.credit;
                     // debt surplus absorbed ^^^^^^^^^ as if it were coverage
                     pledge.work.credit = 0; pledge.work.debit = 0; // reset
                 }   

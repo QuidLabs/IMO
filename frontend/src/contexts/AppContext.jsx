@@ -114,7 +114,7 @@ export const AppContextProvider = ({ children }) => {
         const totalSupply = await quid.methods.totalSupply().call()
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
 
-        const total = await quid.methods.get_total_deposits().call()
+        const total = await quid.methods.get_total_deposits(true).call()
         const formattedTotalDeposited = formatUnits(total.toString(), 18)
 
         const totalInfo = {
