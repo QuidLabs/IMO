@@ -82,11 +82,13 @@
 
   .header-metamaskIcon {
     width: 50px;
-    display: block;
+    display: flex;
     font-size: 0;
     line-height: 0;
+    -webkit-user-select: none;
     user-select: none;
     pointer-events: none;
+    justify-content: center;
 
     img{
       width: 30px!important;
