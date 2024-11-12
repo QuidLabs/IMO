@@ -1,0 +1,125 @@
+.vote-contaier {
+    display: flex;
+    align-content: space-around;
+    justify-content: center;
+    align-items: center;
+    width: 185px;
+
+    .mint-submit {
+        margin-top:0px;
+        margin-bottom:0px;
+    }
+    .buttons-anim {
+        display: flex;
+        justify-content: center;
+
+        button {
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+    }
+
+    .button-slider {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .button-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .button-arrow {
+        background-color: transparent;
+        border: none;
+        color: #4ad300;
+        cursor: pointer;
+        padding: 0 10px;
+        font-size: 1.2em;
+        transition: color 0.3s;
+
+        &:hover {
+            color: #aaff00;
+        }
+    }
+
+    .main-button {
+        background-color: #02d802;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        font-size: 1.2em;
+        transition: transform 0.5s, opacity 0.5s;
+    }
+
+    .button-content {
+        position: relative;
+        width: 150px;
+        height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .button-content.mint {
+        transform: translateX(0);
+    }
+
+    .button-content.debit {
+        transform: translateX(-100%);
+    }
+
+    .button-content.credit {
+        transform: translateX(100%);
+    }
+
+    .button-arrow span {
+        position: relative;
+        padding: 5px 10px;
+        background-color: #02d802;
+        border-radius: 3px;
+        color: white;
+        transition: opacity 0.5s ease;
+    }
+
+    .button-arrow:disabled span {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+
+    .mint-submit {
+        display: flex;
+        color: #ffa300;
+        font-size: 24px;
+        line-height: 24px;
+        font-family: "Road Rage";
+        border: none;
+        text-shadow: 2.5px 2.5px 1px #000, 1px 1px 2px #000;
+        font-weight: 600;
+        background: none;
+        position: relative;
+        justify-content: center;
+        cursor: pointer;
+        animation: glowText-opacity 1s ease-out forwards;
+    }
+
+    .swiper {
+        position: relative;
+        width: 100px;
+    }
+
+    .swiper-button-next, .swiper-button-prev {
+        --swiper-navigation-size: 14px;
+    }
+}
+
+.vote-bar {
+    .summary-section {
+        margin-bottom: 20px;
+    }
+}

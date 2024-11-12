@@ -4,21 +4,19 @@ import { useCallback, useEffect, useState } from "react"
 import { Swiper, SwiperSlide } from "swiper/react"
 import { EffectFlip, Navigation } from 'swiper/modules'
 
-import { useAppContext } from "../../contexts/AppContext"
-
-import { DepositBar } from "../../components/DepositBar"
+import { useAppContext } from "../contexts/AppContext"
 
 import 'swiper/css'
 import 'swiper/css/effect-flip'
 import 'swiper/css/navigation'
 
-import "../../components/Adds/Styles/Slider.scss"
+import "../components/Adds/Styles/Slider.scss"
 
-import './MaintPage.scss'
-import './HomePage.scss'
+import '../pages/MainPage/MaintPage.scss'
+import './Styles/VoteButton.scss'
 
-const HomePage = ({ minValue, maxValue }) => {
-  const { setStorage, account, mo, addressMO } = useAppContext()
+export const VoteButton = ({ minValue, maxValue }) => {
+  const { setStorage, account, mo } = useAppContext()
 
   const [rangeValues, setRangeValue] = useState('')
 
@@ -49,7 +47,7 @@ const HomePage = ({ minValue, maxValue }) => {
         if (account) {
           await mo.methods.FEE().call()
 
-          setNotifications("success", "The withdraw has been pending completed!", true)
+          setNotifications("success", "Your vote has been counted!", true)
         } else {
 
         }
@@ -70,23 +68,7 @@ const HomePage = ({ minValue, maxValue }) => {
 
   return (
     <React.Fragment>
-      <div className="main-side">
-        <Swiper
-          className="mySwiper"
-          slidesPerView={1}
-          initialSlide={0}
-          //onSwiper={(swiper) => {}}
-        >
-          <SwiperSlide>
-            <div className="vote-bar">
-              <DepositBar 
-                address = {addressMO}
-              />
-            </div>
-          </SwiperSlide>
-        </Swiper>
-      </div>
-      <div className="buttons-anim main-content">
+      <div className="vote-contaier">
         <Swiper
           effect={'flip'}
           grabCursor={true}
@@ -109,20 +91,14 @@ const HomePage = ({ minValue, maxValue }) => {
                   onClick={() => {voteStarting()}}
                 >
                   {value}
-                  <div className={`mint-glowEffect mint-glow-on`}>
-                    <div className={`mint-submit-hide`}>
-                      {value}
-                    </div>
-                  </div>
                 </button>
               </div>
             </SwiperSlide>
           )) : null}
         </Swiper>
       </div>
-      <div className="main-fakeCol" />
     </React.Fragment>
   )
 }
 
-export default HomePage
+export default VoteButton

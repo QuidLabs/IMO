@@ -57,7 +57,7 @@
   color: #928263;
 }
 
-.checkbox-container{
+.checkbox-container {
   display: flex;
   align-content: center;
   justify-content: center;
@@ -66,7 +66,7 @@
 
 }
 
-.mint-availabilityMax {    
+.mint-availabilityMax {
   font-size: 14px;
   line-height: 24px;
   color: #e0c89a;
@@ -164,7 +164,7 @@
   &:before {
     content: '';
     color: #54b420;
-    font-weight: bold; 
+    font-weight: bold;
     display: block;
     box-sizing: content-box;
     width: 12px;
@@ -185,6 +185,7 @@
     transform: translateY(-20px);
     opacity: 0;
   }
+
   100% {
     transform: translateY(0);
     opacity: 1;
@@ -196,6 +197,7 @@
     transform: translateY(-20px);
     opacity: 0;
   }
+
   100% {
     transform: translateY(0);
     opacity: 1;
@@ -284,6 +286,7 @@
   0% {
     transform: scale(0.5);
   }
+
   100% {
     transform: scale(1);
   }
@@ -293,6 +296,7 @@
   0% {
     transform: scale(0);
   }
+
   100% {
     transform: scale(1);
   }
@@ -302,9 +306,11 @@
   0% {
     opacity: 0;
   }
+
   50% {
     opacity: 1.3;
   }
+
   100% {
     opacity: 1;
   }
@@ -314,9 +320,11 @@
   0% {
     opacity: 0;
   }
+
   50% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 0.2;
   }
@@ -326,6 +334,7 @@
   0% {
     transform: scale(0);
   }
+
   100% {
     transform: scale(1);
   }
@@ -335,6 +344,7 @@
   0% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 0;
   }
@@ -449,8 +459,8 @@
   font-family: monospace;
   font-size: 14px;
   overflow-y: auto;
-  max-height: 250px; 
-  white-space: pre-wrap; 
+  max-height: 250px;
+  white-space: pre-wrap;
   opacity: 0.85;
   height: 100px;
   margin-top: 20px;
@@ -503,9 +513,12 @@
 }
 
 @keyframes blink {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.5;
   }
@@ -577,7 +590,7 @@
   transition: opacity 0.5s ease-in-out;
 }
 
-.mint-dollarSign.rotated + .mint-links {
+.mint-dollarSign.rotated+.mint-links {
   display: block;
   opacity: 1;
 }
@@ -679,9 +692,11 @@
   opacity: 0.5;
   pointer-events: none;
 }
+
 .mint-switcher {
   width: 30px;
 }
+
 .switch {
   position: relative;
   display: inline-block;
@@ -691,10 +706,10 @@
   border-radius: 15px;
 }
 
-/* Hide default HTML checkbox */
-.switch input {display:none;}
+.switch input {
+  display: none;
+}
 
-/* The slider */
 .slider {
   position: absolute;
   cursor: pointer;
@@ -718,7 +733,7 @@
   border: 5px double #397309;
 }
 
-input:checked + .slider:before {
+input:checked+.slider:before {
   -webkit-transform: translateX(26px);
   -ms-transform: translateX(26px);
   transform: translateX(15px);
@@ -739,36 +754,80 @@ input:checked + .slider:before {
   align-items: center;
   opacity: 0.45;
   height: 25px;
+  width: 185px;
 
   p {
     font-size: 24px;
     margin-right: 10px;
     margin-left: 10px;
     color: #02d802
-    
   }
 
-  b { 
-    color:#055309
+  b {
+    color: #055309
   }
 
   .low-price {
-    b{
-      color:#ced107
+    b {
+      color: #ced107
     }
   }
 
 
   .high-price {
-    b{
-      color:#ced107
+    b {
+      color: #ced107
     }
   }
 
-  .change-price{
-    cursor: pointer;  
+  .change-price {
+    cursor: pointer;
+
     b {
       font-size: 24px;
+    }
+  }
+}
+
+.mint-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 20px 0 20px;
+  height: 25px;
+
+  .mint-vote-box {
+    display: flex;
+    justify-content: center;
+    flex-direction: row-reverse;
+
+    label {
+      opacity: 0.75;
+    }
+
+    .mint-checkBox:before {
+      content: "";
+      color: #ffa300;
+      border: 2px solid #ffa300;
+    }
+
+    .mint-checkBox:checked:before {
+      border-color: #ffa300;
+      content: "✔";
+    }
+
+    .switch {
+      border: 2px solid #ffa300;
+    }
+
+    .mint-switcher{
+      width: auto;
+      margin-left: 10px;
+    }
+
+    .slider:before {
+      background-color: #ffa300;
+      border: 5px double #9b8402;
     }
   }
 }
