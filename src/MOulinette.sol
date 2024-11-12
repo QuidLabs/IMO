@@ -35,7 +35,6 @@ contract MO { // Modus Operandi...
         uint deductible; uint cap; uint minting;
         bool liquidate; uint repay; uint collat; 
     }   Quid QUID; // tethered to the MO contract
-   
     function get_info(address who) view
         external returns (uint, uint) {
         Offer memory pledge = pledges[who];
@@ -189,7 +188,7 @@ contract MO { // Modus Operandi...
             _creditHelper(to); 
         }   _creditHelper(from); 
     }
-    function _creditHelper(address who) internal { 
+    function _creditHelper(address who) internal {
         uint credit = pledges[who].carry.credit;
         SUM -= _min(SUM, credit); // old_share--
         // may be zero if this is the first time 
@@ -316,6 +315,8 @@ contract MO { // Modus Operandi...
     // sittin' at the table...there'll be time
     function redeem(uint amount) // QD
         external returns (uint absorb) {
+        uint cap = capitalisation(0, false);
+        if (cap)
         // % share of overall balance...
         uint share = FullMath.mulDiv(WAD, 
             amount, _min(QUID.matureBalanceOf(
@@ -335,10 +336,7 @@ contract MO { // Modus Operandi...
         QUID.turn(msg.sender, amount);
         // helper function called by turn
         // handles PLEDGE.CARRY.CREDIT-- 
-        amount = qd_amt_to_dollar_amt(
-            capitalisation(0, false),
-            amount
-        );  
+        amount = qd_amt_to_dollar_amt(cap, amount);  
         console.log("AbsorbAmount...", amount);
         // this is a collect call... 
         // do you accept the charges
@@ -480,7 +478,7 @@ contract MO { // Modus Operandi...
             if (pledge.work.credit > state.collat) { // "or soon"
                 state.repay = pledge.work.credit - state.collat; 
                 state.repay += state.collat / 10; // you'll get
-                state.liquidate = true; // dropped, but not final
+                state.liquidate = true; // dropped, reversibly...
                 console.log("FoldRepayLiquidate...", state.repay);
             } else { // for using claimed coverage to payoff debt
                 state.delta = state.collat - pledge.work.credit;
@@ -568,8 +566,10 @@ contract MO { // Modus Operandi...
             state.cap = capitalisation(state.repay, true);
             amount = _min(dollar_amt_to_qd_amt(state.cap, 
                 state.repay), QUID.balanceOf(beneficiary)
-            );  QUID.turn(beneficiary, amount);
-            amount = qd_amt_to_dollar_amt(state.cap, amount);
+            );  QUID.turn(beneficiary, amount); // TODO fix
+            
+            amount = qd_amt_to_dollar_amt(
+                        state.cap, amount);
             // subtract the $ value of QD
             pledge.work.credit -= amount;
             console.log("FoldSalve...", amount); 
@@ -593,7 +593,7 @@ contract MO { // Modus Operandi...
                 } else { // "it don't get no better than this, you catch my [dust]"
                     // otherwise we run into a vacuum leak (infinite contraction)
                     pledges[address(this)].weth.debit += pledge.work.debit;
-                    pledges[address(this)].carry.credit += pledge.work.credit;
+                     pledges[address(this)].carry.credit += pledge.work.credit;
                     // debt surplus absorbed ^^^^^^^^^ as if it were coverage
                     pledge.work.credit = 0; pledge.work.debit = 0; // reset
                 }   
