@@ -34,7 +34,7 @@ contract MO { // Modus Operandi...
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
         bool liquidate; uint repay; uint collat; 
-    }   Quid QUID; // 
+    }   Quid QUID; // tethered to the MO contract
    
     function get_info(address who) view
         external returns (uint, uint) {
@@ -60,8 +60,7 @@ contract MO { // Modus Operandi...
         uint debit; //  quantity of tokens pledged 
     } /* carry.credit = contribution to weighted...
     ...SUM of (QD / total QD) x (ROI / avg ROI) */
-    uint public SUM = 1; uint public AVG_ROI = 1; 
-    uint public liquidityUnderManagement; // UniV3
+    uint public SUM = 1; uint public AVG_ROI = 1;
     // formal contracts require a specific method of 
     // formation to be enforaceable; one example is
     // negotiable instruments like promissory notes 
@@ -146,7 +145,7 @@ contract MO { // Modus Operandi...
         uint assets = collateral + deductibles + 
             // USDC (upscaled for precision)...
             (pledge.work.debit * 1e12) + 
-            QUID.get_total_deposits();
+            QUID.get_total_deposits(true);
         // doesn't account for pledge.weth.credit,
         // which are liabilities (that are insured)
         uint total = QUID.totalSupply(); 
@@ -381,8 +380,8 @@ contract MO { // Modus Operandi...
             }   uint debit = FullMath.mulDiv(price, 
                              pledge.work.debit, WAD);
             uint buffered = debit - (debit / 5);
-            require(buffered >= pledge.work.credit 
-            && buffered > 0 && , "CR"); amount = _min(
+            require(buffered >= pledge.work.credit
+            && buffered > 0, "CR"); amount = _min(
                 amount, buffered - pledge.work.credit);
             if (amount > 0) { 
                 pledge.work.credit += amount;

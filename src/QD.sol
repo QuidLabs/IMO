@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
-import {IMorpho, Position} from "./interfaces/IMorpho.sol";
+import {IMorpho, Position} from "./interfaces/morpho/IMorpho.sol";
+import {MorphoBalancesLib} from ".interfaces/morpho/MorphoBalancesLib.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
@@ -38,7 +39,7 @@ contract Quid is ERC20,
     // "they want their grievances aired on the assumption
     // that all right-thinking persons would be persuaded
     // that problems of the world can be solved," by true 
-    // dough, Pierre, not your unsual money, version mint
+    // dough, Pierre, not your usual money, version mint
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // x 16 (QD)
     // "16 bars keep the car running" ~ chamber music
@@ -150,16 +151,18 @@ contract Quid is ERC20,
         ) + 1; return in_days * MAX_PER_DAY -
                Piscine[batch][43].credit; 
     }
-    function get_total_deposits() // $ 
-        public view returns (uint) {
-        uint dai = _min(perVault[SDAI], ERC4626(
+    function get_total_deposits(bool usdc) 
+        public view returns (uint total) {
+        total += _min(perVault[SDAI], ERC4626(
             SDAI).maxWithdraw(address(this)));
-        uint frax = _min(perVault[SFRAX], ERC4626(
+        total += _min(perVault[SFRAX], ERC4626(
             SFRAX).maxWithdraw(address(this)));
-        uint usde = _min(perVault[SUSDE], ERC4626(
+        total += _min(perVault[SUSDE], ERC4626(
             SUSDE).maxWithdraw(address(this)));
-        return dai + frax + usde + perVault[USDC]; 
+        return usdc ? total +
+        perVault[USDC] : total; 
     }
+
     function vote(uint new_vote) external { 
         uint batch = currentBatch(); // 0-16
         if (batch < 16 
@@ -176,6 +179,7 @@ contract Quid is ERC20,
         _calculateMedian(stake, old_vote,
                          stake, new_vote);
     }
+
     function currentBatch() 
         public view returns (uint batch) {
         batch = (block.timestamp - deployed) / DAYS;
@@ -202,7 +206,7 @@ contract Quid is ERC20,
         }
     }
     function turn(address from, uint value) public
-        onlyGenerators { MO(Moulinette).transferHelper(
+        onlyGenerators returns (bool) { MO(Moulinette).transferHelper(
             from, address(0), value); _transferHelper(
             from, address(0), value); // burn shouldn't 
             // affect carry.debit values of `from` or `to`
@@ -306,6 +310,8 @@ contract Quid is ERC20,
             // _calculateMedian(this.balanceOf(to), to_vote,
             //                     balance_to, to_vote);
         }   
+        // TODO stop at matureBatches end index, burn only
+        // the amount that is able to be cleared 
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k];
             // console.log("TransferHelper...", amt);
@@ -347,15 +353,14 @@ contract Quid is ERC20,
                     consideration[pledge][batch] += amount; 
                     Piscine[batch][in_days].credit += amount;
                     Piscine[batch][in_days].debit += cost;
-                    // 44th row is a total for the batch
+                    // 44th row is the total for the batch
                     Piscine[batch][43].credit += amount;  
                     Piscine[batch][43].debit += cost;
                     MO(Moulinette).mint(pledge, cost, amount);            
                 }
         } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
-        address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
-        address constant FOLD = 0xA0766B65A4f7B1da79a1AF79aC695456eFa28644;
-        address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+         address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
+       address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch 
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
@@ -378,12 +383,11 @@ contract Quid is ERC20,
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
         if (tokenId == LAMBO && ICollection(F8N).ownerOf(
             LAMBO) == address(this)) { address winner;  
-            uint cut = GRIEVANCES / 3; // $ 44 800...
+            uint cut = GRIEVANCES / 2; // $ 67 210...
             Pod memory day = Piscine[batch - 1][43]; 
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT
                      this.draw(QUID, cut); 
-                     this.draw(FOLD, cut); 
                      this.draw(from, cut); 
             AVG_ROI += FullMath.mulDiv(WAD, 
             day.credit - day.debit, day.debit);
@@ -413,9 +417,53 @@ contract Quid is ERC20,
         } return this.onERC721Received.selector; 
     }
 
+    function morph() internal {
+         // if borrow exists
+         //  morpho.accrueInterest(morpho.idToMarketParams(borrowUSDCmId));
+         morpho.withdrawCollateral(
+            morpho.idToMarketParams(borrowUSDCmId),
+            amount,
+            address(this),
+            msg.sender
+        );
+
+         morpho.supplyCollateral(
+            morpho.idToMarketParams(borrowUSDCmId),
+            amount,
+            address(this),
+            ""
+        );
+
+
+        // TODO unstake sDAI into DAI
+        // 
+        morpho.repay(
+            morpho.idToMarketParams(borrowUSDCmId),
+            amountUSDC,
+            0,
+            address(this),
+            ""
+        );
+
+         morpho.borrow(
+            morpho.idToMarketParams(borrowUSDCmId),
+            amountUSDC,
+            0,
+            address(this),
+            msg.sender
+        );
+
+        MorphoBalancesLib.expectedBorrowAssets(
+                morpho,
+                morpho.idToMarketParams(borrowUSDCmId),
+                address(this)
+            );
+
+    }
+
     function draw(address to, uint amount) 
         public onlyGenerators returns (uint QD) { 
-            uint total = get_total_deposits();
+            uint total = get_total_deposits(false);
             if (msg.sender == address(this)) { 
             amount = _min(amount, 
                 FullMath.mulDiv(total, 
@@ -441,17 +489,15 @@ contract Quid is ERC20,
             if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
                 address(this)); perVault[SUSDE] -= usde;
             }
+            // TODO find delta needed to get capitalisation leveled and
+            // borrow only 
             // USDC is never given out, always held in surplus for Uni
         }   else if (MO(Moulinette).capitalisation(0, false) < 77) { 
             // TODO uncomment and test after everything else
             /* (uint susde, ) = IMorpho(MORPHO).withdraw(
             IMorpho((MORPHO)).idToMarketParams(ID),
                 amount, 0, address(this), msg.sender); */
-            // Morpho conditionally invoked through carry
-            // trade (if staking reward of sUSDe is lower
-            // than sDAI APY minus cost to borrow DAI...
-            // needs logic to unwind and payoff debt if 
-            // the situation switches to the opposite)
+            Position memory p = morpho.position(ID, address(this)); 
         }
     }
 }

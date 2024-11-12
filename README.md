@@ -1,12 +1,19 @@
 
 ## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
 
+There are two contracts,  
+both have an `ID`, in the  
+ERC20 related to `MORPHO`  
+and in the second contract  
+bound to the ERC20 (QD),  
+as well as  WETH<>USDC.  
+
 16 chances  to `mint` QD:  
 8 per year times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
-today's," 46% `AVG_ROI`.    
+today's," 46% `AVG_ROI`    
 
-Over time, retained fees  
+Over 2yr, retained fees  
 from ΞTH deployed into  
 UniV3 adds solvency, as  
 well as deductibles do. 
@@ -54,7 +61,7 @@ analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** 
 (let there be light); regarding lime,  
 note 🇺🇦 [70/30](https://www.instagram.com/p/DAgKU2dxtUq/) here  corresponds  
 to the initial capitalisation of QD...  
-Earth's surface is also 71% liquid.     
+Earth's surface is also 71% liquid.  
  
 © 2022-2026 QuidMint Foundation  
 This software `README` is about material   
