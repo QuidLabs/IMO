@@ -18,6 +18,8 @@ export const DepositBar = ({address = null}) => {
             if (connected && account && quid && usde && addressQD) {
                 const setAddress = address ? address : account
 
+                console.log(setAddress)
+
                 await Promise.all([getDepositInfo(setAddress)])
                     .then(value => {
                         setTotalDeposited(value[0].work_eth_balance)

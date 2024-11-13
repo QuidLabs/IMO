@@ -105,7 +105,7 @@ const TestPrice = () => {
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalSupply, setStorage, getWalletBalance, getDepositInfo, getTotalInfo,
+  const { getTotalSupply, setStorage, setSwipe, getWalletBalance, getDepositInfo, getTotalInfo, 
     addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [inputValue, setInputValue] = useState('')
@@ -127,6 +127,9 @@ export const Mint = () => {
   const [insureble, setInsureble] = useState('')
 
   const [voteStatus, setVoteStatus] = useState(false)
+
+  const [ walletEthBalance, setWalletEthBalance] = useState(null)
+  const [ walletUSDeBalances, setWalletUSDeBalances] = useState(null)
 
   const [buttonSign, setSign] = useState('')
   const [placeHolder, setPlaceHolder] = useState('Mint amount')
@@ -174,7 +177,7 @@ export const Mint = () => {
 
   const updateTotalSupply = useCallback(async () => {
     try {
-      await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getTotalInfo()])
+      await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getTotalInfo(), getWalletBalance()])
         .then((value) => {
           const deposit = value[2].total_dep
           const wethUsdBalance = value[1].weth_usd_balance
@@ -182,11 +185,14 @@ export const Mint = () => {
 
           setTotalSupplyCap(value[0])
           setInsureble(deposit - (wethUsdBalance * price))
+
+          setWalletEthBalance(value[3].eth)
+          setWalletUSDeBalances(value[3].usde)
         })
     } catch (error) {
       console.error(error)
     }
-  }, [getDepositInfo, getTotalInfo, getTotalSupply, addressMO])
+  }, [getDepositInfo, getTotalInfo, getTotalSupply, getWalletBalance, addressMO])
 
   const handleChangeValue = useCallback((e) => {
     const regex = /^\d*(\.\d*)?$|^$/
@@ -199,16 +205,10 @@ export const Mint = () => {
     if (originalValue[0] === ".") originalValue = "0" + originalValue
 
     if (regex.test(originalValue)) {
-      if (chooseButton === "MINT" || !chooseCurrency) {
-        setSdaiValue(currentPrice * 0.01)
-        setInputValue(Number(originalValue).toFixed())
-      }
-      else {
-        setInputValue(originalValue)
-        setSdaiValue(currentPrice * 0.01)
-      }
+      if (chooseButton === "MINT" || !chooseCurrency || chooseButton == null) setInputValue(Number(originalValue).toFixed())
+      else setInputValue(originalValue)
     }
-  }, [chooseButton, currentPrice, chooseCurrency])
+  }, [chooseButton, chooseCurrency])
 
   const setNotifications = useCallback((severity, message, status = false) => {
     setStorage(prevNotifications => [
@@ -234,6 +234,7 @@ export const Mint = () => {
     if (!inputValue.length) return setNotifications("error", "Please enter amount")
 
     const depInfo = await getDepositInfo()
+
       .then((numbers) => {
         return numbers
       })
@@ -377,10 +378,13 @@ export const Mint = () => {
     terminalStarting(chooseButton.current)
   }
 
-  const handleSetMaxValue = async () => {
-    if (inputRef.current > totalSupplyCap) setInputValue(totalSupplyCap)
-    else inputRef.current.focus()
-  }
+  const handleSetMaxValue = useCallback(async () => {
+    if (!chooseCurrency || buttonRef.current === "MINT") {
+      const setUSDeValue = Number(walletUSDeBalances).toFixed()
+      setInputValue(setUSDeValue.toString())
+    }
+    else setInputValue(walletEthBalance)
+  }, [chooseCurrency, walletEthBalance, walletUSDeBalances])
 
 
   const handleVotes = useCallback(() => {
@@ -394,19 +398,24 @@ export const Mint = () => {
   }, [insureStatus])
 
 
-  const handleWithdraw = useCallback(() => {
+  const handleCurrency = useCallback(() => {
     if (chooseCurrency) {
       setChooseCurrency(false)
       setCurrency("QUID")
+      setInputValue("")
     }
     else {
       setChooseCurrency(true)
       setCurrency("ETH")
+      setInputValue("")
     }
   }, [chooseCurrency])
 
   useEffect(() => {
-    if (quid) updateTotalSupply()
+    if (quid) {
+      updateTotalSupply()
+      setSdaiValue(currentPrice * 0.01)
+    }
 
     if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight
 
@@ -415,12 +424,19 @@ export const Mint = () => {
 
     if (notifications[0] && !connected) setTimeout(() => setStorage([]), 500)
 
-  }, [updateTotalSupply, setStorage, account, connected, quid, notifications, isProcessing])
+  }, [updateTotalSupply, setStorage, account, connected, currentPrice, quid, notifications, isProcessing])
 
   useEffect(() => {
+    if(swipeStatus) {
+      setInputValue("")
+      setSwipe()
+    }
+
     if (chooseButton.current === "MINT" || chooseButton.current == null) {
       setSign('QD')
       setPlaceHolder('Mint amount')
+      setChooseCurrency(false)
+      setCurrency("QUID")
     } else if (chooseButton.current === "DEPOSIT") {
       if (!chooseCurrency) setSign('QD')
       else {
@@ -436,7 +452,7 @@ export const Mint = () => {
       setSign('Ξ')
       setPlaceHolder('Withdraw amount')
     }
-  }, [calculateEthTransaction, chooseButton, swipeStatus, chooseCurrency])
+  }, [calculateEthTransaction, setSwipe, chooseButton, swipeStatus, chooseCurrency])
 
   return (
     <div className="mint">
@@ -519,6 +535,7 @@ export const Mint = () => {
                 name={"insure"}
                 relation={"INSURING"}
                 onChange={handleInsure}
+                handleCurrency={handleCurrency}
               /> : null
             }
             {chooseButton.current === "MINT" || chooseButton.current == null || chooseButton.current === "DEPOSIT" ?
@@ -529,6 +546,7 @@ export const Mint = () => {
                 name={"tomyself"}
                 relation={"to myself"}
                 onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
+                handleCurrency={handleCurrency}
               /> : null
             }
             {chooseButton.current === "WITHDRAW" || chooseButton.current === "DEPOSIT" ?
@@ -537,7 +555,7 @@ export const Mint = () => {
                 boxType={false}
                 name={"currency"}
                 relation={choiseCurrency}
-                onChange={handleWithdraw}
+                onChange={handleCurrency}
               /> : null
             }
           </label>
