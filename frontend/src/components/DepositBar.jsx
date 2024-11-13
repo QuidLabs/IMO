@@ -63,7 +63,7 @@ export const DepositBar = ({address = null}) => {
                 {address ? <div className="summary-paragraph">Global</div> : null}
                 <div className="summary-title">{address ? null : "My "} ETH insured:</div>
                 <div className="summary-value">
-                    <span className="summary-value">${connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
+                    <span className="summary-value">Ξ{connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
                 </div>
                 {address ? <div className="summary-strock"></div> : null}
             </div>
@@ -71,7 +71,7 @@ export const DepositBar = ({address = null}) => {
                 {address ? <div className="summary-paragraph">Global</div> : null}
                 <div className="summary-title">{address ? null : "My "} $ value of insured:</div>
                 <div className="summary-value">
-                    {connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}
+                    ${connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}
                 </div>
                 {address ? <div className="summary-strock"></div> : null}
             </div>

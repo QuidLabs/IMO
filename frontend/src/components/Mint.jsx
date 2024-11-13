@@ -426,7 +426,6 @@ export const Mint = () => {
 
     if (account && connected && quid) setStartMsg('Terminal started. Mint is available!')
     else {
-      setStartMsg('Connect your MetaMask wallet...')
       localStorage.setItem("consoleNotifications", JSON.stringify(''))
     }
 
@@ -594,7 +593,8 @@ export const Mint = () => {
       </div>
       <div className="mint-console fade-in" ref={consoleRef}>
         <div className="mint-console-content">
-          { startMsg }
+          Connect your MetaMask wallet...
+          <div>{ connected ? startMsg : null }</div>
           {notifications ? notifications.map((notification, index) => (
             <div
               key={index}
