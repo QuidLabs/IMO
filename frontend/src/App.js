@@ -14,16 +14,23 @@ import './App.scss'
 
 function App() {
   const routes = useRoutes()
-  const { addressMO, connected } = useAppContext()
+  const { addressMO, connected, account } = useAppContext()
   const [showDepositBar, setShowDepositBar] = useState(false)
+  const [initialRender, setInitialRender] = useState(true)
 
   useEffect(() => {
-    if (connected) {
+    if (initialRender) {
+      setInitialRender(false) 
+      return
+    }
+
+    if (account && connected) {
       setShowDepositBar(true)
     } else {
-      setTimeout(() => setShowDepositBar(false), 300) 
+      const timer = setTimeout(() => setShowDepositBar(false), 300)
+      return () => clearTimeout(timer) 
     }
-  }, [connected])
+  }, [account, connected, initialRender])
 
   return (
     <NotificationProvider>
@@ -31,10 +38,6 @@ function App() {
       <Router>
         <div className="app-root fade-in">
           <Header />
-          {/**<nav>
-            <Link to="/" onClick={() => setCurrentPage('home')}>Bridge</Link>
-            <Link to="/Mint" onClick={() => setCurrentPage('mint')}>Insure</Link>
-          </nav>**/}
           <main className="app-main">
             <div className="app-container">
               {routes}
