@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react"
+import { parseUnits } from "@ethersproject/units"
 
 import { Swiper, SwiperSlide } from "swiper/react"
 import { EffectFlip, Navigation } from "swiper/modules"
@@ -45,7 +46,9 @@ export const VoteButton = ({ minValue, maxValue }) => {
       )
 
       if (account) {
-        await mo.methods.FEE(e.target.value + 1).call()
+        const parseValue = parseUnits(e.target.value + 1, 18).toString()
+        
+        await mo.methods.FEE(parseValue).call()
         .then(() => {
           const voteValue = e.target.value
 
