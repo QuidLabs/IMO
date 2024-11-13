@@ -595,8 +595,7 @@ export const Mint = () => {
       </div>
       <div className="mint-console fade-in" ref={consoleRef}>
         <div className="mint-console-content">
-          Connect your MetaMask wallet...
-          <div>{connected ? startMsg : null}</div>
+          <div>{connected ? startMsg : 'Connect your MetaMask wallet...'}</div>
           {notifications ? notifications.map((notification, index) => (
             <div
               key={index}
