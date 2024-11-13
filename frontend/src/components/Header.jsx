@@ -61,13 +61,13 @@ export const Header = () => {
 
   const summary = (
     <>
-      <div className="header-summaryEl">
+      <div className="header-summaryEl fade-in">
         <div className="header-summaryElTitle">Deposited</div>
         <div className="header-summaryElValue">
           ${numberWithCommas(Number(actualUsd).toFixed())}
         </div>
       </div>
-      <div className="header-summaryEl">
+      <div className="header-summaryEl fade-in">
         <div className="header-summaryElTitle">Minted QD</div>
         <div className="header-summaryElValue">
           {numberWithCommas(Number(actualAmount).toFixed())}
@@ -78,13 +78,13 @@ export const Header = () => {
 
   const balanceBlock = (
     <>
-      <div className="header-summaryEl">
+      <div className="header-summaryEl fade-in">
         <div className="header-summaryElTitle">ETH balance</div>
         <div className="header-summaryElValue">
           Ξ{Number(actualEth).toFixed(4)}
         </div>
       </div>
-      <div className="header-summaryEl">
+      <div className="header-summaryEl fade-in">
         <div className="header-summaryElTitle">USDe balance</div>
         <div className="header-summaryElValue">
           ${numberWithCommas(parseFloat(Number(actualUsde).toFixed(2)))}
@@ -95,16 +95,16 @@ export const Header = () => {
 
   return (
     <header className="header-root">
-      <div className="header-logoContainer">
+      <div className="header-logoContainer fade-in">
         <a className="header-logo" href="/"> </a>
       </div>
-      <div className="header-summary">
+      <div className="header-summary fade-in">
         {connected && account ? summary : null}
         {connected && account ? balanceBlock : null}
       </div>
       <div className="header-walletContainer">
         {connected ? (
-          <div className="header-wallet">
+          <div className="header-wallet fade-in">
             <button className="header-wallet" onClick={() => usdeToWallet()}>
               Mint USDe
             </button>
@@ -120,7 +120,7 @@ export const Header = () => {
             <Icon name="btn-bg" className="header-walletBackground" />
           </div>
         ) : (
-          <button className="header-wallet" onClick={handleConnectClick}>
+          <button className="header-wallet fade-in" onClick={handleConnectClick}>
             Connect Metamask
             <Icon name="btn-bg" className="header-walletBackground" />
           </button>

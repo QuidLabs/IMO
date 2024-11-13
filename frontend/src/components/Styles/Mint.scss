@@ -443,13 +443,49 @@
   pointer-events: none;
   z-index: -3;
 }
+@keyframes slide-fade-in {
+  from {
+      height: 0;
+      opacity: 0;
+      transform: translateY(-20px);
+  }
+  to {
+      height: 30px;
+      opacity: 1;
+      transform: translateY(0);
+  }
+}
+
+@keyframes slide-fade-out {
+  from {
+      height: 30px; 
+      opacity: 1;
+      transform: translateY(0);
+  }
+  to {
+      height: 0;
+      opacity: 0;
+      transform: translateY(-20px);
+  }
+}
 
 .mint-beneficiaryContainer {
   margin-top: 15px;
   display: flex;
   flex-direction: row;
-  width: 100%;
+  overflow: hidden;
+  animation-duration: 0.5s;
+  animation-fill-mode: forwards;
 }
+
+.mint-beneficiaryContainer.show {
+  animation-name: slide-fade-in;
+}
+
+.mint-beneficiaryContainer.hide {
+  animation-name: slide-fade-out;
+}
+
 
 .mint-console {
   background-color: #000;
@@ -830,4 +866,17 @@ input:checked+.slider:before {
       border: 5px double #9b8402;
     }
   }
+}
+
+@keyframes fade-in {
+  from {
+      opacity: 0;
+  }
+  to {
+      opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fade-in 1s ease forwards;
 }

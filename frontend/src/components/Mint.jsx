@@ -26,30 +26,31 @@ const ChoiseBoxes = ({
           <input
             id={`checkbox-${name}`}
             name={name}
-            className="mint-checkBox"
+            className="mint-checkBox fade-in"
             type="checkbox"
             checked={status}
             style={style ? style : null}
             onChange={() => onChange()}
           />
-          <label htmlFor={`checkbox-${name}`} className="mint-availabilityMax">{relation}</label>
+          <label htmlFor={`checkbox-${name}`} className="mint-availabilityMax fade-in">{relation}</label>
         </>
       ) : (
         <>
-          <span className="mint-switcher mint-availabilityMax">{currency ? 
-          <>
-            <b style={{ color: '#4ad300' }}>{relation}</b>
-          </> : <>{relation}</>
-        }</span>
-          <label className="switch">
+          <span className="mint-switcher mint-availabilityMax">{currency ?
+            <>
+              <b style={{ color: '#4ad300' }} className="fade-in">{relation}</b>
+            </> : <>{relation}</>
+          }</span>
+          <label className="switch fade-in">
             <input
               name={name}
               type="checkbox"
+              className="fade-in"
               checked={status}
               style={style ? style : null}
               onChange={() => onChange()}
             />
-            <span className="slider round"></span>
+            <span className="slider round fade-in"></span>
           </label>
         </>
       )}
@@ -82,19 +83,21 @@ const TestPrice = () => {
 
   return (
     <>
-      <div className="test-price">
-        <div
-          className="change-price low-price"
-          onClick={() => handlePrice(false)}
-        >
-          <b>↓</b>
-        </div>
-        <p><b>{"Ξ "}</b>{parseFloat(price ? price : 0).toFixed(4)}</p>
-        <div
-          className="change-price high-price"
-          onClick={() => handlePrice(true)}
-        >
-          <b>↑</b>
+      <div className="fade-in">
+        <div className="test-price">
+          <div
+            className="change-price low-price"
+            onClick={() => handlePrice(false)}
+          >
+            <b>↓</b>
+          </div>
+          <p><b>{"Ξ "}</b>{parseFloat(price ? price : 0).toFixed(4)}</p>
+          <div
+            className="change-price high-price"
+            onClick={() => handlePrice(true)}
+          >
+            <b>↑</b>
+          </div>
         </div>
       </div>
     </>
@@ -105,7 +108,7 @@ const TestPrice = () => {
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalSupply, setStorage, setSwipe, getWalletBalance, getDepositInfo, getTotalInfo, 
+  const { getTotalSupply, setStorage, setSwipe, getWalletBalance, getDepositInfo, getTotalInfo,
     addressQD, addressSDAI, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, sdai, mo, addressMO } = useAppContext()
 
   const [inputValue, setInputValue] = useState('')
@@ -128,8 +131,8 @@ export const Mint = () => {
 
   const [voteStatus, setVoteStatus] = useState(false)
 
-  const [ walletEthBalance, setWalletEthBalance] = useState(null)
-  const [ walletUSDeBalances, setWalletUSDeBalances] = useState(null)
+  const [walletEthBalance, setWalletEthBalance] = useState(null)
+  const [walletUSDeBalances, setWalletUSDeBalances] = useState(null)
 
   const [buttonSign, setSign] = useState('')
   const [placeHolder, setPlaceHolder] = useState('Mint amount')
@@ -422,14 +425,17 @@ export const Mint = () => {
     if (consoleRef.current) consoleRef.current.scrollTop = consoleRef.current.scrollHeight
 
     if (account && connected && quid) setStartMsg('Terminal started. Mint is available!')
-    else localStorage.setItem("consoleNotifications", JSON.stringify(''))
+    else {
+      setStartMsg('Connect your MetaMask wallet...')
+      localStorage.setItem("consoleNotifications", JSON.stringify(''))
+    }
 
     if (notifications[0] && !connected) setTimeout(() => setStorage([]), 500)
 
   }, [updateTotalSupply, setStorage, account, connected, currentPrice, quid, notifications, isProcessing])
 
   useEffect(() => {
-    if(swipeStatus) {
+    if (swipeStatus) {
       setInputValue("")
       setInsureStatus(true)
       setIsSameBeneficiary(true)
@@ -460,32 +466,32 @@ export const Mint = () => {
 
   return (
     <div className="mint">
-      <div className="mint-root" onSubmit={handleSubmit}>
+      <div className="mint-root fade-in" onSubmit={handleSubmit}>
         <div className="mint-header">
           <span className="mint-title">
             <span className="mint-totalSupply">
               {chooseButton.current === "MINT" || chooseButton.current == null ?
                 (
-                  <>
-                    <span style={{ fontWeight: 400, color: '#4ad300' }}>
+                  <div className="fade-in">
+                    <span style={{ fontWeight: 400, color: '#4ad300' }} className="fade-in">
                       {totalSupplyCap ? numberWithCommas(totalSupplyCap) : 0}
                       &nbsp;
                     </span>
                     QD mintable
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <span style={{ fontWeight: 400, color: '#4ad300' }}>
+                  <div className="fade-in">
+                    <span style={{ fontWeight: 400, color: '#4ad300' }} className="fade-in">
                       {insureble ? numberWithCommas(Number(insureble).toFixed(0)) : 0}
                       &nbsp;
                     </span>
                     $ insurable
-                  </>
+                  </div>
                 )}
             </span>
           </span>
         </div>
-        <div className="mint-inputContainer">
+        <div className="mint-inputContainer fade-in">
           <input
             type="text"
             id="mint-input"
@@ -497,7 +503,7 @@ export const Mint = () => {
           />
           <div className="mint-dollarSign">
             <button id="mint-button">
-              <div>{buttonSign}</div>
+              <div className="fade-in">{buttonSign}</div>
             </button>
           </div>
           <button className="mint-maxButton" onClick={handleSetMaxValue} type="button">
@@ -508,18 +514,18 @@ export const Mint = () => {
         <div className="mint-sub">
           <div className="mint-subLeft">
             {chooseButton.current === "MINT" || chooseButton.current == null ?
-              <>
+              <div className="fade-in">
                 Cost in $
                 <strong>
                   {inputValue === "" || inputValue === "0" ? "sDAI Amount" : numberWithCommas(calculatePrice(sdaiValue * inputValue))}
                 </strong>
-              </> : chooseButton.current === "DEPOSIT" && chooseCurrency ?
-                (<>
+              </div> : chooseButton.current === "DEPOSIT" && chooseCurrency ?
+                (<div className="fade-in">
                   Cost for Ξ
                   <strong>
                     {inputValue === "" || inputValue === "0" ? "ETH Amount" : transactionPrice}
                   </strong>
-                </>)
+                </div>)
                 : null}
           </div>
           {inputValue && inputValue !== "0" && (chooseButton.current === "MINT" || chooseButton.current == null) ? (
@@ -569,8 +575,8 @@ export const Mint = () => {
           isProcessing={isProcessing}
           handleSubmit={handleSubmit}
         />
-        {isSameBeneficiary ? null : (
-          <div className="mint-beneficiaryContainer">
+        {isSameBeneficiary ? <div className={`mint-beneficiaryContainer ${isSameBeneficiary ? "hide" : "show"}`}></div> :
+          <div className={`mint-beneficiaryContainer ${isSameBeneficiary ? "hide" : "show"}`}>
             <div className="mint-inputContainer">
               <input
                 name="beneficiary"
@@ -583,13 +589,12 @@ export const Mint = () => {
                 beneficiary
               </label>
             </div>
-          </div>
-        )}
+          </div>}
         <Modal open={isModalOpen} handleAgree={handleAgreeTerms} handleClose={handleCloseModal} />
       </div>
-      <div className="mint-console" ref={consoleRef}>
+      <div className="mint-console fade-in" ref={consoleRef}>
         <div className="mint-console-content">
-          {connected ? startMsg : "Connect your MetaMask..."}
+          { startMsg }
           {notifications ? notifications.map((notification, index) => (
             <div
               key={index}
@@ -605,8 +610,8 @@ export const Mint = () => {
           )}
         </div>
       </div>
-      <div className="mint-bottom">
-        <div className="mint-vote-box">
+      <div className="mint-bottom fade-in">
+        <div className="mint-vote-box fade-in">
           <ChoiseBoxes
             status={voteStatus}
             boxType={false}
@@ -616,7 +621,7 @@ export const Mint = () => {
             onChange={() => handleVotes()}
           />
         </div>
-        {voteStatus ? <VoteButton minValue={1} maxValue={9}/> : <TestPrice /> }
+        {voteStatus ? <VoteButton minValue={1} maxValue={9} /> : <TestPrice />}
       </div>
     </div>
   )
