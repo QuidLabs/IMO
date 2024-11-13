@@ -264,6 +264,7 @@ contract MO { // Modus Operandi...
     } // adjust to the nearest multiple of our tick width
     function _adjustTicks(int24 twap) internal pure returns 
         (int24 adjustedIncrease, int24 adjustedDecrease) {
+        // dynamic width of the gap depending on volume TODO
         int256 upper = int256(WAD + (WAD / 14)); 
         int256 lower = int256(WAD - (WAD / 14));
         int24 increase = int24((int256(twap) * upper) / int256(WAD));
@@ -316,7 +317,7 @@ contract MO { // Modus Operandi...
     function redeem(uint amount) // QD
         external returns (uint absorb) {
         uint cap = capitalisation(0, false);
-        if (cap)
+        // if (cap) TODO morpho
         // % share of overall balance...
         uint share = FullMath.mulDiv(WAD, 
             amount, _min(QUID.matureBalanceOf(
@@ -554,7 +555,8 @@ contract MO { // Modus Operandi...
             pledge.work.debit) - state.deductible;
             // if sell true...pledge doesn't get any ETH back...
             pledges[address(this)].work.credit -= state.deductible;
-            pledges[address(this)].weth.debit += state.deductible;  
+            pledges[address(this)].weth.debit += state.deductible; 
+            
 
             state.collat = FullMath.mulDiv(pledge.work.debit, state.price, WAD);
             if (state.collat > pledge.work.credit) { state.liquidate = false; } 
@@ -567,7 +569,8 @@ contract MO { // Modus Operandi...
             amount = _min(dollar_amt_to_qd_amt(state.cap, 
                 state.repay), QUID.balanceOf(beneficiary)
             );  QUID.turn(beneficiary, amount); // TODO fix
-            
+            // head on assault, the result [debt] by the bolt 
+
             amount = qd_amt_to_dollar_amt(
                         state.cap, amount);
             // subtract the $ value of QD

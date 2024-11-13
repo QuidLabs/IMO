@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Id, MarketParams} from "../IMorpho.sol";
+import {MarketParams} from "../IMorpho.sol";
 
 /// @title MarketParamsLib
 /// @author Morpho Labs
@@ -15,7 +15,7 @@ library MarketParamsLib {
     /// @notice Returns the id of the market `marketParams`.
     function id(
         MarketParams memory marketParams
-    ) internal pure returns (Id marketParamsId) {
+    ) internal pure returns (bytes32 marketParamsId) {
         assembly ("memory-safe") {
             marketParamsId := keccak256(
                 marketParams,

@@ -3,7 +3,7 @@
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {IMorpho, Position} from "./interfaces/morpho/IMorpho.sol";
-import {MorphoBalancesLib} from ".interfaces/morpho/MorphoBalancesLib.sol";
+import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
@@ -292,10 +292,10 @@ contract Quid is ERC20,
 
     function _transferHelper(address from, 
         address to, uint amount) internal {
-        uint balance_from = this.balanceOf(from); 
-        uint balance_to = this.balanceOf(to); 
         uint from_vote = feeVotes[from];
-        uint to_vote = feeVotes[to];
+        uint balance_from = this.balanceOf(from); 
+        
+        
         amount = _min(amount, this.balanceOf(from));
         require(amount > WAD, "insufficient QD"); 
         int i; // must be int otherwise tx reverts
@@ -304,7 +304,10 @@ contract Quid is ERC20,
             i = int(matureBatches()); 
             _burn(from, amount);
             // no _calculateMedian `to`
-        } else { i = int(currentBatch()); 
+        } 
+        else { i = int(currentBatch()); 
+            uint to_vote = feeVotes[to];
+            uint balance_to = this.balanceOf(to); 
             console.log("MedianTransferHelper...TO", 
                 balance_to, to_vote, this.balanceOf(to));
             // _calculateMedian(this.balanceOf(to), to_vote,
@@ -324,9 +327,9 @@ contract Quid is ERC20,
             }   i -= 1;
         }   require(amount == 0, "transfer");
         console.log("MedianTransferHelper...FROM", 
-            balance_from, from_vote, this.balanceOf(from));
-        // _calculateMedian(this.balanceOf(from), from_vote, 
-        //                     balance_from, from_vote);
+            balance_from, from_vote);
+        // _calculateMedian(balance_from, from_vote, 
+        //                 balance_from, from_vote);
     }
 
     function mint(address pledge, uint amount, address token) 
@@ -378,21 +381,16 @@ contract Quid is ERC20,
         address from, // previous owner... 
         uint tokenId, bytes calldata data) 
         external override returns (bytes4) { 
-        uint batch = currentBatch(); 
+        uint batch = currentBatch(); // 1-16
+        require(block.timestamp > START + DAYS, "early");
         require(data.length >= 32, "insufficient bytes");
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
         if (tokenId == LAMBO && ICollection(F8N).ownerOf(
-            LAMBO) == address(this)) { address winner;  
-            uint cut = GRIEVANCES / 2; // $ 67 210...
-            Pod memory day = Piscine[batch - 1][43]; 
+            LAMBO) == address(this)) { address winner;
+            uint cut = GRIEVANCES / 2; uint count = 0; 
             ICollection(F8N).transferFrom( // return
-                address(this), QUID, LAMBO); // NFT
-                     this.draw(QUID, cut); 
-                     this.draw(from, cut); 
-            AVG_ROI += FullMath.mulDiv(WAD, 
-            day.credit - day.debit, day.debit);
-            MO(Moulinette).setMetrics(AVG_ROI / // 46% 
-                (DAYS / 1 days) * batch); uint count = 0; 
+                address(this), QUID, LAMBO); // NFT...
+            this.draw(QUID, cut); this.draw(from, cut); 
             uint backend = BACKEND; cut = backend / 8;
             require(voters[batch - 1].length >= 6, "6");
             for (uint i = 0; count < 6 && i < 16; i++) {
@@ -406,17 +404,72 @@ contract Quid is ERC20,
                     backend -= cut; _mint(winner, cut);
                     consideration[winner][batch] += cut;
                 }
-            }   require(block.timestamp >= START + DAYS &&
-                batch < 18, "re-up"); // "like a boomerang
-            // ...I need a...^^^^^^ same level, same rebel
-            START = block.timestamp; // that never settled
-            cut = backend; _mint(from, cut); // remainder
+            } cut = backend; _mint(from, cut); // keep
             consideration[from][batch] += cut; // in QD
-            // in the frontend, safeTransferFrom in order
-            // to receive NFT, pass in calldata for lotto
+            _batchup(batch); // "like a boomerang, I need
+            // a repeat...same level, same rebel that 
+            // never settled and overcame the get owe"
         } return this.onERC721Received.selector; 
     }
 
+    function _batchup
+        (uint batch) 
+        internal { Pod memory day = 
+        Piscine[batch - 1][43]; 
+        require(batch < 17, "!"); 
+        AVG_ROI += FullMath.mulDiv(WAD, 
+        day.credit - day.debit, day.debit);
+        MO(Moulinette).setMetrics(AVG_ROI / 
+            (DAYS / 1 days) * batch);
+            START = block.timestamp; 
+    }
+    function batchup() public {
+        if (block.timestamp > 
+        START + DAYS + 3 days) { 
+        _batchup(currentBatch()); 
+    }}
+
+    function draw(address to, uint amount) 
+        public onlyGenerators returns (uint QD) { 
+            uint total = get_total_deposits(false);
+            if (msg.sender == address(this)) { 
+            amount = _min(amount, 
+                FullMath.mulDiv(total, 
+                    PENNY * 2 / 10, WAD));
+        }   require(amount > 0, "no thing");
+        if (MO(Moulinette).capitalisation(0, false) > 100) { 
+            uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SDAI], total), WAD);
+
+            uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SFRAX], total), WAD);
+
+            uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SUSDE], total), WAD);
+            require(amount <= total 
+                && (dai + frax + usde) <= amount, "cash");
+            if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
+                address(this)); perVault[SDAI] -= dai;
+            }
+            if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
+                address(this)); perVault[SFRAX] -= frax;
+            }
+            if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
+                address(this)); perVault[SUSDE] -= usde;
+            }
+            // TODO find delta needed to get capitalisation leveled and
+            // borrow only 
+            // USDC is never given out, always held in surplus for Uni
+        }   else if (MO(Moulinette).capitalisation(0, false) < 77) { 
+            // TODO uncomment and test after everything else
+            /* (uint susde, ) = IMorpho(MORPHO).withdraw(
+            IMorpho((MORPHO)).idToMarketParams(ID),
+                amount, 0, address(this), msg.sender); */
+            // Position memory p = morpho.position(ID, address(this)); 
+        }
+    }
+
+      /*
     function morph() internal {
          // if borrow exists
          //  morpho.accrueInterest(morpho.idToMarketParams(borrowUSDCmId));
@@ -459,45 +512,6 @@ contract Quid is ERC20,
                 address(this)
             );
 
-    }
+    }*/
 
-    function draw(address to, uint amount) 
-        public onlyGenerators returns (uint QD) { 
-            uint total = get_total_deposits(false);
-            if (msg.sender == address(this)) { 
-            amount = _min(amount, 
-                FullMath.mulDiv(total, 
-                    PENNY * 2 / 10, WAD));
-        }   require(amount > 0, "no thing");
-        if (MO(Moulinette).capitalisation(0, false) > 100) { 
-            uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SDAI], total), WAD);
-
-            uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SFRAX], total), WAD);
-
-            uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SUSDE], total), WAD);
-            require(amount <= total 
-                && (dai + frax + usde) <= amount, "cash");
-            if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
-                address(this)); perVault[SDAI] -= dai;
-            }
-            if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
-                address(this)); perVault[SFRAX] -= frax;
-            }
-            if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
-                address(this)); perVault[SUSDE] -= usde;
-            }
-            // TODO find delta needed to get capitalisation leveled and
-            // borrow only 
-            // USDC is never given out, always held in surplus for Uni
-        }   else if (MO(Moulinette).capitalisation(0, false) < 77) { 
-            // TODO uncomment and test after everything else
-            /* (uint susde, ) = IMorpho(MORPHO).withdraw(
-            IMorpho((MORPHO)).idToMarketParams(ID),
-                amount, 0, address(this), msg.sender); */
-            Position memory p = morpho.position(ID, address(this)); 
-        }
-    }
 }

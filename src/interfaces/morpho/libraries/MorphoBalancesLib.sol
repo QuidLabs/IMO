@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Id, MarketParams, Market, IMorpho} from "../IMorpho.sol";
+import {MarketParams, Market, IMorpho} from "../IMorpho.sol";
 import {IIrm} from "../IIrm.sol";
 
 import {MathLib} from "./MathLib.sol";
@@ -34,7 +34,7 @@ library MorphoBalancesLib {
         IMorpho morpho,
         MarketParams memory marketParams
     ) internal view returns (uint256, uint256, uint256, uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         Market memory market = morpho.market(id);
 
         uint256 elapsed = block.timestamp - market.lastUpdate;
@@ -117,7 +117,7 @@ library MorphoBalancesLib {
         MarketParams memory marketParams,
         address user
     ) internal view returns (uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         uint256 supplyShares = morpho.supplyShares(id, user);
         (
             uint256 totalSupplyAssets,
@@ -137,7 +137,7 @@ library MorphoBalancesLib {
         MarketParams memory marketParams,
         address user
     ) internal view returns (uint256) {
-        Id id = marketParams.id();
+        bytes32 id = marketParams.id();
         uint256 borrowShares = morpho.borrowShares(id, user);
         (
             ,
