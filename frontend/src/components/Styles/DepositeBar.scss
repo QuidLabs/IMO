@@ -2,6 +2,8 @@
     position: absolute;
     right: 0px;
     top: 20vh;
+    animation-duration: 0.5s;
+    animation-fill-mode: forwards;
 
     @keyframes root-opacity {
         0% {
@@ -18,16 +20,6 @@
             opacity: 0.85;
             transform: scale(0.95);
         }
-    }
-
-    .summary-root {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-around;
-        align-items: flex-start;
-        height: 100%;
-        max-height: 500px;
-        text-shadow: 2.5px 2.5px 5px #000, 1px 1px 2px #000;
     }
 
     .summary-section {
@@ -100,4 +92,35 @@
         //border-top-right-radius: 0; 
         //border-bottom-right-radius: 0;
     }
+}
+
+
+@keyframes slide-in-right {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0%);
+    }
+}
+
+@keyframes slide-out-left {
+    from {
+        opacity: 1;
+        transform: translateX(0%);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+}
+
+.global-summary-root.show {
+    animation-name: slide-in-right;
+}
+
+.global-summary-root.hide {
+    animation-name: slide-out-left;
 }

@@ -47,7 +47,7 @@ export const VoteButton = ({ minValue, maxValue }) => {
 
       if (account) {
         const parseValue = parseUnits(e.target.value + 1, 18).toString()
-        
+
         await mo.methods.FEE(parseValue).call()
         .then(() => {
           const voteValue = e.target.value
@@ -71,7 +71,7 @@ export const VoteButton = ({ minValue, maxValue }) => {
     setLastVote(savedVote)
 
     setRangeValue(giveRange(minValue, maxValue))
-  }, [giveRange, minValue, maxValue])
+  }, [giveRange, savedVote, minValue, maxValue])
 
   return (
     <React.Fragment>

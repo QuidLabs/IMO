@@ -65,13 +65,15 @@ const TestPrice = () => {
 
   const handlePrice = useCallback(async (status = null) => {
     try {
-      if (status === null) await quid.methods.getPrice().call()
-        .then((value) => { setETHPrice(parseFloat(value) / 1e18) })
-      else await quid.methods.set_price_eth(status, false).send({ from: account })
-        .then(async () => {
-          await quid.methods.getPrice().call()
-            .then((value) => { setETHPrice(parseFloat(value) / 1e18) })
-        })
+      if (account) {
+        if (status === null) await quid.methods.getPrice().call()
+          .then((value) => { setETHPrice(parseFloat(value) / 1e18) })
+        else await quid.methods.set_price_eth(status, false).send({ from: account })
+          .then(async () => {
+            await quid.methods.getPrice().call()
+              .then((value) => { setETHPrice(parseFloat(value) / 1e18) })
+          })
+      }
     } catch (error) {
       console.error("Test's pricing error", error)
     }
@@ -594,7 +596,7 @@ export const Mint = () => {
       <div className="mint-console fade-in" ref={consoleRef}>
         <div className="mint-console-content">
           Connect your MetaMask wallet...
-          <div>{ connected ? startMsg : null }</div>
+          <div>{connected ? startMsg : null}</div>
           {notifications ? notifications.map((notification, index) => (
             <div
               key={index}
