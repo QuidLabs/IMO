@@ -1,0 +1,103 @@
+.global-summary-root {
+    position: absolute;
+    right: 0px;
+    top: 20vh;
+
+    @keyframes root-opacity {
+        0% {
+            opacity: 0;
+            transform: scale(0);
+        }
+
+        50% {
+            opacity: 0.5;
+            transform: scale(1);
+        }
+
+        100% {
+            opacity: 0.85;
+            transform: scale(0.95);
+        }
+    }
+
+    .summary-root {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: flex-start;
+        height: 100%;
+        max-height: 500px;
+        text-shadow: 2.5px 2.5px 5px #000, 1px 1px 2px #000;
+    }
+
+    .summary-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        margin-right: 15px;
+        margin-top: 30px;
+        text-shadow:
+            -2px -2px 0 black,
+            2px -2px 0 black,
+            -2px 2px 0 black,
+            px 2px 0 black;
+    }
+
+    .summary-paragraph {
+        color: #978977;
+        font-size: 28px;
+        font-weight: bold;
+        line-height: 24px;
+        font-family: "Outfit";
+        z-index: 1;
+        text-shadow:
+            -1px -1px 0 rgba(0, 0, 0, 0.55),
+            2px -1px 0 rgba(0, 0, 0, 0.55),
+            -1px 1px 0 rgba(0, 0, 0, 0.55),
+            1px 1px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .summary-title {
+        color: #ffa300;
+        font-size: 20px;
+        line-height: 24px;
+        font-weight: bold;
+        margin-bottom: 2px;
+        z-index: 1;
+        text-shadow:
+            -1px -1px 0 rgba(0, 0, 0, 0.55),
+            1px -1px 0 rgba(0, 0, 0, 0.55),
+            -1px 1px 0 rgba(0, 0, 0, 0.55),
+            1px 1px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .summary-value {
+        font-family: inherit;
+        font-weight: bold;
+        font-size: 48px;
+        line-height: 54px;
+        color: #ffffff;
+        z-index: 1;
+        text-shadow:
+            -2px -2px 0 rgba(0, 0, 0, 0.55),
+            2px -2px 0 rgba(0, 0, 0, 0.55),
+            -2px 2px 0 rgba(0, 0, 0, 0.55),
+            2px 2px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .summary-strock {
+        position: absolute;
+        width: 200px;
+        height: 80px;
+        margin-top: 10px;
+        background: linear-gradient(60deg, rgba(0, 0, 0, 0) 25%, rgb(133 94 2 / 78%) 100%);
+        z-index: 0;
+        right: 0px;
+        opacity: 1;
+        //border-radius: 50px;
+        //border-top-left-radius: 10px; 
+        //border-bottom-left-radius: 10px; 
+        //border-top-right-radius: 0; 
+        //border-bottom-right-radius: 0;
+    }
+}
