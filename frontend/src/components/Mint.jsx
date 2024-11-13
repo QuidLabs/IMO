@@ -403,6 +403,8 @@ export const Mint = () => {
       setChooseCurrency(false)
       setCurrency("QUID")
       setInputValue("")
+      setInsureStatus(true)
+      setIsSameBeneficiary(true)
     }
     else {
       setChooseCurrency(true)
@@ -429,6 +431,8 @@ export const Mint = () => {
   useEffect(() => {
     if(swipeStatus) {
       setInputValue("")
+      setInsureStatus(true)
+      setIsSameBeneficiary(true)
       setSwipe()
     }
 
@@ -535,7 +539,6 @@ export const Mint = () => {
                 name={"insure"}
                 relation={"INSURING"}
                 onChange={handleInsure}
-                handleCurrency={handleCurrency}
               /> : null
             }
             {chooseButton.current === "MINT" || chooseButton.current == null || chooseButton.current === "DEPOSIT" ?
@@ -546,7 +549,6 @@ export const Mint = () => {
                 name={"tomyself"}
                 relation={"to myself"}
                 onChange={() => setIsSameBeneficiary(!isSameBeneficiary)}
-                handleCurrency={handleCurrency}
               /> : null
             }
             {chooseButton.current === "WITHDRAW" || chooseButton.current === "DEPOSIT" ?

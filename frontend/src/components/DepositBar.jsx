@@ -43,7 +43,7 @@ export const DepositBar = ({address = null}) => {
     }, [resetAccounts, updatingInfo, connected, notifications])
 
     return (
-        <div className={`summary-root`} >
+        <div className={ address ? 'global-summary-root' : `summary-root`} >
             <div className="summary-section">
                 <div className="summary-title">ETH pledged:</div>
                 <div className="summary-value">
