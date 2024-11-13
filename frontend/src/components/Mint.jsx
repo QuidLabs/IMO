@@ -610,7 +610,7 @@ export const Mint = () => {
           )}
         </div>
       </div>
-      <div className="mint-bottom fade-in">
+      {connected ? <div className="mint-bottom fade-in">
         <div className="mint-vote-box fade-in">
           <ChoiseBoxes
             status={voteStatus}
@@ -622,7 +622,7 @@ export const Mint = () => {
           />
         </div>
         {voteStatus ? <VoteButton minValue={1} maxValue={9} /> : <TestPrice />}
-      </div>
+      </div> : null}
     </div>
   )
 }
