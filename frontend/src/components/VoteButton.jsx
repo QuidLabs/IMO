@@ -16,7 +16,7 @@ import "../pages/MainPage/MaintPage.scss"
 import "./Styles/VoteButton.scss"
 
 export const VoteButton = ({ minValue, maxValue }) => {
-  const { setStorage, account, mo } = useAppContext()
+  const { setStorage, account, quid } = useAppContext()
 
   const savedVote = localStorage.getItem("saveQUIDVote")
 
@@ -48,7 +48,7 @@ export const VoteButton = ({ minValue, maxValue }) => {
       if (account) {
         const parseValue = parseUnits(e.target.value + 1, 18).toString()
 
-        await mo.methods.FEE(parseValue).call()
+        await quid.methods.vote(parseValue).send({from: account })
         .then(() => {
           const voteValue = e.target.value
 
