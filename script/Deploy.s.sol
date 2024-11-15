@@ -11,7 +11,8 @@ import {WETH} from "../lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "../lib/solmate/src/tokens/ERC20.sol";
 // import {ERC4626} from "../lib/solmate/src/tokens/ERC4626.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
-import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
+// import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol"; // This is is used on L1 mainnet
+import {IV3SwapRouter} from "../src/interfaces/IV3SwapRouter.sol"; // used on Sepolia and Taiko...
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
 
 contract Deploy is Script {
@@ -25,8 +26,8 @@ contract Deploy is Script {
     mockToken public DAI;
     address public chainlink = 0x694AA1769357215DE4FAC081bf1f309aDC325306;
 
-    // TODO the interface of the router is a bit different on mainnet than it is on Taiko
-    ISwapRouter public router = ISwapRouter(0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E);
+    // ISwapV3Router public router = ISwapV3Router(0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E);
+    IV3SwapRouter public router = IV3SwapRouter(0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E);
     // 0xdD489C75be1039ec7d843A6aC2Fd658350B067Cf 
     INonfungiblePositionManager public nfpm = INonfungiblePositionManager(0x1238536071E1c677A632429e3655c799b22cDA52);
     // 0x8B3c541c30f9b29560f56B9E44b59718916B69EF

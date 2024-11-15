@@ -7,15 +7,15 @@ and in the second contract
 bound to the ERC20 (QD),  
 as well as  WETH<>USDC.  
 
-16 chances  to `mint` QD:  
-8 per year times [43 days](https://bit.ly/3q4tShS),   
+8 chances  to `mint` QD  
+(per year) times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
 today's," 46% `AVG_ROI`    
 
-Over 2yr, retained fees  
+Over time, retained fees  
 from ΞTH deployed into  
 UniV3 adds solvency, as  
-well as deductibles do. 
+well as deductibles do... 
 
 Hedged against 10% drops,  
 ΞTH insured can't exceed $  
@@ -35,8 +35,8 @@ maturity, when any holder
 
 may `redeem` 1 QD for $1.  
 Voting is incentivised by  
-4 x 55k QD, distributed  
-16x `onERC721Received`.  
+6 x 55k QD, distributed  
+in `onERC721Received`.  
 
 - electric ignition system (nervous system):  
   `deposit` ΞTH if nervous about its price,  

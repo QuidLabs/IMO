@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
-import {IMorpho, Position} from "./interfaces/morpho/IMorpho.sol";
+import {IMorpho, Position, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
@@ -41,9 +41,7 @@ contract Quid is ERC20,
     // that problems of the world can be solved," by true 
     // dough, Pierre, not your usual money, version mint
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
-    uint constant BACKEND = 444477 * WAD; // x 16 (QD)
-    // "16 bars keep the car running" ~ chamber music
-    // https://www.law.cornell.edu/wex/consideration
+    uint constant BACKEND = 444477 * WAD; // per batch
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
     // an exchange agreement, for the breach of which
@@ -109,9 +107,10 @@ contract Quid is ERC20,
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
     } 
-    function _minAmount(address from, address token, 
-        uint amount) internal returns (uint usd) {
-        bool isDollar = false;
+    function _minAmount(address from, 
+        address token, uint amount) 
+        internal returns (uint usd) {
+            bool isDollar = false;
         if (token == address(SDAI)
         || token == address(SFRAX) 
         || token == address(SUSDE)) {
@@ -119,21 +118,27 @@ contract Quid is ERC20,
             ERC4626(token).convertToAssets(
             ERC4626(token).balanceOf(from)));
             perVault[token] += usd;
+            
             amount = ERC4626(token).convertToShares(usd);
             ERC4626(token).transferFrom(msg.sender, 
-                            address(this), amount); }  
-        else if (token == address(DAI) ||
-                token == address(FRAX) || 
-                token == address(USDE) ||
-                token == USDC) { // solvency capital
+                            address(this), amount);
+
+        }  else if (token == address(DAI)  ||
+                    token == address(FRAX) || 
+                    token == address(USDE) ||
+                    token == USDC) {
                 isDollar = true; usd = _min(amount, 
                 ERC20(token).balanceOf(from));
                 address vault = vaults[token]; 
                 perVault[vault] += usd;
                 if (vault != USDC) {
-                    ERC20(token).transferFrom(from, address(this), usd);
-                    amount = ERC4626(vault).deposit(usd, address(this));
-                } else { ERC20(USDC).transferFrom(
+                    ERC20(token).transferFrom(from, 
+                                    address(this), usd);
+
+                    amount = ERC4626(vault).deposit(
+                                usd, address(this));
+                } 
+                else { ERC20(USDC).transferFrom(
                         from, Moulinette, usd); } 
         } require(isDollar && amount > 0, "$");
     }
@@ -155,10 +160,13 @@ contract Quid is ERC20,
         public view returns (uint total) {
         total += _min(perVault[SDAI], ERC4626(
             SDAI).maxWithdraw(address(this)));
+
         total += _min(perVault[SFRAX], ERC4626(
             SFRAX).maxWithdraw(address(this)));
+
         total += _min(perVault[SUSDE], ERC4626(
             SUSDE).maxWithdraw(address(this)));
+
         return usdc ? total +
         perVault[USDC] : total; 
     }
@@ -172,7 +180,7 @@ contract Quid is ERC20,
         }
         uint old_vote = feeVotes[msg.sender];
         require(new_vote != old_vote &&
-                new_vote < 89, "bad vote"); 
+                new_vote <= 89, "bad vote"); 
         // +11 max vote = 9.0% deductible...
         feeVotes[msg.sender] = new_vote;
         uint stake = this.balanceOf(msg.sender);
@@ -217,12 +225,13 @@ contract Quid is ERC20,
             to, value); _transferHelper(msg.sender, 
             to, value); super.transfer(to, value);
     }
-    function transferFrom(address from, address to, uint value) 
-        public override(ERC20) returns (bool) {
-        MO(Moulinette).transferHelper(from, 
-            to, value); _transferHelper(from, 
-            to, value); super.transferFrom(from, 
-            to, value);
+    function transferFrom(address from, address to, 
+        uint value) public override(ERC20) returns (bool) { 
+        MO(Moulinette).transferHelper(from, to, value); 
+        _transferHelper(from, to, value); 
+        if (msg.sender != Moulinette) {
+            super.transferFrom(from, to, value);
+        }
     }
 
     function set_price_eth(bool up,
@@ -258,7 +267,7 @@ contract Quid is ERC20,
      *  If there is no such value of k, there must be a value of k 
      *  in the same range range(0, len(Weights)) such that 
      *  sum(Weights[0:k]) > sum(Weights) / 2
-     */ 
+     */ // TODO debug
     function _calculateMedian(uint old_stake, uint old_vote,
         uint new_stake, uint new_vote) internal { 
         if (old_vote != 17 && old_stake != 0) { 
@@ -312,9 +321,7 @@ contract Quid is ERC20,
                 balance_to, to_vote, this.balanceOf(to));
             // _calculateMedian(this.balanceOf(to), to_vote,
             //                     balance_to, to_vote);
-        }   
-        // TODO stop at matureBatches end index, burn only
-        // the amount that is able to be cleared 
+        } 
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k];
             // console.log("TransferHelper...", amt);
@@ -363,7 +370,7 @@ contract Quid is ERC20,
                 }
         } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
-       address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+       address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb; 
     bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch 
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
@@ -469,49 +476,38 @@ contract Quid is ERC20,
         }
     }
 
-      /*
+    /*
     function morph() internal {
-         // if borrow exists
-         //  morpho.accrueInterest(morpho.idToMarketParams(borrowUSDCmId));
-         morpho.withdrawCollateral(
-            morpho.idToMarketParams(borrowUSDCmId),
+        MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
+        uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
+            IMorpho(MORPHO), params, address(this)
+        ); // IMorpho(MORPHO).accrueInterest(params);
+        if (borrowed > 0) {
+
+        }
+          
+        IMorpho(MORPHO).withdraw(
+            params,
             amount,
             address(this),
             msg.sender
         );
 
-         morpho.supplyCollateral(
-            morpho.idToMarketParams(borrowUSDCmId),
-            amount,
-            address(this),
-            ""
+        IMorpho(MORPHO).supplyCollateral(params,
+            amount, address(this), ""
         );
-
 
         // TODO unstake sDAI into DAI
         // 
-        morpho.repay(
-            morpho.idToMarketParams(borrowUSDCmId),
-            amountUSDC,
-            0,
-            address(this),
+        IMorpho(MORPHO).repay(params,
+            amount, 0, address(this),
             ""
         );
 
-         morpho.borrow(
-            morpho.idToMarketParams(borrowUSDCmId),
-            amountUSDC,
-            0,
-            address(this),
-            msg.sender
+        IMorpho(MORPHO).borrow(params,
+            amount, 0, address(this),
+            address(this)
         );
-
-        MorphoBalancesLib.expectedBorrowAssets(
-                morpho,
-                morpho.idToMarketParams(borrowUSDCmId),
-                address(this)
-            );
-
-    }*/
-
+    }
+    */
 }

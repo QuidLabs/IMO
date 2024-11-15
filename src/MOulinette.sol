@@ -7,7 +7,8 @@ import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
-import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
+// import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; // TODO uncomment 
+import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // used on Sepolia
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
@@ -163,7 +164,7 @@ contract MO { // Modus Operandi...
             uint cap = capitalisation(amount, true); 
             uint burn = _min(qd_amt_to_dollar_amt(cap, amount), credit);
             require(amount <= dollar_amt_to_qd_amt(cap, burn), "$");
-            pledges[from].work.credit -= burn;
+            pledges[from].work.credit -= burn; // write to storage
         } else if (to != address(0)) {
             // percentage of carry.debit gets 
             // transferred over in proportion 
@@ -249,7 +250,7 @@ contract MO { // Modus Operandi...
     function _adjustToNearestIncrement(int24 input) 
         internal pure returns (int24 result) {
         int24 remainder = input % 10; // 10 
-        // is the tick width for WETH<>USDC
+        // is the tick width for WETH<>USDC...
         if (remainder == 0) { result = input;
         } else if (remainder >= 5) { // round up
             result = input + (10 - remainder);
@@ -295,14 +296,18 @@ contract MO { // Modus Operandi...
                 int(amount0 * 1e12) // minus
             ) / int(2 * price / 1e18); 
             if (selling > 0) {
-                amount1 -= uint(selling); amount0 += ROUTER.exactInput(
+                amount1 -= uint(selling); 
+                amount0 += ROUTER.exactInput(
                     ISwapRouter.ExactInputParams(abi.encodePacked(
                         address(token1), POOL_FEE, address(token0)),
-                        address(this), block.timestamp, uint(selling), 0));
-            } else {    selling *= int(price) / 1e30; amount0 -= uint(selling);
+                        address(this), /* block.timestamp, */ uint(selling), 0)
+                    );
+            } else { // TODO uncomment block.timestamp    
+                selling *= int(price) / 1e30; amount0 -= uint(selling);
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
-                        address(this), block.timestamp, uint(selling), 0));
+                        address(this), /* block.timestamp, */ uint(selling), 0)
+                );
             }   currentRatio = amount1 / amount0;
         }   return (amount0, amount1); 
     }
@@ -392,7 +397,7 @@ contract MO { // Modus Operandi...
                 (FullMath.mulDiv(pledges[address(this)].weth.credit, 
                     price, WAD) + FullMath.mulDiv(price,
                     pledges[address(this)].work.credit / 2, // TODO
-                    WAD)), "over-encumbered");
+                    WAD)), "over-encumbered"); // assume 90% drop max
         } else { uint withdrawable;
             if (pledge.work.credit > 0) {
                 uint debit = FullMath.mulDiv(price, 
@@ -568,9 +573,8 @@ contract MO { // Modus Operandi...
             state.cap = capitalisation(state.repay, true);
             amount = _min(dollar_amt_to_qd_amt(state.cap, 
                 state.repay), QUID.balanceOf(beneficiary)
-            );  QUID.turn(beneficiary, amount); // TODO fix
-            // head on assault, the result [debt] by the bolt 
-
+            );  QUID.transferFrom(beneficiary, 
+                        address(this), amount); 
             amount = qd_amt_to_dollar_amt(
                         state.cap, amount);
             // subtract the $ value of QD
@@ -608,19 +612,19 @@ contract MO { // Modus Operandi...
     // "to improve is to change, to perfect is to change often,"
     // we want to make sure that all of the WETH deposited to 
     // this contract is always in range (collecting), since 
-    // repackNFT is relatively costly in terms of gas, we 
-    // want to call it rarely...so as a rule of thumb, the  
-    // range is roughly 14% total, 7% below and above TWAP,
-    // we check for a delta of this size over last 8 hours;
+    // burn & mint is relatively costly in terms of gas, we 
+    // want to do that rarely...so as a rule of thumb, the  
+    // range is roughly 14% total, 7% below and above tick,
     // this number was inspired by automotive science: how
     // voltage regulators watch the currents and control the 
     // relay (which turns on & off the alternator, if below 
     // or above 14 volts, respectively, re-charging battery)
     function repackNFT(uint amount0, uint amount1) public {
         (uint160 sqrtPriceX96, // Chainlink price used by swap
+        // to prevent possible sandwich / price manipulation
         int24 twap,,,,,) = POOL.slot0(); uint128 liquidity; 
         if (LAST_TWAP_TICK != 0) { // not first _repack...
-            if ((twap > UPPER_TICK || twap < LOWER_TICK) && 
+            if ( (twap > UPPER_TICK || twap < LOWER_TICK) && 
             block.timestamp - pledges[address(this)].last >= 1 hours) {
                 (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
                 (uint collected0, 
