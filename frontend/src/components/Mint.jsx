@@ -304,7 +304,9 @@ export const Mint = () => {
       }
 
       if (button === "DEPOSIT") {
-        if (!chooseCurrency && inputValue > (await usdebalance())) return setNotifications("error", "Cost shouldn't be more than your usde balance")
+        const workUsdBalance = await getDepositInfo().then(depositInfo => {return depositInfo.work_usd_balance})
+        
+        if (!chooseCurrency && inputValue > workUsdBalance) return setNotifications("error", "Cost shouldn't be more than your owed USDe balance")
         if (!chooseCurrency && inputValue > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
         if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
