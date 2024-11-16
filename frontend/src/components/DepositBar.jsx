@@ -44,7 +44,6 @@ export const DepositBar = ({address = null}) => {
     return (
         <div className={ address ? `global-summary-root ${connected ? 'show' : 'hide'}` : `summary-root`} >
             <div className="summary-section">
-                {address ? <div className="summary-paragraph">Global</div> : null}
                 <div className="summary-title">{address ? null : "My "}ETH pledged:</div>
                 <div className="summary-value">
                     Ξ{connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(2))) : 0}
@@ -52,7 +51,6 @@ export const DepositBar = ({address = null}) => {
                 {address ? <div className="summary-strock"></div> : null}
             </div>
             <div className="summary-section">
-                {address ? <div className="summary-paragraph">Global</div> : null}
                 <div className="summary-title">{address ? null : "My "}$ owed:</div>
                 <div className="summary-value">
                     ${connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(2))) : 0}
@@ -60,7 +58,6 @@ export const DepositBar = ({address = null}) => {
                 {address ? <div className="summary-strock"></div> : null}
             </div>
             <div className="summary-section">   
-                {address ? <div className="summary-paragraph">Global</div> : null}
                 <div className="summary-title">{address ? null : "My "} ETH insured:</div>
                 <div className="summary-value">
                     <span className="summary-value">Ξ{connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
@@ -68,7 +65,6 @@ export const DepositBar = ({address = null}) => {
                 {address ? <div className="summary-strock"></div> : null}
             </div>
             <div className="summary-section">
-                {address ? <div className="summary-paragraph">Global</div> : null}
                 <div className="summary-title">{address ? null : "My "} $ value of insured:</div>
                 <div className="summary-value">
                     ${connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}

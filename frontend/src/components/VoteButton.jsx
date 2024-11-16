@@ -1,64 +1,49 @@
-import React, { useCallback, useEffect, useState } from "react"
-import { parseUnits } from "@ethersproject/units"
-
-import { Swiper, SwiperSlide } from "swiper/react"
-import { EffectFlip, Navigation } from "swiper/modules"
-
+import React, { useCallback, useEffect, useRef, useState } from "react"
 import { useAppContext } from "../contexts/AppContext"
-
-import "swiper/css"
-import "swiper/css/effect-flip"
-import "swiper/css/navigation"
-
-import "../components/Adds/Styles/Slider.scss"
-import "../pages/MainPage/MaintPage.scss"
 
 import "./Styles/VoteButton.scss"
 
-export const VoteButton = ({ minValue, maxValue }) => {
+export const VoteButton = ({ minValue = 1, maxValue = 9 }) => {
   const { setStorage, account, quid } = useAppContext()
 
   const savedVote = localStorage.getItem("saveQUIDVote")
+  const [rangeValue, setRangeValue] = useState(savedVote ? parseFloat(savedVote) : minValue)
+  const animationFrameRef = useRef(null)
+  const [animatedValue, setAnimatedValue] = useState(rangeValue)
 
-  const [lastVote, setLastVote] = useState(savedVote)
-  const [rangeValues, setRangeValue] = useState('')
+  const setNotifications = useCallback(
+    (severity, message, status = false) => {
+      setStorage((prevNotifications) => [
+        ...prevNotifications,
+        { severity: severity, message: message, status: status }
+      ])
+    },
+    [setStorage]
+  )
 
-  const giveRange = useCallback((minValue, maxValue) => {
-    let array = []
-    for (let i = 0; i <= maxValue - minValue; i++) {
-      array[i] = `${minValue + i}.0%`
-    }
-    return array
-  }, [])
+  const voteStarting = async () => {
+    try { 
+      if(account){
+        setNotifications(
+          "info",
+          "Processing. Please don't close or refresh page when terminal is working"
+        )
+  
+        //const oldFeeVote = await mo.methods.FEE().call()
+        const oldVote = localStorage.getItem("saveQUIDVote")
 
-  const setNotifications = useCallback((severity, message, status = false) => {
-    setStorage((prevNotifications) => [
-      ...prevNotifications,
-      { severity: severity, message: message, status: status }
-    ])
-  }, [setStorage])
-
-  const voteStarting = async (e) => {
-    try {
-      setNotifications(
-        "info",
-        "Processing. Please don't close or refresh page when terminal is working"
-      )
-
-      if (account) {
-        const parseValue = parseUnits(e.target.value + 1, 18).toString()
-
-        await quid.methods.vote(parseValue).send({from: account })
-        .then(() => {
-          const voteValue = e.target.value
-
-          localStorage.setItem("saveQUIDVote", JSON.parse(voteValue))
-        })
-
-        setNotifications("success", "Your vote has been counted!", true)
+        if (rangeValue.toString() !== oldVote) {
+          const calculateVote = rangeValue*10 - 2
+          await quid.methods.vote(calculateVote).send({ from: account })
+            .then(() => {
+              localStorage.setItem("saveQUIDVote", JSON.stringify(rangeValue))
+            })
+  
+          setNotifications("success", "Your vote has been counted!", true)
+        } else setNotifications("error", "Your new voice should be different from your previous one.", true)
       }
     } catch (err) {
-      const er = "MO::mint: supply cap exceeded"
+      const er = "MO::mint: supply cap exceeded";
       const msg =
         err.error?.message === er || err.message === er
           ? "Please wait for more QD to become mintable..."
@@ -68,42 +53,71 @@ export const VoteButton = ({ minValue, maxValue }) => {
   }
 
   useEffect(() => {
-    setLastVote(savedVote)
+    if (savedVote) {
+      setRangeValue(parseFloat(savedVote))
+    }
+  }, [savedVote])
 
-    setRangeValue(giveRange(minValue, maxValue))
-  }, [giveRange, savedVote, minValue, maxValue])
+  const animateValue = (targetValue) => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+    }
+
+    const step = () => {
+      setAnimatedValue((prevValue) => {
+        const diff = targetValue - prevValue
+        const increment = diff * 0.1
+        const newValue = prevValue + increment
+
+        if (Math.abs(diff) < 0.1) {
+          return targetValue
+        }
+        return newValue
+      })
+
+      animationFrameRef.current = requestAnimationFrame(step)
+    }
+
+    step()
+  }
+
+  useEffect(() => {
+    animateValue(rangeValue)
+  }, [rangeValue])
+
+  const getMarkerPosition = () => {
+    const percentage = ((animatedValue - minValue) / (maxValue - minValue)) * 95
+    return `calc(${percentage}% - 20px)`
+  }
 
   return (
-    <React.Fragment>
-      <div className="vote-contaier">
-        <Swiper
-          effect={"flip"}
-          grabCursor={true}
-          navigation={true}
-          modules={[EffectFlip, Navigation]}
-          className="mySwiper"
-          initialSlide={lastVote}
+    <div className="vote-container fade-in">
+      <div className="custom-range-container">
+        <input
+          id="voteRange"
+          type="range"
+          min={minValue}
+          max={maxValue}
+          step={0.1}
+          value={rangeValue}
+          onChange={(e) => setRangeValue(parseFloat(e.target.value))}
+          className="vote-range"
+          onDoubleClick={() => voteStarting()}
+          style={{
+            backgroundSize: `${((rangeValue - minValue) / (maxValue - minValue)) * 100}% 100%`
+          }}
+        />
+        <div
+          className="custom-marker"
+          style={{
+            left: getMarkerPosition()
+          }}
         >
-          {rangeValues
-            ? rangeValues.map((value, key) => (
-                <SwiperSlide key={"choise-value-" + key} name={value}>
-                  <div className="button-overflow">
-                    <button
-                      type="submit"
-                      className={"mint-submit"}
-                      name={value}
-                      value={key} // Передаем ключ как значение для vote
-                      onClick={voteStarting}
-                    >
-                      {value}
-                    </button>
-                  </div>
-                </SwiperSlide>
-              ))
-            : null}
-        </Swiper>
+          {animatedValue.toFixed(1)}%
+        </div>
+        <div className="custom-line"></div>
       </div>
-    </React.Fragment>
+    </div>
   )
 }
 

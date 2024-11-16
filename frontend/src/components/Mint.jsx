@@ -618,7 +618,7 @@ export const Mint = () => {
             boxType={false}
             name={"vote"}
             currency={false}
-            relation={voteStatus ? "Choise value and click for the vote:" : "Vote for the deductible!"}
+            relation={voteStatus ? "Choise value and double click for voting:" : "Vote for the deductible!"}
             onChange={() => handleVotes()}
           />
         </div>
