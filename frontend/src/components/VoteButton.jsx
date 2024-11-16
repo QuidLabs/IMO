@@ -86,8 +86,8 @@ export const VoteButton = ({ minValue = 1, maxValue = 9 }) => {
   }, [rangeValue])
 
   const getMarkerPosition = () => {
-    const percentage = ((animatedValue - minValue) / (maxValue - minValue)) * 95
-    return `calc(${percentage}% - 20px)`
+    const percentage = (((animatedValue - minValue) / (maxValue - minValue)).toFixed(2)) * 100
+    return `calc(${percentage}% - 25px)`
   }
 
   return (
