@@ -1,16 +1,18 @@
 
 ## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
+
 There are two contracts,  
 both have an `ID`, in the  
-ERC20 related to `MORPHO`  
+ERC20 related to `MORPHO`,  
 and in the second contract  
-bound to the ERC20 (QD),  
-as well as  WETH<>USDC.  
+(bound to the ERC20, QD),  
+related to  WETH<>USDC.  
 
 8 chances  to `mint` QD  
-(per year) times [43 days](https://bit.ly/3q4tShS),   
+(per year) times **[43 days](https://bit.ly/3q4tShS)**,   
 "yesterday's price is *not*  
-today's," 46% `AVG_ROI`    
+today's," 46% `AVG_ROI`  
+before counting liabilities.    
 
 Over time, retained fees  
 from ΞTH deployed into  
@@ -34,9 +36,9 @@ absorbing liabilties upon
 maturity, when any holder  
 
 may `redeem` 1 QD for $1.  
-Voting is incentivised by  
-6 x 55k QD, distributed  
-in `onERC721Received`.  
+Voting incentivised by a 6  
+x 55k QD lotto, distributed  
+in `onERC721Received`...  
 
 - electric ignition system (nervous system):  
   `deposit` ΞTH if nervous about its price,  
@@ -55,7 +57,7 @@ in `onERC721Received`.
   and suspension is related: determines your  
   ride quality (`fold` suspension/liquidation)
 
-Speaking of car...one more useful
+Speaking of car...one more useful  
 analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** *lux*  
 (let there be light); regarding lime,  
 note 🇺🇦 [70/30](https://www.instagram.com/p/DAgKU2dxtUq/) here  corresponds  

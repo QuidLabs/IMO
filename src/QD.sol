@@ -42,6 +42,7 @@ contract Quid is ERC20,
     // dough, Pierre, not your usual money, version mint
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // per batch
+    // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
     // an exchange agreement, for the breach of which

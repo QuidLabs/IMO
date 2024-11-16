@@ -176,6 +176,14 @@ contract MainnetFork is Test {
         );
         vm.stopPrank();
 
+        vm.startPrank(User02);
+        vm.deal(User02, 1_000_000_000 ether);
+        
+        moulinette.deposit{value: jackson_in_ETH}(User02, 0, false);
+        moulinette.withdraw(jackson_in_ETH, false);
+
+        vm.stopPrank();
+
         // TODO 
         // assertEq(minted, rack);
 
@@ -226,10 +234,13 @@ contract MainnetFork is Test {
         vm.stopPrank();
 
         uint avg_roi_before = quid.AVG_ROI();
+        
         vm.startPrank(address(quid));
         bytes32 seed = 0xfecf91618d752d88c3c7ed03b6040823a43b4a88edd2372a0a07aa348780c85b;
         F8N.safeTransferFrom(0x42cc020Ef5e9681364ABB5aba26F39626F1874A4,
             address(quid), 16508, abi.encode(seed));
+        assertEq(F8N.ownerOf(16508), 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4);
+        // ^^^^^ checks that the NFT was sent back properly 
         vm.stopPrank();
 
         uint avg_roi_after = quid.AVG_ROI();

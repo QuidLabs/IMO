@@ -7,8 +7,8 @@ import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
-// import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; // TODO uncomment 
-import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // used on Sepolia
+import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; 
+// import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
@@ -31,6 +31,7 @@ contract MO { // Modus Operandi...
     int24 internal LOWER_TICK;
     uint internal _ETH_PRICE; // TODO delete
     IUniswapV3Pool POOL; ISwapRouter ROUTER; 
+    uint128 liquidityUnderManagement; // UniV3
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
@@ -222,12 +223,12 @@ contract MO { // Modus Operandi...
         uint160 sqrtPriceX96lower = TickMath.getSqrtPriceAtTick(LOWER_TICK);
         uint160 sqrtPriceX96upper = TickMath.getSqrtPriceAtTick(UPPER_TICK);
         uint128 liquidity0 = LiquidityAmounts.getLiquidityForAmount0(
-            sqrtPriceX96upper, sqrtPriceX96lower, amount0
-        );
+            sqrtPriceX96lower, sqrtPriceX96upper, amount0
+        ); 
         uint128 liquidity1 = LiquidityAmounts.getLiquidityForAmount1(
-            sqrtPriceX96upper, sqrtPriceX96lower, amount1
+            sqrtPriceX96lower, sqrtPriceX96upper, amount1
         );
-        return (sqrtPriceX96lower, sqrtPriceX96upper,
+        return (sqrtPriceX96lower, sqrtPriceX96upper, 
                 _max(liquidity0, liquidity1));
     }
     function _collect() internal returns 
@@ -240,6 +241,8 @@ contract MO { // Modus Operandi...
     }
     function _withdrawAndCollect(uint128 liquidity) 
         internal returns (uint amount0, uint amount1) {
+        require(liquidity > 0, "nothing to decrease");
+        liquidityUnderManagement -= liquidity;
         NFPM.decreaseLiquidity(
             INonfungiblePositionManager.DecreaseLiquidityParams(
                 ID, liquidity, 0, 0, block.timestamp
@@ -280,15 +283,17 @@ contract MO { // Modus Operandi...
         uint160 sqrtPriceX96) internal returns 
         (uint, uint) { uint price = QUID.getPrice();
         (,, uint128 liquidity) = _liquidity(amount0, amount1);
+        
         (uint positionAmount0, // target amounts for LP deposit
          uint positionAmount1) = LiquidityAmounts.getAmountsForLiquidity(
             sqrtPriceX96, TickMath.getSqrtPriceAtTick(LOWER_TICK), 
             TickMath.getSqrtPriceAtTick(UPPER_TICK), liquidity
-        );  uint targetRatio = positionAmount1 / positionAmount0;
+        );  console.log("positionAmount0...", positionAmount0); console.log("positionAmount1...", positionAmount1); 
+        uint targetRatio = positionAmount1 / (positionAmount0 + 1);
         if (token0.balanceOf(address(this)) > 0) {
             amount0 = _min(positionAmount0, 
             token0.balanceOf(address(this)));
-        }   uint currentRatio = amount1 / amount0;
+        }   uint currentRatio = amount1 / (amount0 + 1);
         if (currentRatio <= (targetRatio * 999) / 1000 
          || currentRatio >= (targetRatio * 1001) / 1000) {
             int selling = ( // some algebra...
@@ -300,13 +305,13 @@ contract MO { // Modus Operandi...
                 amount0 += ROUTER.exactInput(
                     ISwapRouter.ExactInputParams(abi.encodePacked(
                         address(token1), POOL_FEE, address(token0)),
-                        address(this), /* block.timestamp, */ uint(selling), 0)
+                        address(this), block.timestamp, uint(selling), 0)
                     );
-            } else { // TODO uncomment block.timestamp    
+            } else { // TODO comment out block.timestamp for Taiko deploy
                 selling *= int(price) / 1e30; amount0 -= uint(selling);
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
-                        address(this), /* block.timestamp, */ uint(selling), 0)
+                        address(this), block.timestamp, uint(selling), 0)
                 );
             }   currentRatio = amount1 / amount0;
         }   return (amount0, amount1); 
@@ -417,7 +422,9 @@ contract MO { // Modus Operandi...
                 transfer = _min(amount, pledge.work.debit);  
             }   pledges[address(this)].work.credit -= transfer;
             // for unwrapping from Uniswap to transfer ETH...
-            (,, uint128 liquidity) = _liquidity(transfer, 0);
+            console.log("TRANSFER...", transfer);
+            (,, uint128 liquidity) = _liquidity(1, transfer);
+            console.log("LIQUIDITY...", uint256(liquidity));
             (amount0, amount1) = _withdrawAndCollect(liquidity);
             console.log("WithdrawingETH...", transfer, amount0, amount1);
             if (amount1 >= transfer) { WETH9.transfer(msg.sender, transfer);
@@ -448,12 +455,11 @@ contract MO { // Modus Operandi...
             pledge.weth.credit += in_dollars - deductible;
             require(pledges[address(this)].carry.debit > 
                 (FullMath.mulDiv(pledges[address(this)].weth.credit, 
-                    price, WAD) + FullMath.mulDiv(price * 90 / 100,
+                    price, WAD) + FullMath.mulDiv(price,
                     pledges[address(this)].work.credit, 
                     WAD)), "insuring too much"); // 1:1     
-        }           pledges[beneficiary] = pledge; // 💿
-        repackNFT(1, amount); // 1 passed in to prevent
-        // division by zero, later it is decremented back 
+        }           pledges[beneficiary] = pledge; 
+                    repackNFT(0, amount); 
     }
     
     // "Entropy" comes from a Greek word for transformation; 
@@ -639,20 +645,23 @@ contract MO { // Modus Operandi...
         (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
         (amount0, 
          amount1) = _swap(amount0, amount1, sqrtPriceX96);
-        (ID,,,) = NFPM.mint(
+        (ID, liquidity,,) = NFPM.mint(
             INonfungiblePositionManager.MintParams({ token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
-                tickUpper: UPPER_TICK, amount0Desired: amount0 - 1, 
+                tickUpper: UPPER_TICK, amount0Desired: amount0 /*- 1*/, 
                 amount1Desired: amount1, amount0Min: 0, amount1Min: 0, 
                 recipient: address(this), deadline: block.timestamp }));
+                liquidityUnderManagement = liquidity;
         } // else no need to repack NFT, only collect LP fees
         else { (uint collected0, uint collected1) = _collect(); 
             amount0 += collected0; amount1 += collected1;
             (amount0, amount1) = _swap(
-             amount0, amount1, sqrtPriceX96); NFPM.increaseLiquidity(
+             amount0, amount1, sqrtPriceX96); 
+            (liquidity,,) = NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
-                    ID, amount0, amount1, 0, 0, block.timestamp
+                    ID, amount0 /*- 1*/, amount1, 0, 0, block.timestamp
             )); 
+            liquidityUnderManagement += liquidity;
         }   pledges[address(this)].weth.debit += amount1;
             pledges[address(this)].work.debit += amount0;
     }
