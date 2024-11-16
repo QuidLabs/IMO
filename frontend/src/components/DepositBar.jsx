@@ -3,32 +3,35 @@ import { useAppContext } from "../contexts/AppContext";
 import { numberWithCommas } from "../utils/number-with-commas"
 
 import "./Styles/MintBar.scss"
+import "./Styles/DepositeBar.scss"
 
-export const DepositBar = () => {
+export const DepositBar = ({address = null}) => {
     const { getDepositInfo, resetAccounts,
         account, connected, quid, usde, addressQD, notifications } = useAppContext()
 
-    const [totalDeposited, setTotalDeposited] = useState("")
-    const [totalMinted, setTotalMinted] = useState("")
-    const [gain, setGain] = useState("")
-    const [price, setPrice] = useState("")
+    const [workEthBalance, setWorkEth] = useState("")
+    const [workUsdBalance, setWorkUsd] = useState("")
+    const [wethEthBalance, setWethEth] = useState("")
+    const [wethUsdBalance, setWethUsd] = useState("")
 
     const updatingInfo = useCallback(async () => {
         try {
             if (connected && account && quid && usde && addressQD) {
-                await Promise.all([getDepositInfo()])
+                const setAddress = address ? address : account
+
+                await Promise.all([getDepositInfo(setAddress)])
                     .then(value => {
-                        setTotalDeposited(value[0].work_eth_balance)
-                        setTotalMinted(value[0].work_usd_balance)
-                        setPrice(value[0].weth_eth_balance)
-                        setGain(value[0].weth_usd_balance)
+                        setWorkEth(value[0].work_eth_balance)
+                        setWorkUsd(value[0].work_usd_balance)
+                        setWethEth(value[0].weth_eth_balance)
+                        setWethUsd(value[0].weth_usd_balance)
                     })
             } else resetAccounts(true)
         } catch (error) {
             console.error("Some problem with updateInfo, Summary.js, l.22: ", error)
         }
     }, [getDepositInfo, resetAccounts,
-        account, addressQD, connected, usde, quid])
+        account, addressQD, connected, usde, quid, address])
 
     useEffect(() => {
         try {
@@ -39,30 +42,34 @@ export const DepositBar = () => {
     }, [resetAccounts, updatingInfo, connected, notifications])
 
     return (
-        <div className={`summary-root`} >
+        <div className={ address ? `global-summary-root ${connected ? 'show' : 'hide'}` : `summary-root`} >
             <div className="summary-section">
-                <div className="summary-title">ETH pledged:</div>
+                <div className="summary-title">{address ? null : "My "}ETH pledged:</div>
                 <div className="summary-value">
-                    Ξ{connected && account ? numberWithCommas(parseFloat(Number(totalDeposited).toFixed(2))) : 0}
+                    Ξ{connected? numberWithCommas(parseFloat(Number(workEthBalance).toFixed(2))) : 0}
                 </div>
+                {address ? <div className="summary-strock"></div> : null}
             </div>
             <div className="summary-section">
-                <div className="summary-title">$ owed:</div>
+                <div className="summary-title">{address ? null : "My "}$ owed:</div>
                 <div className="summary-value">
-                    ${connected && account ? numberWithCommas(parseFloat(Number(totalMinted).toFixed(2))) : 0}
+                    ${connected ? numberWithCommas(parseFloat(Number(workUsdBalance).toFixed(2))) : 0}
                 </div>
+                {address ? <div className="summary-strock"></div> : null}
+            </div>
+            <div className="summary-section">   
+                <div className="summary-title">{address ? null : "My "} ETH insured:</div>
+                <div className="summary-value">
+                    <span className="summary-value">Ξ{connected ? parseFloat(Number(wethEthBalance).toFixed(2)) : 0}</span>
+                </div>
+                {address ? <div className="summary-strock"></div> : null}
             </div>
             <div className="summary-section">
-                <div className="summary-title">ETH insured:</div>
+                <div className="summary-title">{address ? null : "My "} $ value of insured:</div>
                 <div className="summary-value">
-                    <span className="summary-value">${connected && account ? parseFloat(Number(price).toFixed(2)) : 0}</span>
+                    ${connected ? parseFloat(Number(wethUsdBalance).toFixed(2)) : 0}
                 </div>
-            </div>
-            <div className="summary-section">
-                <div className="summary-title">$ value of insured:</div>
-                <div className="summary-value">
-                    {connected && account ? parseFloat(Number(gain).toFixed(2)) : 0}
-                </div>
+                {address ? <div className="summary-strock"></div> : null}
             </div>
         </div>
     )
