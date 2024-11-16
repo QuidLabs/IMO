@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {IMorpho, Id} from "../IMorpho.sol";
+import {IMorpho} from "../IMorpho.sol";
 import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 
 /// @title MorphoLib
@@ -12,7 +12,7 @@ import {MorphoStorageLib} from "./MorphoStorageLib.sol";
 library MorphoLib {
     function supplyShares(
         IMorpho morpho,
-        Id id,
+        bytes32 id,
         address user
     ) internal view returns (uint256) {
         bytes32[] memory slot = _array(
@@ -23,7 +23,7 @@ library MorphoLib {
 
     function borrowShares(
         IMorpho morpho,
-        Id id,
+        bytes32 id,
         address user
     ) internal view returns (uint256) {
         bytes32[] memory slot = _array(
@@ -34,7 +34,7 @@ library MorphoLib {
 
     function collateral(
         IMorpho morpho,
-        Id id,
+        bytes32 id,
         address user
     ) internal view returns (uint256) {
         bytes32[] memory slot = _array(
@@ -45,7 +45,7 @@ library MorphoLib {
 
     function totalSupplyAssets(
         IMorpho morpho,
-        Id id
+        bytes32 id
     ) internal view returns (uint256) {
         bytes32[] memory slot = _array(
             MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id)
@@ -55,7 +55,7 @@ library MorphoLib {
 
     function totalSupplyShares(
         IMorpho morpho,
-        Id id
+        bytes32 id
     ) internal view returns (uint256) {
         bytes32[] memory slot = _array(
             MorphoStorageLib.marketTotalSupplyAssetsAndSharesSlot(id)
@@ -65,7 +65,7 @@ library MorphoLib {
 
     function totalBorrowAssets(
         IMorpho morpho,
-        Id id
+        bytes32 id
     ) internal view returns (uint256) {
         bytes32[] memory slot = _array(
             MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id)
@@ -75,7 +75,7 @@ library MorphoLib {
 
     function totalBorrowShares(
         IMorpho morpho,
-        Id id
+        bytes32 id
     ) internal view returns (uint256) {
         bytes32[] memory slot = _array(
             MorphoStorageLib.marketTotalBorrowAssetsAndSharesSlot(id)
@@ -83,14 +83,14 @@ library MorphoLib {
         return uint256(morpho.extSloads(slot)[0] >> 128);
     }
 
-    function lastUpdate(IMorpho morpho, Id id) internal view returns (uint256) {
+    function lastUpdate(IMorpho morpho, bytes32 id) internal view returns (uint256) {
         bytes32[] memory slot = _array(
             MorphoStorageLib.marketLastUpdateAndFeeSlot(id)
         );
         return uint128(uint256(morpho.extSloads(slot)[0]));
     }
 
-    function fee(IMorpho morpho, Id id) internal view returns (uint256) {
+    function fee(IMorpho morpho, bytes32 id) internal view returns (uint256) {
         bytes32[] memory slot = _array(
             MorphoStorageLib.marketLastUpdateAndFeeSlot(id)
         );

@@ -1,9 +1,8 @@
 
-
-export const addressMO = '0x7A4620Be8E2aadE159a35D627cAF14314EabFf9b'
-export const addressQD = '0x2EBcE0b5fb02119be375ABB269bE23712E5C9cA4';
-export const addressUSDE = '0x81c16dCC9F6c63a4bc6100E83A33B48Ab21F374F';
-export const addressSUSDE = '0x345B07c99df92E4Df56380266723aB9Cd60e71b7';
+export const addressMO = '0x9c60b63B04FBb73dd2d299343DcF16B9711D033e'
+export const addressQD = '0x3EE4D349cA3420b2285a33Cf6A35Bd734CBEeb08';
+export const addressUSDE = '0x47a19E1F815CF8a87b195a34F671b13743E38a81';
+export const addressSUSDE = '0xD02EaCa8E120DB434F1123Ce126D7Bbeb5080f93';
 
 export const MO = [
   {
@@ -241,19 +240,6 @@ export const MO = [
         "type": "uint256",
         "internalType": "uint256"
       },
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "liquidityUnderManagement",
-    "inputs": [],
-    "outputs": [
       {
         "name": "",
         "type": "uint256",
@@ -784,6 +770,13 @@ export const QUID = [
   },
   {
     "type": "function",
+    "name": "batchup",
+    "inputs": [],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
     "name": "consideration",
     "inputs": [
       {
@@ -904,10 +897,16 @@ export const QUID = [
   {
     "type": "function",
     "name": "get_total_deposits",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "usdc",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
     "outputs": [
       {
-        "name": "",
+        "name": "total",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1257,7 +1256,13 @@ export const QUID = [
         "internalType": "uint256"
       }
     ],
-    "outputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {
@@ -1293,6 +1298,25 @@ export const QUID = [
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "winners",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"

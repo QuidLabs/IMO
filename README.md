@@ -1,6 +1,5 @@
 
 ## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
-
 There are two contracts,  
 both have an `ID`, in the  
 ERC20 related to `MORPHO`  
@@ -8,15 +7,15 @@ and in the second contract
 bound to the ERC20 (QD),  
 as well as  WETH<>USDC.  
 
-16 chances  to `mint` QD:  
-8 per year times [43 days](https://bit.ly/3q4tShS),   
+8 chances  to `mint` QD  
+(per year) times [43 days](https://bit.ly/3q4tShS),   
 "yesterday's price is *not*  
 today's," 46% `AVG_ROI`    
 
-Over 2yr, retained fees  
+Over time, retained fees  
 from ΞTH deployed into  
 UniV3 adds solvency, as  
-well as deductibles do. 
+well as deductibles do... 
 
 Hedged against 10% drops,  
 ΞTH insured can't exceed $  
@@ -36,8 +35,8 @@ maturity, when any holder
 
 may `redeem` 1 QD for $1.  
 Voting is incentivised by  
-4 x 55k QD, distributed  
-16x `onERC721Received`.  
+6 x 55k QD, distributed  
+in `onERC721Received`.  
 
 - electric ignition system (nervous system):  
   `deposit` ΞTH if nervous about its price,  
@@ -56,27 +55,9 @@ Voting is incentivised by
   and suspension is related: determines your  
   ride quality (`fold` suspension/liquidation)
 
-Speaking of cars, another decent  
+Speaking of car...one more useful
 analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** *lux*  
 (let there be light); regarding lime,  
 note 🇺🇦 [70/30](https://www.instagram.com/p/DAgKU2dxtUq/) here  corresponds  
 to the initial capitalisation of QD...  
-Earth's surface is also 71% liquid.  
- 
-© 2022-2026 QuidMint Foundation  
-This software `README` is about material   
-of Quid Labs; quid.io owned by QU!D LTD  
-THIS `README` IS PROVIDED "AS IS," AND  
-© HOLDERS MAKE NO REPRESENTATIONS  
-
-WARRANTIES, EXPRESS OR IMPLIED, INCLUDING,   
-NOT LIMITED TO, MERCHANTABILITY WARRANTIES    
-OF [FITNESS](https://x.com/QuidMint/status/1840815343364677821) FOR A PARTICULAR PURPOSE OR TITLE.  
-
-THE CONTENTS OF `README` ARE SUITABLE FOR  
-IMPLEMENTATION WITHOUT INFRINGING ANY 3RD  
-PARTY PATENTS, COPYRIGHTS, OR TRADEMARKS.   
-COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR  
-DIRECT, INDIRECT, OR [UNUSUAL](https://github.com/QuidLabs/IMO/blob/main/src/QD.sol#L42)/CONSEQUENTIAL  
-DAMAGES ARISING OUT OF [PERFORMANCE](https://x.com/lex_node/status/1845182121553559770): ANY   
-USE OF CONTENTS OR THEIR IMPLEMENTATION.  
+Earth's surface is also 71% liquid. 

@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.0;
 
-import {Id} from "../IMorpho.sol";
-
 /// @title MorphoStorageLib
 /// @author Morpho Labs
 /// @custom:contact security@morpho.org
@@ -47,7 +45,7 @@ library MorphoStorageLib {
     }
 
     function positionSupplySharesSlot(
-        Id id,
+        bytes32 id,
         address user
     ) internal pure returns (bytes32) {
         return
@@ -64,7 +62,7 @@ library MorphoStorageLib {
     }
 
     function positionBorrowSharesAndCollateralSlot(
-        Id id,
+        bytes32 id,
         address user
     ) internal pure returns (bytes32) {
         return
@@ -81,7 +79,7 @@ library MorphoStorageLib {
     }
 
     function marketTotalSupplyAssetsAndSharesSlot(
-        Id id
+        bytes32 id
     ) internal pure returns (bytes32) {
         return
             bytes32(
@@ -91,7 +89,7 @@ library MorphoStorageLib {
     }
 
     function marketTotalBorrowAssetsAndSharesSlot(
-        Id id
+        bytes32 id
     ) internal pure returns (bytes32) {
         return
             bytes32(
@@ -100,7 +98,7 @@ library MorphoStorageLib {
             );
     }
 
-    function marketLastUpdateAndFeeSlot(Id id) internal pure returns (bytes32) {
+    function marketLastUpdateAndFeeSlot(bytes32 id) internal pure returns (bytes32) {
         return
             bytes32(
                 uint256(keccak256(abi.encode(id, MARKET_SLOT))) +
@@ -133,7 +131,7 @@ library MorphoStorageLib {
         return keccak256(abi.encode(authorizer, NONCE_SLOT));
     }
 
-    function idToLoanTokenSlot(Id id) internal pure returns (bytes32) {
+    function idToLoanTokenSlot(bytes32 id) internal pure returns (bytes32) {
         return
             bytes32(
                 uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) +
@@ -141,7 +139,7 @@ library MorphoStorageLib {
             );
     }
 
-    function idToCollateralTokenSlot(Id id) internal pure returns (bytes32) {
+    function idToCollateralTokenSlot(bytes32 id) internal pure returns (bytes32) {
         return
             bytes32(
                 uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) +
@@ -149,7 +147,7 @@ library MorphoStorageLib {
             );
     }
 
-    function idToOracleSlot(Id id) internal pure returns (bytes32) {
+    function idToOracleSlot(bytes32 id) internal pure returns (bytes32) {
         return
             bytes32(
                 uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) +
@@ -157,7 +155,7 @@ library MorphoStorageLib {
             );
     }
 
-    function idToIrmSlot(Id id) internal pure returns (bytes32) {
+    function idToIrmSlot(bytes32 id) internal pure returns (bytes32) {
         return
             bytes32(
                 uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) +
@@ -165,7 +163,7 @@ library MorphoStorageLib {
             );
     }
 
-    function idToLltvSlot(Id id) internal pure returns (bytes32) {
+    function idToLltvSlot(bytes32 id) internal pure returns (bytes32) {
         return
             bytes32(
                 uint256(keccak256(abi.encode(id, ID_TO_MARKET_PARAMS_SLOT))) +
