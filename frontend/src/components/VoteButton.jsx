@@ -24,15 +24,15 @@ export const VoteButton = ({ minValue = 1, maxValue = 9 }) => {
   const voteStarting = async () => {
     try { 
       if(account){
-        setNotifications(
-          "info",
-          "Processing. Please don't close or refresh page when terminal is working"
-        )
-  
         //const oldFeeVote = await mo.methods.FEE().call()
         const oldVote = localStorage.getItem("saveQUIDVote")
 
         if (rangeValue.toString() !== oldVote) {
+          setNotifications(
+            "info",
+            "Processing. Please don't close or refresh page when terminal is working"
+          )
+          
           const calculateVote = rangeValue*10 - 2
           await quid.methods.vote(calculateVote).send({ from: account })
             .then(() => {
