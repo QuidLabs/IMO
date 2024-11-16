@@ -110,7 +110,7 @@ const TestPrice = () => {
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalSupply, setStorage, setSwipe, getWalletBalance, getDepositInfo, getTotalInfo,
+  const { getTotalSupply, setStorage, setSwipe, getWalletBalance, getDepositInfo,
     addressQD, addressUSDE, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, usde, mo, addressMO } = useAppContext()
 
   const [inputValue, setInputValue] = useState('')
@@ -129,7 +129,7 @@ export const Mint = () => {
 
   const [transactionPrice, setTransactionPrice] = useState('')
 
-  const [insureble, setInsureble] = useState('')
+  const [insurable, setInsurable] = useState('')
 
   const [voteStatus, setVoteStatus] = useState(false)
 
@@ -182,22 +182,22 @@ export const Mint = () => {
 
   const updateTotalSupply = useCallback(async () => {
     try {
-      await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getTotalInfo(), getWalletBalance()])
+      await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getWalletBalance()])
         .then((value) => {
-          const deposit = value[2].total_dep
-          const wethUsdBalance = value[1].weth_usd_balance
+          const deposit = value[1].weth_usd_balance
+          const workUsdBalance = value[1].work_usd_balance
           const price = value[1].ethPrice
 
           setTotalSupplyCap(value[0])
-          setInsureble(deposit - (wethUsdBalance * price))
+          setInsurable(deposit + (workUsdBalance * price * 0.9))
 
-          setWalletEthBalance(value[3].eth)
-          setWalletUSDeBalances(value[3].usde)
+          setWalletEthBalance(value[2].eth)
+          setWalletUSDeBalances(value[2].usde)
         })
     } catch (error) {
       console.error(error)
     }
-  }, [getDepositInfo, getTotalInfo, getTotalSupply, getWalletBalance, addressMO])
+  }, [getDepositInfo, getTotalSupply, getWalletBalance, addressMO])
 
   const handleChangeValue = useCallback((e) => {
     const regex = /^\d*(\.\d*)?$|^$/
@@ -250,7 +250,8 @@ export const Mint = () => {
     })
 
     //By default the weth and work ballance are equals zero, so cindition for DEBIT/WITHDRAW will not work with this values
-    //const depositBuffer = ethPrice * depInfo.work_eth_balance - depInfo.work_usd_balance
+    const ethPrice = await quid.methods.getPrice().call()
+    const parseEthPrice = parseFloat(ethPrice) / 1e18
 
     const usdebalance = async () => {
       if (usde) return Number(formatUnits(await usde.methods.balanceOf(account).call(), 18))
@@ -304,13 +305,10 @@ export const Mint = () => {
 
       if (button === "DEPOSIT") {
         if (!chooseCurrency && inputValue > (await usdebalance())) return setNotifications("error", "Cost shouldn't be more than your usde balance")
-
-        if (!chooseCurrency && inputValue > insureble) return setNotifications("error", "The amount shouldn't be more than insurable")
+        if (!chooseCurrency && inputValue > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
         if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
-
-        // depositeBuffer using for this condition
-        //if (chooseCurrency && inputValue > depositBuffer) return setNotifications("error", "The amount shouldn't be more than work and weth balance")
+        if (chooseCurrency && inputValue*parseEthPrice > insurable) return setNotifications("error", "The amount shouldn't be more than work and weth balance")
 
         const valueDepo = parseUnits(inputValue, 18).toString()
 
@@ -341,7 +339,7 @@ export const Mint = () => {
       if (button === "WITHDRAW") {
         if (!chooseCurrency && inputValue > (await usdebalance())) return setNotifications("error", "Cost shouldn't be more than your usde balance")
 
-        if (!chooseCurrency && inputValue > insureble) return setNotifications("error", "The amount shouldn't be more than insurable")
+        if (!chooseCurrency && inputValue > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
         if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
@@ -354,6 +352,7 @@ export const Mint = () => {
         }
 
         const withDrawValue = parseUnits(inputValue, 18).toString()
+        console.log(withDrawValue)
 
         setIsProcessing(true)
         setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
@@ -483,7 +482,7 @@ export const Mint = () => {
                 ) : (
                   <div className="fade-in">
                     <span style={{ fontWeight: 400, color: '#4ad300' }} className="fade-in">
-                      {insureble ? numberWithCommas(Number(insureble).toFixed(0)) : 0}
+                      {insurable ? numberWithCommas(Number(insurable).toFixed(0)) : 0}
                       &nbsp;
                     </span>
                     $ insurable
