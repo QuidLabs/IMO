@@ -244,12 +244,12 @@ export const Mint = () => {
         return numbers
       })
 
-    const ballanceStatus = await getWalletBalance().then((balance) => {
+    const balanceStatus = await getWalletBalance().then((balance) => {
       if (Number(inputValue) > Number(balance.eth)) return true
       else return false
     })
 
-    //By default the weth and work ballance are equals zero, so cindition for DEBIT/WITHDRAW will not work with this values
+    //By default the weth and work balance are equals zero, so cindition for DEBIT/WITHDRAW will not work with this values
     const ethPrice = await quid.methods.getPrice().call()
     const parseEthPrice = parseFloat(ethPrice) / 1e18
 
@@ -309,7 +309,7 @@ export const Mint = () => {
         if (!chooseCurrency && inputValue > workUsdBalance) return setNotifications("error", "Cost shouldn't be more than your owed USDe balance. Use The QD's withdrow for top up your account.")
         if (!chooseCurrency && inputValue > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
-        if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
+        if (chooseCurrency && balanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
         if (chooseCurrency && inputValue*parseEthPrice > insurable) return setNotifications("error", "The amount shouldn't be more than work and weth balance")
 
         const valueDepo = parseUnits(inputValue, 18).toString()
@@ -325,13 +325,13 @@ export const Mint = () => {
         }
 
         if (account && !chooseCurrency) {
-          const matureBallance = await quid.methods.matureBalanceOf(account).call()
+          const maturebalance = await quid.methods.matureBalanceOf(account).call()
             .then(value => {
               const mature = parseFloat(value) / 1e18
               return mature
             })
 
-          if (inputValue <= matureBallance) await mo.methods.redeem(valueDepo).send({ from: account })
+          if (inputValue <= maturebalance) await mo.methods.redeem(valueDepo).send({ from: account })
           else await quid.methods.transfer(addressMO, valueDepo).send({ from: account })
         }
 
@@ -343,7 +343,7 @@ export const Mint = () => {
 
         if (!chooseCurrency && inputValue > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
-        if (chooseCurrency && ballanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
+        if (chooseCurrency && balanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
 
         if (chooseCurrency && inputValue > depInfo.work_eth_balance) {
           const foldValue = (inputValue - depInfo.work_eth_balance).toString()
@@ -354,7 +354,6 @@ export const Mint = () => {
         }
 
         const withDrawValue = parseUnits(inputValue, 18).toString()
-        console.log(withDrawValue)
 
         setIsProcessing(true)
         setNotifications("info", "Processing. Please don't close or refresh page when terminal is working")
