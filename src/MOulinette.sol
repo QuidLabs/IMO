@@ -420,9 +420,9 @@ contract MO { // Modus Operandi...
                 pledges[address(this)].weth.debit += // sell ETH
                 withdrawable; // to clear work.credit of pledge          
                 transfer = _min(amount, pledge.work.debit);  
-            }   pledges[address(this)].work.credit -= transfer;
-            // for unwrapping from Uniswap to transfer ETH...
-            console.log("TRANSFER...", transfer);
+            }   require(transfer > 0, "nothing to withdraw");
+            pledges[address(this)].work.credit -= transfer;
+            // for unwrapping from Uniswap to transfer ETH
             (,, uint128 liquidity) = _liquidity(1, transfer);
             console.log("LIQUIDITY...", uint256(liquidity));
             (amount0, amount1) = _withdrawAndCollect(liquidity);
@@ -648,7 +648,7 @@ contract MO { // Modus Operandi...
         (ID, liquidity,,) = NFPM.mint(
             INonfungiblePositionManager.MintParams({ token0: address(token0),
                 token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK, 
-                tickUpper: UPPER_TICK, amount0Desired: amount0 /*- 1*/, 
+                tickUpper: UPPER_TICK, amount0Desired: amount0, 
                 amount1Desired: amount1, amount0Min: 0, amount1Min: 0, 
                 recipient: address(this), deadline: block.timestamp }));
                 liquidityUnderManagement = liquidity;
@@ -659,7 +659,7 @@ contract MO { // Modus Operandi...
              amount0, amount1, sqrtPriceX96); 
             (liquidity,,) = NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
-                    ID, amount0 /*- 1*/, amount1, 0, 0, block.timestamp
+                    ID, amount0, amount1, 0, 0, block.timestamp
             )); 
             liquidityUnderManagement += liquidity;
         }   pledges[address(this)].weth.debit += amount1;
