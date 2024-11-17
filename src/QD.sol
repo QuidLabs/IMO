@@ -1,14 +1,14 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-import "lib/forge-std/src/console.sol"; // TODO delete
+// import "lib/forge-std/src/console.sol"; // TODO delete
 import {IMorpho, Position, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import "./interfaces/AggregatorV3Interface.sol";
 import "./interfaces/IERC721.sol";
+/*
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -20,10 +20,11 @@ interface IERC721Receiver {
 interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
-} // http://42.fr Piscine
+} */
+// http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is ERC20,
-    IERC721Receiver {
+contract Quid is ERC20 //, 
+    /* IERC721Receiver */ {
     uint public AVG_ROI;
     uint public START;  
     // "Walked in the 
@@ -42,7 +43,6 @@ contract Quid is ERC20,
     // dough, Pierre, not your usual money, version mint
     uint constant GRIEVANCES = 134420 * WAD; // in USDe
     uint constant BACKEND = 444477 * WAD; // per batch
-    // https://www.law.cornell.edu/wex/consideration
     mapping(address => uint[16]) public consideration;
     // of legally sufficient value, bargained-for in 
     // an exchange agreement, for the breach of which
@@ -67,13 +67,11 @@ contract Quid is ERC20,
     address public immutable USDC;
     address public immutable DAI; 
     address public immutable SDAI;
-    address public immutable SFRAX;
-    address public immutable FRAX;
-    address public immutable USDE;
-    address public immutable SUSDE;
-    uint internal _ETH_PRICE; // TODO 
+    // address public immutable SFRAX;
+    // address public immutable FRAX;
+    // address public immutable USDE;
+    // address public immutable SUSDE;
     address public Moulinette; // windmill
-    address internal chainlink;
     uint constant WAD = 1e18;
     modifier onlyGenerators { 
         address sender = msg.sender;
@@ -85,24 +83,24 @@ contract Quid is ERC20,
         require(currentBatch() > 0, "after");  
         _; 
     }
-    constructor(address _mo, address _link,
-        address _usde, address _susde, 
-        address _frax, address _sfrax,
+    constructor(address _mo, // спутник
+        // address _usde, address _susde, 
+        // address _frax, address _sfrax,
         address _sdai, address _dai)
         ERC20("QU!D", "QD", 18) {
         START = block.timestamp; 
+        /* START = 1733333333; */
         SDAI = _sdai; DAI = _dai;
-        FRAX = _frax; SFRAX = _sfrax; 
-        USDE = _usde; SUSDE = _susde;
-        /* START = 1733333333; */ deployed = START;
-        Moulinette = _mo; chainlink = _link;
+        // FRAX = _frax; SFRAX = _sfrax; 
+        // USDE = _usde; SUSDE = _susde;
+        deployed = START; Moulinette = _mo; 
         USDC = address(MO(Moulinette).token0());
         vaults[USDC] = USDC; vaults[DAI] = SDAI;
-        vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
+        // vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
         ERC20(DAI).approve(_sdai, type(uint256).max);
-        ERC20(FRAX).approve(_sfrax,  type(uint256).max);
-        ERC20(USDE).approve(_susde,  type(uint256).max);
-        ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
+        // ERC20(FRAX).approve(_sfrax,  type(uint256).max);
+        // ERC20(USDE).approve(_susde,  type(uint256).max);
+        // ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     }
     function _min(uint _a, uint _b) internal 
         pure returns (uint) { return (_a < _b) ?
@@ -113,8 +111,8 @@ contract Quid is ERC20,
         internal returns (uint usd) {
             bool isDollar = false;
         if (token == address(SDAI)
-        || token == address(SFRAX) 
-        || token == address(SUSDE)) {
+        /*|| token == address(SFRAX) 
+        || token == address(SUSDE)*/) {
             isDollar = true; usd =_min(amount, 
             ERC4626(token).convertToAssets(
             ERC4626(token).balanceOf(from)));
@@ -124,9 +122,9 @@ contract Quid is ERC20,
             ERC4626(token).transferFrom(msg.sender, 
                             address(this), amount);
 
-        }  else if (token == address(DAI)  ||
+        }  else if (token == address(DAI) || /*
                     token == address(FRAX) || 
-                    token == address(USDE) ||
+                    token == address(USDE) ||*/
                     token == USDC) {
                 isDollar = true; usd = _min(amount, 
                 ERC20(token).balanceOf(from));
@@ -162,11 +160,11 @@ contract Quid is ERC20,
         total += _min(perVault[SDAI], ERC4626(
             SDAI).maxWithdraw(address(this)));
 
-        total += _min(perVault[SFRAX], ERC4626(
-            SFRAX).maxWithdraw(address(this)));
+        // total += _min(perVault[SFRAX], ERC4626(
+        //     SFRAX).maxWithdraw(address(this)));
 
-        total += _min(perVault[SUSDE], ERC4626(
-            SUSDE).maxWithdraw(address(this)));
+        // total += _min(perVault[SUSDE], ERC4626(
+        //     SUSDE).maxWithdraw(address(this)));
 
         return usdc ? total +
         perVault[USDC] : total; 
@@ -235,33 +233,6 @@ contract Quid is ERC20,
         }
     }
 
-    function set_price_eth(bool up,
-        bool refresh) external { 
-        if (refresh) { _ETH_PRICE = 0;
-            _ETH_PRICE = getPrice();
-        }   else { uint delta = _ETH_PRICE / 5;
-            _ETH_PRICE = up ? _ETH_PRICE + delta 
-                              : _ETH_PRICE - delta;
-        } // TODO remove this testing function...
-    }
-    function getPrice() public 
-        view returns (uint price) {
-        if (_ETH_PRICE > 0) { 
-            return _ETH_PRICE;
-        }
-        (, int priceAnswer,, 
-        uint timeStamp,) = AggregatorV3Interface(chainlink).latestRoundData();
-        uint8 answerDigits = AggregatorV3Interface(chainlink).decimals();
-        price = uint(priceAnswer);
-        require(timeStamp > 0 
-            && timeStamp <= block.timestamp 
-            && priceAnswer >= 0, "price");
-        // Aggregator returns an 8-digit precision, 
-        // but we handle the case of future changes
-        if (answerDigits > 18) { price /= 10 ** (answerDigits - 18); }
-        else if (answerDigits < 18) { price *= 10 ** (18 - answerDigits); } 
-    }
-
     /** https://x.com/QuidMint/status/1833820062714601782
      *  Find value of k in range(0, len(Weights)) such that 
      *  sum(Weights[0:k]) = sum(Weights[k:len(Weights)+1]) = sum(Weights) / 2
@@ -289,12 +260,12 @@ contract Quid is ERC20,
                 while (K >= 1 && (
                     (SUM - WEIGHTS[K]) >= mid
                 )) { SUM -= WEIGHTS[K]; K -= 1; 
-                    console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
+                    // console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
                 }
             } else { 
                 while (SUM < mid) { 
                     K += 1; SUM += WEIGHTS[K];
-                    console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
+                    // console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
                 }
             } MO(Moulinette).setFee(K);
         }  else { SUM = 0; } // reset
@@ -304,8 +275,6 @@ contract Quid is ERC20,
         address to, uint amount) internal {
         uint from_vote = feeVotes[from];
         uint balance_from = this.balanceOf(from); 
-        
-        
         amount = _min(amount, this.balanceOf(from));
         require(amount > WAD, "insufficient QD"); 
         int i; // must be int otherwise tx reverts
@@ -318,8 +287,8 @@ contract Quid is ERC20,
         else { i = int(currentBatch()); 
             uint to_vote = feeVotes[to];
             uint balance_to = this.balanceOf(to); 
-            console.log("MedianTransferHelper...TO", 
-                balance_to, to_vote, this.balanceOf(to));
+            // console.log("MedianTransferHelper...TO", 
+            //    balance_to, to_vote, this.balanceOf(to));
             // _calculateMedian(this.balanceOf(to), to_vote,
             //                     balance_to, to_vote);
         } 
@@ -334,8 +303,8 @@ contract Quid is ERC20,
                 amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        console.log("MedianTransferHelper...FROM", 
-            balance_from, from_vote);
+        // console.log("MedianTransferHelper...FROM", 
+        //    balance_from, from_vote);
         // _calculateMedian(balance_from, from_vote, 
         //                 balance_from, from_vote);
     }
@@ -369,10 +338,10 @@ contract Quid is ERC20,
                     Piscine[batch][43].debit += cost;
                     MO(Moulinette).mint(pledge, cost, amount);            
                 }
-        } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
+        } /* address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
        address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb; 
-    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
+    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28; */
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch 
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
     recipient prevent tokens from being forever locked.
@@ -385,6 +354,7 @@ contract Quid is ERC20,
      *   by the recipient, the transfer will be reverted. 
      */
     // QuidMint...foundation.app/@quid 
+    /*
     function onERC721Received(address, 
         address from, // previous owner... 
         uint tokenId, bytes calldata data) 
@@ -418,7 +388,7 @@ contract Quid is ERC20,
             // a repeat...same level, same rebel that 
             // never settled and overcame the get owe"
         } return this.onERC721Received.selector; 
-    }
+    } */
 
     function _batchup
         (uint batch) 
@@ -449,22 +419,22 @@ contract Quid is ERC20,
             uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                         perVault[SDAI], total), WAD);
 
-            uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SFRAX], total), WAD);
+            // uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+            //                             perVault[SFRAX], total), WAD);
 
-            uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SUSDE], total), WAD);
+            // uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+            //                             perVault[SUSDE], total), WAD);
             require(amount <= total 
-                && (dai + frax + usde) <= amount, "cash");
+                && (dai /*+ frax + usde*/) <= amount, "cash");
             if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
                 address(this)); perVault[SDAI] -= dai;
             }
-            if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
-                address(this)); perVault[SFRAX] -= frax;
-            }
-            if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
-                address(this)); perVault[SUSDE] -= usde;
-            }
+            // if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
+            //     address(this)); perVault[SFRAX] -= frax;
+            // }
+            // if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
+            //     address(this)); perVault[SUSDE] -= usde;
+            // }
             // TODO find delta needed to get capitalisation leveled and
             // borrow only 
             // USDC is never given out, always held in surplus for Uni

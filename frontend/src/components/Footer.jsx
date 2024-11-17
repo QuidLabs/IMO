@@ -43,13 +43,13 @@ export const Footer = () => {
         </button>
         <div className="footer-spacer" />
         <a
-          href="https://www.youtube.com/watch?v=uHjjcv1DAIg"
+          href="https://www.youtube.com/watch?v=ci_g7uwjT4U"
           target="_blank"
           rel="noreferrer"
           className="footer-youtube"
         >
           <Icon name="youtube" className="footer-youtubeIcon" />
-          ETHdenver
+          Video
         </a>
       </div>
 
@@ -62,23 +62,14 @@ export const Footer = () => {
           <Icon name="link-hover-2" className="footer-socialIconHover" />
         </a>
         <a
-          href="https://mirror.xyz/sukc.eth"
+          href="https://mirror.xyz/quid.eth"
           className={cx('footer-socialLink', 'footer-socialLink3')}
         >
           <Icon name="medium" className="footer-socialIcon" />
           <Icon name="link-hover-3" className="footer-socialIconHover" />
         </a>
         <a
-          href="https://book.quid.io/"
-          target="_blank"
-          rel="noreferrer"
-          className={cx('footer-socialLink', 'footer-socialLink1')}
-        >
-          <Icon name="book" className="footer-socialIcon" />
-          <Icon name="link-hover-1" className="footer-socialIconHover" />
-        </a>
-        <a
-          href="https://github.com/QuidMint/IBO/blob/main/README.md"
+          href="https://github.com/QuidMint/IMO/blob/main/README.md"
           target="_blank"
           rel="noreferrer"
           className={cx('footer-socialLink', 'footer-socialLink2')}

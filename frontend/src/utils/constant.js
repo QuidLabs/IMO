@@ -1,8 +1,8 @@
 
-export const addressMO = '0x9c60b63B04FBb73dd2d299343DcF16B9711D033e'
-export const addressQD = '0x3EE4D349cA3420b2285a33Cf6A35Bd734CBEeb08';
-export const addressUSDE = '0x47a19E1F815CF8a87b195a34F671b13743E38a81';
-export const addressSUSDE = '0xD02EaCa8E120DB434F1123Ce126D7Bbeb5080f93';
+export const addressMO = '0x2ceF8857fF2E10e8a5B9D20258F11731C6b4F1a8'
+export const addressQD = '0xB383944d6d2598EA1078Dc67E788f03CB2F9c727';
+export const addressUSDE = '0xB58A3A1d90992Fa1e8E3fD8145575479d87173cE';
+export const addressSUSDE = '0xDd942051cf0b55926a0dffaC3104c713fC24002F';
 
 export const MO = [
   {
@@ -192,6 +192,25 @@ export const MO = [
   },
   {
     "type": "function",
+    "name": "getPrice",
+    "inputs": [
+      {
+        "name": "sqrtPriceX96",
+        "type": "uint160",
+        "internalType": "uint160"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "get_info",
     "inputs": [
       {
@@ -327,6 +346,11 @@ export const MO = [
         "name": "amount1",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "price",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -366,6 +390,24 @@ export const MO = [
         "name": "_quid",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "set_price_eth",
+    "inputs": [
+      {
+        "name": "up",
+        "type": "bool",
+        "internalType": "bool"
+      },
+      {
+        "name": "refresh",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "outputs": [],
@@ -446,11 +488,6 @@ export const QUID = [
     "inputs": [
       {
         "name": "_mo",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "_link",
         "type": "address",
         "internalType": "address"
       },
@@ -883,19 +920,6 @@ export const QUID = [
   },
   {
     "type": "function",
-    "name": "getPrice",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "price",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "get_total_deposits",
     "inputs": [
       {
@@ -1050,40 +1074,6 @@ export const QUID = [
   },
   {
     "type": "function",
-    "name": "onERC721Received",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "from",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "tokenId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "data",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "permit",
     "inputs": [
       {
@@ -1143,24 +1133,6 @@ export const QUID = [
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "set_price_eth",
-    "inputs": [
-      {
-        "name": "up",
-        "type": "bool",
-        "internalType": "bool"
-      },
-      {
-        "name": "refresh",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
   },
   {
     "type": "function",

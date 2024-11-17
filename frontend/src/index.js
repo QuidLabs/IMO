@@ -7,7 +7,7 @@ import { AppContextProvider } from "./contexts/AppContext"
 const letsgo = ReactDOM.createRoot(document.getElementById('letsgo'))
 // Read the API key from the environment variables
 const infuraAPIKey = process.env.INFURA_API_KEY;
-const chainID = process.env.CHAIN_ID; // 0xAA36A7
+const chainID = process.env.CHAIN_ID; 
 
 letsgo.render(
   <React.StrictMode>
