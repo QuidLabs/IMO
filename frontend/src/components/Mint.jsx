@@ -110,7 +110,7 @@ const TestPrice = () => {
 export const Mint = () => {
   const DELAY = 60 * 60 * 8
 
-  const { getTotalSupply, setStorage, setSwipe, getWalletBalance, getDepositInfo,
+  const { getTotalSupply, setStorage, setSwipe, getWalletBalance, getDepositInfo, getUserInfo,
     addressQD, addressUSDE, account, connected, chooseButton, swipeStatus, currentPrice, notifications, quid, usde, mo, addressMO } = useAppContext()
 
   const [inputValue, setInputValue] = useState('')
@@ -183,13 +183,19 @@ export const Mint = () => {
   const updateTotalSupply = useCallback(async () => {
     try {
       await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getWalletBalance()])
-        .then((value) => {
+        .then(async (value) => {
+          const carryDebit = await getUserInfo(addressMO).then(userInfo => {return userInfo.actualUsd})
+
           const deposit = value[1].weth_usd_balance
           const workUsdBalance = value[1].work_usd_balance
           const price = value[1].ethPrice
 
+          const insurableValue = deposit + (workUsdBalance * price * 0.9) - carryDebit
+
           setTotalSupplyCap(value[0])
-          setInsurable(deposit + (workUsdBalance * price * 0.9))
+          setInsurable(insurableValue > 0 ? insurableValue : 0)
+
+          console.log(carryDebit, addressMO)
 
           setWalletEthBalance(value[2].eth)
           setWalletUSDeBalances(value[2].usde)
@@ -197,7 +203,7 @@ export const Mint = () => {
     } catch (error) {
       console.error(error)
     }
-  }, [getDepositInfo, getTotalSupply, getWalletBalance, addressMO])
+  }, [getDepositInfo, getTotalSupply, getWalletBalance, getUserInfo, addressMO])
 
   const handleChangeValue = useCallback((e) => {
     const regex = /^\d*(\.\d*)?$|^$/
@@ -310,7 +316,7 @@ export const Mint = () => {
         if (!chooseCurrency && inputValue > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
         if (chooseCurrency && balanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
-        if (chooseCurrency && inputValue*parseEthPrice > insurable) return setNotifications("error", "The amount shouldn't be more than work and weth balance")
+        if (chooseCurrency && insureStatus && inputValue*parseEthPrice > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
         const valueDepo = parseUnits(inputValue, 18).toString()
 

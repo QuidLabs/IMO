@@ -129,7 +129,7 @@ export const AppContextProvider = ({ children }) => {
     }
   }, [account, connected, quid, usde])
 
-  const getUserInfo = useCallback(async () => {
+  const getUserInfo = useCallback(async (address = null) => {
     try {
       if (connected && account && quid) {
         const timestamp = Math.floor(Date.now() / 1000)
@@ -144,7 +144,9 @@ export const AppContextProvider = ({ children }) => {
 
         const price = BigNumber.from(Math.floor(value).toString())
 
-        const info = await mo.methods.get_info(account).call()
+        const requireAddress = address ? address : account
+
+        const info = await mo.methods.get_info(requireAddress).call()
 
         const actualUsd = Number(info[0]) / 1e18
         const actualQD = Number(info[1]) / 1e18
@@ -157,6 +159,7 @@ export const AppContextProvider = ({ children }) => {
         }
 
         return userInfo
+
       }
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
