@@ -23,7 +23,7 @@ interface ICollection is IERC721 {
 } */
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is ERC20 //, TODO L1 only
+contract Quid is ERC20 //, 
     /* IERC721Receiver */ {
     uint public AVG_ROI;
     uint public START;  
@@ -67,10 +67,10 @@ contract Quid is ERC20 //, TODO L1 only
     address public immutable USDC;
     address public immutable DAI; 
     address public immutable SDAI;
-    address public immutable SFRAX;
-    address public immutable FRAX;
-    address public immutable USDE;
-    address public immutable SUSDE;
+    // address public immutable SFRAX;
+    // address public immutable FRAX;
+    // address public immutable USDE;
+    // address public immutable SUSDE;
     address public Moulinette; // windmill
     uint constant WAD = 1e18;
     modifier onlyGenerators { 
@@ -84,22 +84,22 @@ contract Quid is ERC20 //, TODO L1 only
         _; 
     }
     constructor(address _mo, // спутник
-        address _usde, address _susde, 
-        address _frax, address _sfrax,
+        // address _usde, address _susde, 
+        // address _frax, address _sfrax,
         address _sdai, address _dai)
         ERC20("QU!D", "QD", 18) {
         START = block.timestamp; 
         /* START = 1733333333; */
         SDAI = _sdai; DAI = _dai;
-        FRAX = _frax; SFRAX = _sfrax; 
-        USDE = _usde; SUSDE = _susde;
+        // FRAX = _frax; SFRAX = _sfrax; 
+        // USDE = _usde; SUSDE = _susde;
         deployed = START; Moulinette = _mo; 
         USDC = address(MO(Moulinette).token0());
         vaults[USDC] = USDC; vaults[DAI] = SDAI;
-        vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
+        // vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
         ERC20(DAI).approve(_sdai, type(uint256).max);
-        ERC20(FRAX).approve(_sfrax,  type(uint256).max);
-        ERC20(USDE).approve(_susde,  type(uint256).max);
+        // ERC20(FRAX).approve(_sfrax,  type(uint256).max);
+        // ERC20(USDE).approve(_susde,  type(uint256).max);
         // ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     }
     function _min(uint _a, uint _b) internal 
@@ -111,8 +111,8 @@ contract Quid is ERC20 //, TODO L1 only
         internal returns (uint usd) {
             bool isDollar = false;
         if (token == address(SDAI)
-        || token == address(SFRAX) 
-        || token == address(SUSDE)) {
+        /*|| token == address(SFRAX) 
+        || token == address(SUSDE)*/) {
             isDollar = true; usd =_min(amount, 
             ERC4626(token).convertToAssets(
             ERC4626(token).balanceOf(from)));
@@ -122,9 +122,9 @@ contract Quid is ERC20 //, TODO L1 only
             ERC4626(token).transferFrom(msg.sender, 
                             address(this), amount);
 
-        }  else if (token == address(DAI)  ||
+        }  else if (token == address(DAI) || /*
                     token == address(FRAX) || 
-                    token == address(USDE) ||
+                    token == address(USDE) ||*/
                     token == USDC) {
                 isDollar = true; usd = _min(amount, 
                 ERC20(token).balanceOf(from));
@@ -160,11 +160,11 @@ contract Quid is ERC20 //, TODO L1 only
         total += _min(perVault[SDAI], ERC4626(
             SDAI).maxWithdraw(address(this)));
 
-        total += _min(perVault[SFRAX], ERC4626(
-            SFRAX).maxWithdraw(address(this)));
+        // total += _min(perVault[SFRAX], ERC4626(
+        //     SFRAX).maxWithdraw(address(this)));
 
-        total += _min(perVault[SUSDE], ERC4626(
-            SUSDE).maxWithdraw(address(this)));
+        // total += _min(perVault[SUSDE], ERC4626(
+        //     SUSDE).maxWithdraw(address(this)));
 
         return usdc ? total +
         perVault[USDC] : total; 
@@ -419,22 +419,22 @@ contract Quid is ERC20 //, TODO L1 only
             uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                         perVault[SDAI], total), WAD);
 
-            uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SFRAX], total), WAD);
+            // uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+            //                             perVault[SFRAX], total), WAD);
 
-            uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SUSDE], total), WAD);
+            // uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+            //                             perVault[SUSDE], total), WAD);
             require(amount <= total 
-                && (dai + frax + usde) <= amount, "cash");
+                && (dai /*+ frax + usde*/) <= amount, "cash");
             if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
                 address(this)); perVault[SDAI] -= dai;
             }
-            if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
-                address(this)); perVault[SFRAX] -= frax;
-            }
-            if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
-                address(this)); perVault[SUSDE] -= usde;
-            }
+            // if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
+            //     address(this)); perVault[SFRAX] -= frax;
+            // }
+            // if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
+            //     address(this)); perVault[SUSDE] -= usde;
+            // }
             // TODO find delta needed to get capitalisation leveled and
             // borrow only 
             // USDC is never given out, always held in surplus for Uni
