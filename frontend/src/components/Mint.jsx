@@ -59,18 +59,18 @@ const ChoiseBoxes = ({
 }
 
 const TestPrice = () => {
-  const { account, quid } = useAppContext()
+  const { account, mo } = useAppContext()
 
   const [price, setETHPrice] = useState('')
 
   const handlePrice = useCallback(async (status = null) => {
     try {
       if (account) {
-        if (status === null) await quid.methods.getPrice().call()
+        if (status === null) await mo.methods.getPrice().call()
           .then((value) => { setETHPrice(parseFloat(value) / 1e18) })
-        else await quid.methods.set_price_eth(status, false).send({ from: account })
+        else await mo.methods.set_price_eth(status, false).send({ from: account })
           .then(async () => {
-            await quid.methods.getPrice().call()
+            await mo.methods.getPrice().call()
               .then((value) => { setETHPrice(parseFloat(value) / 1e18) })
           })
       }
@@ -250,7 +250,7 @@ export const Mint = () => {
     })
 
     //By default the weth and work balance are equals zero, so cindition for DEBIT/WITHDRAW will not work with this values
-    const ethPrice = await quid.methods.getPrice().call()
+    const ethPrice = await mo.methods.getPrice().call()
     const parseEthPrice = parseFloat(ethPrice) / 1e18
 
     const usdebalance = async () => {

@@ -23,14 +23,14 @@ interface ICollection is IERC721 {
 contract MainnetFork is Test {
     Quid public quid;
     MO public moulinette;
+
     mockToken public DAI; // = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     mockVault public SDAI; // = ERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
     mockToken public FRAX; // = ERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
     mockVault public SFRAX; // = ERC4626(0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32);
     mockToken public USDE; // = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
     mockVault public SUSDE; // = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
-    
-    address public chainlink = 0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419;
+
     ICollection public F8N = ICollection(0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405); 
     ISwapRouter public router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
     INonfungiblePositionManager public nfpm = INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
@@ -70,26 +70,26 @@ contract MainnetFork is Test {
         vm.deal(User01, 1_000_000 ether);
         vm.deal(User02, 1_000_000 ether);
         
-        USDE = new mockToken();
-        SUSDE = new mockVault(USDE);
-        FRAX = new mockToken();
-        SFRAX = new mockVault(FRAX);
         DAI = new mockToken();
         SDAI = new mockVault(DAI);
+        FRAX = new mockToken();
+        SFRAX = new mockVault(FRAX);
+        USDE = new mockToken();
+        SUSDE = new mockVault(USDE);
 
         moulinette = new MO(
             address(weth), address(nfpm), 
             address(pool), address(router)
         );
         quid = new Quid(
-            address(moulinette), chainlink, 
+            address(moulinette), 
             address(USDE), address(SUSDE),
             address(FRAX), address (SFRAX),
             address (SDAI), address (DAI)
         );
 
         moulinette.setQuid(address(quid));
-        quid.set_price_eth(false, true);
+        moulinette.set_price_eth(false, true);
     }
     
     function testEverything() public {
@@ -176,10 +176,10 @@ contract MainnetFork is Test {
         );
         vm.stopPrank();
 
-        vm.startPrank(User02);
-        vm.deal(User02, 1_000_000_000 ether);
+        vm.startPrank(User01);
+        // vm.deal(User02, 1_000_000_000 ether);
         
-        moulinette.deposit{value: jackson_in_ETH}(User02, 0, false);
+        // moulinette.deposit{value: jackson_in_ETH}(User02, 0, false);
         moulinette.withdraw(jackson_in_ETH, false);
 
         vm.stopPrank();
