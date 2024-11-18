@@ -539,7 +539,7 @@ export const Mint = () => {
           {inputValue && inputValue !== "0" && (chooseButton.current === "MINT" || chooseButton.current == null) ? (
             <div className="mint-subRight">
               <strong style={{ color: "#02d802" }}>
-                ${numberWithCommas((+inputValue - usdeValue).toFixed())}
+                ${numberWithCommas((inputValue - usdeValue * inputValue).toFixed())}{" "}
               </strong>
               Future profit
             </div>
