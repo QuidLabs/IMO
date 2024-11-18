@@ -193,7 +193,7 @@ export const AppContextProvider = ({ children }) => {
     } catch (error) {
       console.warn(`Failed to get account info:`, error)
     }
-  }, [account, connected, mo, quid])
+  }, [account, connected, mo])
 
   const getUsde = useCallback(async () => {
     try {
