@@ -1,14 +1,13 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-// import "lib/forge-std/src/console.sol"; // TODO delete
+import "lib/forge-std/src/console.sol"; // TODO delete
 import {IMorpho, Position, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import "./interfaces/IERC721.sol";
-/*
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -20,11 +19,11 @@ interface IERC721Receiver {
 interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
-} */
+} 
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is ERC20 //, 
-    /* IERC721Receiver */ {
+contract Quid is ERC20, 
+    IERC721Receiver {
     uint public AVG_ROI;
     uint public START;  
     // "Walked in the 
@@ -67,10 +66,10 @@ contract Quid is ERC20 //,
     address public immutable USDC;
     address public immutable DAI; 
     address public immutable SDAI;
-    // address public immutable SFRAX;
-    // address public immutable FRAX;
-    // address public immutable USDE;
-    // address public immutable SUSDE;
+    address public immutable SFRAX;
+    address public immutable FRAX;
+    address public immutable USDE;
+    address public immutable SUSDE;
     address public Moulinette; // windmill
     uint constant WAD = 1e18;
     modifier onlyGenerators { 
@@ -84,23 +83,23 @@ contract Quid is ERC20 //,
         _; 
     }
     constructor(address _mo, // спутник
-        // address _usde, address _susde, 
-        // address _frax, address _sfrax,
+        address _usde, address _susde, 
+        address _frax, address _sfrax,
         address _sdai, address _dai)
         ERC20("QU!D", "QD", 18) {
         START = block.timestamp; 
         /* START = 1733333333; */
         SDAI = _sdai; DAI = _dai;
-        // FRAX = _frax; SFRAX = _sfrax; 
-        // USDE = _usde; SUSDE = _susde;
+        FRAX = _frax; SFRAX = _sfrax; 
+        USDE = _usde; SUSDE = _susde;
         deployed = START; Moulinette = _mo; 
         USDC = address(MO(Moulinette).token0());
         vaults[USDC] = USDC; vaults[DAI] = SDAI;
-        // vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
+        vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
         ERC20(DAI).approve(_sdai, type(uint256).max);
-        // ERC20(FRAX).approve(_sfrax,  type(uint256).max);
-        // ERC20(USDE).approve(_susde,  type(uint256).max);
-        // ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
+        ERC20(FRAX).approve(_sfrax,  type(uint256).max);
+        ERC20(USDE).approve(_susde,  type(uint256).max);
+        ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     }
     function _min(uint _a, uint _b) internal 
         pure returns (uint) { return (_a < _b) ?
@@ -111,8 +110,8 @@ contract Quid is ERC20 //,
         internal returns (uint usd) {
             bool isDollar = false;
         if (token == address(SDAI)
-        /*|| token == address(SFRAX) 
-        || token == address(SUSDE)*/) {
+        || token == address(SFRAX) 
+        || token == address(SUSDE)) {
             isDollar = true; usd =_min(amount, 
             ERC4626(token).convertToAssets(
             ERC4626(token).balanceOf(from)));
@@ -122,10 +121,10 @@ contract Quid is ERC20 //,
             ERC4626(token).transferFrom(msg.sender, 
                             address(this), amount);
 
-        }  else if (token == address(DAI) || /*
+        }  else if (token == address(DAI) ||
                     token == address(FRAX) || 
-                    token == address(USDE) ||*/
-                    token == USDC) {
+                    token == address(USDE) ||
+                    token == USDC) { 
                 isDollar = true; usd = _min(amount, 
                 ERC20(token).balanceOf(from));
                 address vault = vaults[token]; 
@@ -160,11 +159,11 @@ contract Quid is ERC20 //,
         total += _min(perVault[SDAI], ERC4626(
             SDAI).maxWithdraw(address(this)));
 
-        // total += _min(perVault[SFRAX], ERC4626(
-        //     SFRAX).maxWithdraw(address(this)));
+        total += _min(perVault[SFRAX], ERC4626(
+            SFRAX).maxWithdraw(address(this)));
 
-        // total += _min(perVault[SUSDE], ERC4626(
-        //     SUSDE).maxWithdraw(address(this)));
+        total += _min(perVault[SUSDE], ERC4626(
+            SUSDE).maxWithdraw(address(this)));
 
         return usdc ? total +
         perVault[USDC] : total; 
@@ -260,12 +259,12 @@ contract Quid is ERC20 //,
                 while (K >= 1 && (
                     (SUM - WEIGHTS[K]) >= mid
                 )) { SUM -= WEIGHTS[K]; K -= 1; 
-                    // console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
+                    console.log("MedianizerOne...", K, SUM, WEIGHTS[K]); 
                 }
             } else { 
                 while (SUM < mid) { 
                     K += 1; SUM += WEIGHTS[K];
-                    // console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
+                    console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]); 
                 }
             } MO(Moulinette).setFee(K);
         }  else { SUM = 0; } // reset
@@ -287,14 +286,14 @@ contract Quid is ERC20 //,
         else { i = int(currentBatch()); 
             uint to_vote = feeVotes[to];
             uint balance_to = this.balanceOf(to); 
-            // console.log("MedianTransferHelper...TO", 
-            //    balance_to, to_vote, this.balanceOf(to));
-            // _calculateMedian(this.balanceOf(to), to_vote,
-            //                     balance_to, to_vote);
+            console.log("MedianTransferHelper...TO", 
+               balance_to, to_vote, this.balanceOf(to));
+            _calculateMedian(this.balanceOf(to), to_vote,
+                                balance_to, to_vote);
         } 
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k];
-            // console.log("TransferHelper...", amt);
+            console.log("TransferHelper...", amt);
             if (amt > 0) { amt = _min(amount, amt);
                 consideration[from][k] -= amt;
                 // `to` may be address(0) but it's 
@@ -303,10 +302,10 @@ contract Quid is ERC20 //,
                 amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        // console.log("MedianTransferHelper...FROM", 
-        //    balance_from, from_vote);
-        // _calculateMedian(balance_from, from_vote, 
-        //                 balance_from, from_vote);
+        console.log("MedianTransferHelper...FROM", 
+           balance_from, from_vote);
+        _calculateMedian(balance_from, from_vote, 
+                        balance_from, from_vote);
     }
 
     function mint(address pledge, uint amount, address token) 
@@ -338,10 +337,10 @@ contract Quid is ERC20 //,
                     Piscine[batch][43].debit += cost;
                     MO(Moulinette).mint(pledge, cost, amount);            
                 }
-        } /* address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
+        } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405; 
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
        address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb; 
-    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28; */
+    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28; 
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch 
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
     recipient prevent tokens from being forever locked.
@@ -354,7 +353,6 @@ contract Quid is ERC20 //,
      *   by the recipient, the transfer will be reverted. 
      */
     // QuidMint...foundation.app/@quid 
-    /*
     function onERC721Received(address, 
         address from, // previous owner... 
         uint tokenId, bytes calldata data) 
@@ -388,7 +386,7 @@ contract Quid is ERC20 //,
             // a repeat...same level, same rebel that 
             // never settled and overcame the get owe"
         } return this.onERC721Received.selector; 
-    } */
+    }
 
     function _batchup
         (uint batch) 
@@ -419,22 +417,22 @@ contract Quid is ERC20 //,
             uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                         perVault[SDAI], total), WAD);
 
-            // uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-            //                             perVault[SFRAX], total), WAD);
+            uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SFRAX], total), WAD);
 
-            // uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-            //                             perVault[SUSDE], total), WAD);
+            uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                        perVault[SUSDE], total), WAD);
             require(amount <= total 
-                && (dai /*+ frax + usde*/) <= amount, "cash");
+                && (dai + frax + usde) <= amount, "cash");
             if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
                 address(this)); perVault[SDAI] -= dai;
             }
-            // if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
-            //     address(this)); perVault[SFRAX] -= frax;
-            // }
-            // if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
-            //     address(this)); perVault[SUSDE] -= usde;
-            // }
+            if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
+                address(this)); perVault[SFRAX] -= frax;
+            }
+            if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
+                address(this)); perVault[SUSDE] -= usde;
+            }
             // TODO find delta needed to get capitalisation leveled and
             // borrow only 
             // USDC is never given out, always held in surplus for Uni

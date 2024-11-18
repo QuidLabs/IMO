@@ -16,6 +16,7 @@ import {ERC4626} from "../lib/solmate/src/tokens/ERC4626.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
+
 interface ICollection is IERC721 {
     function latestTokenId()
     external view returns (uint);
@@ -23,7 +24,6 @@ interface ICollection is IERC721 {
 contract MainnetFork is Test {
     Quid public quid;
     MO public moulinette;
-
     mockToken public DAI; // = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     mockVault public SDAI; // = ERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
     mockToken public FRAX; // = ERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
