@@ -186,11 +186,11 @@ export const Mint = () => {
         .then(async (value) => {
           const carryDebit = await getUserInfo(addressMO).then(userInfo => {return userInfo.actualUsd})
 
-          const deposit = value[1].weth_usd_balance
-          const workUsdBalance = value[1].work_usd_balance
+          const wethUsdBalance = value[1].weth_usd_balance
+          const workEthBalance = value[1].work_eth_balance
           const price = value[1].ethPrice
 
-          const insurableValue = deposit + (workUsdBalance * price * 0.9) - carryDebit
+          const insurableValue = wethUsdBalance + (workEthBalance * price) - carryDebit
 
           setTotalSupplyCap(value[0])
           setInsurable(insurableValue > 0 ? insurableValue : 0)
