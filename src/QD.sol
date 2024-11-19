@@ -108,20 +108,20 @@ contract Quid is ERC20,
     function _minAmount(address from, 
         address token, uint amount) 
         internal returns (uint usd) {
-            bool isDollar = false;
-        if (token == address(SDAI)
-        || token == address(SFRAX) 
-        || token == address(SUSDE)) {
+        bool isDollar = false; // $
+        if (token == address(SDAI) // TODO make sure cost is calculated correctly in mint based on dollar value
+         || token == address(SFRAX) 
+         || token == address(SUSDE)) {
             isDollar = true; usd =_min(amount, 
             ERC4626(token).convertToAssets(
             ERC4626(token).balanceOf(from)));
-            perVault[token] += usd;
+            perVault[token] += usd; // metrics
             
             amount = ERC4626(token).convertToShares(usd);
             ERC4626(token).transferFrom(msg.sender, 
                             address(this), amount);
 
-        }  else if (token == address(DAI) ||
+        }  else if (token == address(DAI)  ||
                     token == address(FRAX) || 
                     token == address(USDE) ||
                     token == USDC) { 
@@ -211,27 +211,30 @@ contract Quid is ERC20,
             total += consideration[account][i];
         }
     }
-    function turn(address from, uint value) public
-        onlyGenerators returns (bool) { MO(Moulinette).transferHelper(
+    
+    // turning a generator is what redeems it
+    function turn(address from, uint value)
+        public onlyGenerators returns (bool) { 
+            MO(Moulinette).transferHelper( 
             from, address(0), value); _transferHelper(
             from, address(0), value); // burn shouldn't 
             // affect carry.debit values of `from` or `to`
     }
     function transfer(address to, uint value) 
         public override(ERC20) returns (bool) {
-        uint transferred = MO(Moulinette).transferHelper(
+        uint sent = MO(Moulinette).transferHelper(
             msg.sender, to, value); 
-            if (transferred > 0) {
-                _transferHelper(msg.sender, to, 
-                    transferred); super.transfer(
-                                to, transferred);
+            if (sent > 0) {
+                _transferHelper(msg.sender, 
+                to, sent); super.transfer(
+                                to, sent);
             }
     }
     function transferFrom(address from, address to, 
         uint value) public override(ERC20) returns (bool) { 
         MO(Moulinette).transferHelper(from, to, value); 
-        _transferHelper(from, to, value); 
-        if (msg.sender != Moulinette) {
+                      _transferHelper(from, to, value); 
+        if (msg.sender != Moulinette) { // used in fold...
             super.transferFrom(from, to, value);
         }
     }
@@ -313,10 +316,10 @@ contract Quid is ERC20,
 
     function mint(address pledge, uint amount, address token) 
         public returns (uint cost, uint shares) { // 7 possible $
-            uint batch = currentBatch(); //
+            uint batch = currentBatch(); // 
             if (token == address(this)) { _mint(pledge, amount); 
                 consideration[pledge][batch] += amount; // redeemable
-                require(msg.sender == Moulinette, "?!"); // authorisation
+                require(msg.sender == Moulinette, "no authorisation"); 
             }   else if (block.timestamp <= START + DAYS && batch < 16) {
                     uint in_days = ((block.timestamp - START) / 1 days);
                     require(amount >= 10 * WAD, "mint more QD");
@@ -360,7 +363,7 @@ contract Quid is ERC20,
         address from, // previous owner... 
         uint tokenId, bytes calldata data) 
         external override returns (bytes4) { 
-        uint batch = currentBatch(); // 1-16
+        uint batch = currentBatch(); // 1 - 16 (2 years)
         require(block.timestamp > START + DAYS, "early");
         require(data.length >= 32, "insufficient bytes");
         bytes32 _seed = abi.decode(data[:32], (bytes32));         
@@ -408,7 +411,7 @@ contract Quid is ERC20,
     }}
 
     function draw(address to, uint amount) 
-        public onlyGenerators returns (uint QD) { 
+        public onlyGenerators returns (uint) { 
             uint total = get_total_deposits(false);
             // total does not include USDC because
             // we never transfer it out, we only 
@@ -425,14 +428,16 @@ contract Quid is ERC20,
         } 
         uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                     perVault[SDAI], total), WAD);
+                                    dai = _min(perVault[SDAI], dai);
 
         uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                     perVault[SFRAX], total), WAD);
+                                    frax = _min(perVault[SFRAX], frax);
 
         uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
                                     perVault[SUSDE], total), WAD);
-        require(amount <= total 
-            && (dai + frax + usde) <= amount, "cash");
+                                    usde = _min(perVault[SUSDE], usde);
+               
         if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
             address(this)); perVault[SDAI] -= dai;
         }
@@ -441,7 +446,8 @@ contract Quid is ERC20,
         }
         if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
             address(this)); perVault[SUSDE] -= usde;
-        }
+        } 
+        return dai + frax + usde; // total drawn in $
     }
 
     /*

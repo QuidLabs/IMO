@@ -1,8 +1,8 @@
 
-export const addressMO = '0x2ceF8857fF2E10e8a5B9D20258F11731C6b4F1a8'
-export const addressQD = '0xB383944d6d2598EA1078Dc67E788f03CB2F9c727';
-export const addressUSDE = '0xB58A3A1d90992Fa1e8E3fD8145575479d87173cE';
-export const addressSUSDE = '0xDd942051cf0b55926a0dffaC3104c713fC24002F';
+export const addressMO = '0xDE86b070C9A1e2E5B95DFAa884808EDB60B4f4c4'
+export const addressQD = '0x66f2B106FA0F56312f6dc0eeeA7321411b667B88';
+export const addressUSDE = '0x941b9952CE6Bceb5F6889b320BA7CdE0F27b44Da';
+export const addressSUSDE = '0xa2D7A73f671e5f227A5CAfc80B02211CD4Bd8352';
 
 export const MO = [
   {
@@ -324,13 +324,7 @@ export const MO = [
         "internalType": "uint256"
       }
     ],
-    "outputs": [
-      {
-        "name": "absorb",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "outputs": [],
     "stateMutability": "nonpayable"
   },
   {
@@ -459,7 +453,13 @@ export const MO = [
         "internalType": "uint256"
       }
     ],
-    "outputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {
@@ -892,7 +892,7 @@ export const QUID = [
     ],
     "outputs": [
       {
-        "name": "QD",
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1071,6 +1071,40 @@ export const QUID = [
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "onERC721Received",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "from",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tokenId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "data",
+        "type": "bytes",
+        "internalType": "bytes"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "bytes4",
+        "internalType": "bytes4"
+      }
+    ],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
