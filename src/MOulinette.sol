@@ -344,18 +344,17 @@ contract MO { // Modus Operandi...
     // "you never count your money while you're
     // sittin' at the table...there'll be time
     function redeem(uint amount) // QD
-        external returns (uint absorb) {
-        uint cap = capitalisation(0, false);
+        external {
         uint share = FullMath.mulDiv(WAD, 
             amount, _min(QUID.matureBalanceOf(
                         msg.sender), amount));
-                        
+
         // coverage includes 30% of all QD minted in QUID.mint
         // as this % supply is not 1:1 backed; also includes
         // any remaining debt on a fully liquidated pledge,
         // and QD minted in fold() as insurance coverage...
         // maximum $ pledge would absorb if redeemed all QD...
-        absorb = FullMath.mulDiv(pledges[address(this)].carry.credit, 
+        uint absorb = FullMath.mulDiv(pledges[address(this)].carry.credit, 
             FullMath.mulDiv(WAD, pledges[msg.sender].carry.credit, SUM), 
             WAD);  // if not 100% of the mature QD is being redeemed...
         if (WAD > share) {
@@ -366,7 +365,9 @@ contract MO { // Modus Operandi...
         console.log("AbsorbInRedeem...", absorb);
         // helper function called by turn
         // handles PLEDGE.CARRY.CREDIT-- 
-        amount = qd_amt_to_dollar_amt(cap, amount);  
+        amount = qd_amt_to_dollar_amt(
+            capitalisation(0, false), amount
+        );  
         console.log("AbsorbAmount...", amount);
         
         if (amount > absorb) {
