@@ -219,9 +219,13 @@ contract Quid is ERC20,
     }
     function transfer(address to, uint value) 
         public override(ERC20) returns (bool) {
-        MO(Moulinette).transferHelper(msg.sender, 
-            to, value); _transferHelper(msg.sender, 
-            to, value); super.transfer(to, value);
+        uint transferred = MO(Moulinette).transferHelper(
+            msg.sender, to, value); 
+            if (transferred > 0) {
+                _transferHelper(msg.sender, to, 
+                    transferred); super.transfer(
+                                to, transferred);
+            }
     }
     function transferFrom(address from, address to, 
         uint value) public override(ERC20) returns (bool) { 
@@ -282,15 +286,14 @@ contract Quid is ERC20,
             i = int(matureBatches()); 
             _burn(from, amount);
             // no _calculateMedian `to`
-        } 
-        else { i = int(currentBatch()); 
+        }   else { i = int(currentBatch()); 
             uint to_vote = feeVotes[to];
             uint balance_to = this.balanceOf(to); 
             console.log("MedianTransferHelper...TO", 
                balance_to, to_vote, this.balanceOf(to));
             _calculateMedian(this.balanceOf(to), to_vote,
                                 balance_to, to_vote);
-        } 
+        }   
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k];
             console.log("TransferHelper...", amt);
@@ -309,8 +312,8 @@ contract Quid is ERC20,
     }
 
     function mint(address pledge, uint amount, address token) 
-        public returns (uint cost, uint shares) { 
-            uint batch = currentBatch();
+        public returns (uint cost, uint shares) { // 7 possible $
+            uint batch = currentBatch(); //
             if (token == address(this)) { _mint(pledge, amount); 
                 consideration[pledge][batch] += amount; // redeemable
                 require(msg.sender == Moulinette, "?!"); // authorisation
@@ -388,8 +391,7 @@ contract Quid is ERC20,
         } return this.onERC721Received.selector; 
     }
 
-    function _batchup
-        (uint batch) 
+    function _batchup (uint batch) 
         internal { Pod memory day = 
         Piscine[batch - 1][43]; 
         require(batch < 17, "!"); 
@@ -408,56 +410,57 @@ contract Quid is ERC20,
     function draw(address to, uint amount) 
         public onlyGenerators returns (uint QD) { 
             uint total = get_total_deposits(false);
+            // total does not include USDC because
+            // we never transfer it out, we only 
+            // use it for the Uniswap LP position,
+            // converting to WETH in MO.withdraw
             if (msg.sender == address(this)) { 
-            amount = _min(amount, 
-                FullMath.mulDiv(total, 
-                    PENNY * 2 / 10, WAD));
+                amount = _min(amount, 
+                    FullMath.mulDiv(total, 
+                        PENNY * 2 / 10, WAD));
         }   require(amount > 0, "no thing");
-        if (MO(Moulinette).capitalisation(0, false) > 100) { 
-            uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SDAI], total), WAD);
+        if (MO(Moulinette).capitalisation(0, false) > 77) { 
+            
+            
+        } 
+        uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                    perVault[SDAI], total), WAD);
 
-            uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SFRAX], total), WAD);
+        uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                    perVault[SFRAX], total), WAD);
 
-            uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
-                                        perVault[SUSDE], total), WAD);
-            require(amount <= total 
-                && (dai + frax + usde) <= amount, "cash");
-            if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
-                address(this)); perVault[SDAI] -= dai;
-            }
-            if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
-                address(this)); perVault[SFRAX] -= frax;
-            }
-            if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
-                address(this)); perVault[SUSDE] -= usde;
-            }
-            // TODO find delta needed to get capitalisation leveled and
-            // borrow only 
-            // USDC is never given out, always held in surplus for Uni
-        }   else if (MO(Moulinette).capitalisation(0, false) < 77) { 
-            // TODO uncomment and test after everything else
-            /* (uint susde, ) = IMorpho(MORPHO).withdraw(
-            IMorpho((MORPHO)).idToMarketParams(ID),
-                amount, 0, address(this), msg.sender); */
-            // Position memory p = morpho.position(ID, address(this)); 
+        uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD, 
+                                    perVault[SUSDE], total), WAD);
+        require(amount <= total 
+            && (dai + frax + usde) <= amount, "cash");
+        if (dai > 0) { ERC4626(SDAI).withdraw(dai, to, 
+            address(this)); perVault[SDAI] -= dai;
+        }
+        if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
+            address(this)); perVault[SFRAX] -= frax;
+        }
+        if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to, 
+            address(this)); perVault[SUSDE] -= usde;
         }
     }
 
     /*
-    function morph() internal {
+    function morph(uint delta) public onlyGenerators { // reserve bailout 
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
             IMorpho(MORPHO), params, address(this)
-        ); // IMorpho(MORPHO).accrueInterest(params);
+        ); 
+        
+        IMorpho(MORPHO).accrueInterest(params);
+        Position memory p = IMorpho(MORPHO).position(ID, address(this)); 
+
         if (borrowed > 0) {
 
         }
           
         IMorpho(MORPHO).withdraw(
             params,
-            amount,
+            amount, 0,
             address(this),
             msg.sender
         );
