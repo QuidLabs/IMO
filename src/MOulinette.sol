@@ -7,8 +7,8 @@ import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
-import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; 
-// import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO
+// import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; 
+import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
@@ -312,7 +312,7 @@ contract MO { // Modus Operandi...
             amount0 += ROUTER.exactInput(
                 ISwapRouter.ExactInputParams(abi.encodePacked(
                     address(token1), POOL_FEE, address(token0)),
-                    address(this), block.timestamp, selling, 0));
+                    address(this), /*block.timestamp,*/ selling, 0));
         } else if (delta < 0) { 
             selling = uint(delta * -1);
             selling = FullMath.mulDiv(
@@ -321,7 +321,7 @@ contract MO { // Modus Operandi...
             amount1 += ROUTER.exactInput(
                 ISwapRouter.ExactInputParams(abi.encodePacked(
                     address(token0), POOL_FEE, address(token1)),
-                    address(this), block.timestamp, selling, 0));
+                    address(this), /*block.timestamp,*/ selling, 0));
         }   return (amount0, amount1); 
     }
 
@@ -332,7 +332,7 @@ contract MO { // Modus Operandi...
         pledges[to].carry.debit += cost; // contingent
         // variable for ROI as well as redemption,
         // carry.credit gets reset in _creditHelper
-        pledges[to].carry.credit += minted; 
+        pledges[to].carry.credit += minted / 3; 
         _creditHelper(to); // beneficiary of QD
     } 
 
@@ -387,7 +387,7 @@ contract MO { // Modus Operandi...
                     require(amount0 > 0 && amount1 > 0, "nothing was withdrawn");
                     amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                         abi.encodePacked(address(token1), POOL_FEE, address(token0)),
-                        address(this), block.timestamp, amount1, 0)); 
+                        address(this), /*block.timestamp,*/ amount1, 0)); 
                     token0.transfer(msg.sender, usdc / 1e12 + amount0);
                 }
             }    pledges[address(this)].carry.credit -= absorb;
@@ -462,7 +462,7 @@ contract MO { // Modus Operandi...
             if (amount0 > 0) {
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
-                    address(this), block.timestamp, amount0, 0)); amount0 = 0;
+                    address(this), /*block.timestamp,*/ amount0, 0)); amount0 = 0;
             }       transfer = transfer > amount1 ? amount1 : transfer;
             WETH9.transfer(msg.sender, transfer); amount1 -= transfer; 
             if (amount1 > 0) { repackNFT(amount0, amount1, price); }

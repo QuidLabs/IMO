@@ -77,12 +77,11 @@ contract MainnetFork is Test {
         USDE = new mockToken();
         SUSDE = new mockVault(USDE);
 
-        moulinette = new MO(
+        moulinette = new MO(//Moulinette 
             address(weth), address(nfpm), 
             address(pool), address(router)
         );
-        quid = new Quid(
-            address(moulinette), 
+        quid = new Quid(address(moulinette), 
             address(USDE), address(SUSDE),
             address(FRAX), address (SFRAX),
             address (SDAI), address (DAI)
