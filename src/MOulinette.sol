@@ -62,13 +62,12 @@ contract MO { // Modus Operandi...
     } /* carry.credit = contribution to weighted...
     ...SUM of (QD / total QD) x (ROI / avg ROI) */
     uint public SUM = 1; uint public AVG_ROI = 1;
-    // formal contracts require a specific method of 
-    // formation to be enforaceable; one example is
-    // negotiable instruments like promissory notes 
-    // an Offer is a promise or commitment to do
-    // or refrain from doing something specific
-    // in the future...our case is bilateral...
-    // promise for a promise, aka quid pro quo...
+    // formal contracts require a pledge method of 
+    // Offer to be enforaceable; one example is
+    // negotiable instruments, promissory notes 
+    // or time based commitment to do / refrain 
+    // from doing a specific future thing...
+    // bilateral...promise for a promise, aka
     struct Offer { Pod weth; Pod carry; Pod work;
     uint last; } // timestamp of last liquidate & 
     // % that's been liquidated (smaller over time)
@@ -81,10 +80,10 @@ contract MO { // Modus Operandi...
     // carry is relevant for redemption purposes.
     // fold() holds depositors accountable for 
     // work, as well as accountability for weth
-    function setQuid(address _quid) external 
-        {  QUID = Quid(_quid); 
-        require(QUID.Moulinette()
-         == address(this), "42");
+    function setQuid(address _quid) 
+        external { QUID = Quid(_quid); 
+            require(QUID.Moulinette()
+             == address(this), "42");
     } 
     modifier onlyQuid {
         require(msg.sender 
@@ -142,7 +141,7 @@ contract MO { // Modus Operandi...
     function capitalisation(uint qd, bool burn) 
         public view returns (uint) { // ^ extra in QD
         (uint160 sqrtPriceX96,,,,,,) = POOL.slot0(); 
-        uint price = getPrice(sqrtPriceX96); 
+         uint price = getPrice(sqrtPriceX96); 
         // earned from deductibles and Uniswap fees
         Offer memory pledge = pledges[address(this)];
         uint collateral = FullMath.mulDiv(price,
@@ -153,28 +152,28 @@ contract MO { // Modus Operandi...
         ); // composition of insurance capital:
         uint assets = collateral + deductibles + 
             // USDC (upscaled for precision)...
-            (pledge.work.debit * 1e12) + 
             QUID.get_total_deposits(true);
         // doesn't account for pledge.weth.credit,
-        // which are liabilities (that are insured)
+        // which are liabilities (that're insured)
         uint total = QUID.totalSupply(); 
         if (qd > 0) { total = (burn) ? 
             total - qd : total + qd;
-        }
-        return FullMath.mulDiv(100, assets, total); 
+        }   return FullMath.mulDiv(
+                100, assets, total); 
     }
 
     // helpers allow treating QD balances
     // uniquely without needing ERC721...
     function transferHelper(address from, 
-        address to, uint amount) onlyQuid 
-        public { if (to == address(this)) { // burn
-            uint credit = pledges[from].work.credit;
-            uint cap = capitalisation(amount, true); 
-            uint burn = _min(qd_amt_to_dollar_amt(cap, amount), credit);
-            require(amount <= dollar_amt_to_qd_amt(cap, burn), "$");
-            pledges[from].work.credit -= burn; // write to storage
-        } else if (to != address(0)) {
+        address to, uint amount) 
+        onlyQuid public returns (uint) { 
+            if (to == address(this)) { 
+                uint credit = pledges[from].work.credit;
+                uint cap = capitalisation(amount, true); 
+                uint burn = _min(qd_amt_to_dollar_amt(cap, amount), credit);
+                require(amount <= dollar_amt_to_qd_amt(cap, burn), "$");
+                pledges[from].work.credit -= burn; return burn; 
+            } else if (to != address(0)) {
             // percentage of carry.debit gets 
             // transferred over in proportion 
             // to amount's % of total balance
@@ -182,6 +181,7 @@ contract MO { // Modus Operandi...
             // transferred for ROI pro rata
             uint ratio = FullMath.mulDiv(WAD, 
                 amount, QUID.balanceOf(from));
+            require(ratio <= WAD, "insufficient balance");
             console.log("TransferHelperEvent...", ratio);
             // proportionally transfer debit...
             uint debit = FullMath.mulDiv(ratio, 
@@ -197,6 +197,7 @@ contract MO { // Modus Operandi...
             // in the discounted mint windows
             _creditHelper(to); 
         }   _creditHelper(from); 
+            return amount;
     }
     function _creditHelper(address who) internal {
         uint credit = pledges[who].carry.credit;
@@ -227,14 +228,13 @@ contract MO { // Modus Operandi...
     }
 
     function getPrice(uint160 sqrtPriceX96) 
-        public view returns (uint) {
-        if (_ETH_PRICE > 0) { // TODO remove testing only
-            return _ETH_PRICE;
-        }
-        return FullMath.mulDiv(
-            uint(sqrtPriceX96) * 1e7, 
-            uint(sqrtPriceX96) * 1e7,
-            2 ** 192) / 10;
+        public view returns (uint) { 
+        if (_ETH_PRICE > 0) { // TODO b4 12/12
+            return _ETH_PRICE; // remove local
+        }   return FullMath.mulDiv( // testing
+            uint(sqrtPriceX96) * 1e7, // only
+            uint(sqrtPriceX96) * 1e7, // 1:1
+            2 ** 192) / 10; // for precision
     }
     function _collect() internal returns 
         (uint amount0, uint amount1) {
@@ -279,8 +279,8 @@ contract MO { // Modus Operandi...
     function _adjustTicks(int24 twap) internal pure returns 
         (int24 adjustedIncrease, int24 adjustedDecrease) {
         // dynamic width of the gap depending on volume TODO
-        int256 upper = int256(WAD + (WAD / 14)); 
-        int256 lower = int256(WAD - (WAD / 14));
+        int256 upper = int256(WAD + (WAD / 28)); 
+        int256 lower = int256(WAD - (WAD / 28));
         int24 increase = int24((int256(twap) * upper) / int256(WAD));
         int24 decrease = int24((int256(twap) * lower) / int256(WAD));
         adjustedIncrease = _adjustToNearestIncrement(increase);
@@ -296,10 +296,14 @@ contract MO { // Modus Operandi...
                 amount1, price, WAD);
         if (in_usd > scaled && // from QUID.mint
             token0.balanceOf(address(this)) > 0) {
-            amount0 = _min((in_usd - amount0) / 1e12, 
+            amount0 = _min((in_usd - scaled) / 1e12, 
                 token0.balanceOf(address(this)));
-        }   int delta = (int(in_usd) - int(scaled)) 
-                         / int(2 * price / 1e18); 
+        }  
+        else if (scaled > in_usd) { scaled = in_usd; 
+            amount0 = in_usd / 1e12; 
+        }   
+        int delta = (int(in_usd) - int(scaled)) 
+                    / int(2 * price / 1e18); 
         uint selling;
         if (delta > 0) { 
             selling = uint(delta);
@@ -329,7 +333,8 @@ contract MO { // Modus Operandi...
         // carry.credit gets reset in _creditHelper
         pledges[to].carry.credit += minted; 
         _creditHelper(to); // beneficiary of QD
-    } // redeem will absorb 1:1 minus credit cover
+    } 
+
     // call in QD's worth (обнал sans liabilities)
     // calculates the coverage absorption for each 
     // insurer by first determining their share %
@@ -340,7 +345,6 @@ contract MO { // Modus Operandi...
     function redeem(uint amount) // QD
         external returns (uint absorb) {
         uint cap = capitalisation(0, false);
-        // if (cap < 100) TODO morpho
         uint share = FullMath.mulDiv(WAD, 
             amount, _min(QUID.matureBalanceOf(
                         msg.sender), amount));
@@ -349,8 +353,7 @@ contract MO { // Modus Operandi...
         // maximum $ pledge would absorb if redeemed all QD
         absorb = FullMath.mulDiv(coverage, FullMath.mulDiv(WAD, 
             pledges[msg.sender].carry.credit, SUM), WAD  
-        );  
-        // if not 100% of the mature QD is
+        );  // if not 100% of the mature QD is
         if (WAD > share) { // being redeemed
             absorb = FullMath.mulDiv(absorb, 
                                 share, WAD);
@@ -365,26 +368,28 @@ contract MO { // Modus Operandi...
         if (amount > absorb) {  
             amount -= absorb; 
             QUID.draw(msg.sender, amount);
+            // TODO cover remaining delta by swapping to USDC
             pledges[address(this)].carry.credit -= absorb;
         }   
         else {
             pledges[address(this)].carry.credit -= amount;         
         }
-    }
+    } 
 
     // Quid says if amount is QD...
     // ETH can only be withdrawn from
     // pledge.work.debit; if ETH was 
     // deposited pledge.weth.debit,
     // call fold() before withdraw():
-    // form of flash loan protection;
-    // I audited the first flash loan
+    // form of flash loan protection
     function withdraw(uint amount, 
         bool quid) external payable {
         uint amount0; uint amount1; 
         (uint160 sqrtPriceX96, 
         int24 tick,,,,,) = POOL.slot0(); 
         LAST_TWAP_TICK = tick; 
+        // TODO check block.timestamp different from
+        // saved value during fold() for msg.sender
         uint price = getPrice(sqrtPriceX96);
         Offer memory pledge = pledges[msg.sender];
         if (quid) { // amount is in units of QD...
@@ -410,8 +415,8 @@ contract MO { // Modus Operandi...
                     price, WAD) + FullMath.mulDiv(price,
                     pledges[address(this)].work.credit / 2, // TODO
                     WAD)), "over-encumbered"); // assume 90% drop max
-        } else { uint withdrawable;
-            if (pledge.work.credit > 0) {
+        } else { uint withdrawable; // of ETH collateral (work.debit)
+            if (pledge.work.credit > 0) { // see if we owe debt on it
                 uint debit = FullMath.mulDiv(price, 
                     pledge.work.debit, WAD
                 ); uint buffered = debit - debit / 5;
@@ -489,9 +494,8 @@ contract MO { // Modus Operandi...
     // when to..." 
     function fold(address beneficiary, // amount is
         uint amount, bool sell) external payable { 
-        FoldState memory state; 
-        (uint160 sqrtPriceX96,,,,,,) = POOL.slot0(); 
-        state.price = getPrice(sqrtPriceX96);
+        FoldState memory state; (uint160 sqrtPriceX96,
+        ,,,,,) = POOL.slot0(); state.price = getPrice(sqrtPriceX96);
         // call in collateral that's insured, or liquidate;
         // if there is an insured event, QD may be minted,
         // or simply clear the debt of a long position...
@@ -557,7 +561,7 @@ contract MO { // Modus Operandi...
                     state.minting -= state.cap; 
                     state.repay -= state.cap; 
                 }   state.cap = capitalisation(state.delta, false); 
-                if (state.minting > state.delta || state.cap > 77) { 
+                if (state.minting > state.delta || state.cap > 77) { // TODO morpho
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
@@ -565,7 +569,7 @@ contract MO { // Modus Operandi...
                     QUID.mint(beneficiary, state.minting, address(QUID));
                     pledges[address(this)].carry.credit += state.delta; 
                 }   else { state.deductible = 0; } // no mint = no charge  
-            }   else if (!state.liquidate) { require(
+            }   else if (!state.liquidate) { require( // TODO test
                 msg.sender == beneficiary, "auth"); 
             }   
             pledges[address(this)].weth.credit -= amount;
@@ -637,15 +641,15 @@ contract MO { // Modus Operandi...
     // this contract is always in range (collecting), since 
     // burn & mint is relatively costly in terms of gas, we 
     // want to do that rarely...so as a rule of thumb, the  
-    // range is roughly 14% total, 7% below and above tick,
-    // this number was inspired by automotive science: how
+    // range is roughly 7% below and above tick, it's how
     // voltage regulators watch the currents and control the 
     // relay (which turns on & off the alternator, if below 
     // or above 14 volts, respectively, re-charging battery)
     function repackNFT(uint amount0, 
         uint amount1, uint price) public { uint128 liquidity; 
         if (pledges[address(this)].last != 0) { // not first time
-            if ((LAST_TWAP_TICK > UPPER_TICK || LAST_TWAP_TICK < LOWER_TICK) 
+            if ((LAST_TWAP_TICK > UPPER_TICK 
+            || LAST_TWAP_TICK < LOWER_TICK) 
             && block.timestamp - pledges[address(this)].last >= 1 hours) {
                 (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
                 (uint collected0, 
@@ -656,8 +660,7 @@ contract MO { // Modus Operandi...
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
                 pledges[address(this)].last = block.timestamp;
             }
-        } 
-        if (liquidity > 0 || ID == 0) { 
+        }   if (liquidity > 0 || ID == 0) { 
             (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
             (amount0, amount1) = _swap(amount0, amount1, price);
             (ID, liquidityUnderManagement,,) = NFPM.mint(
@@ -673,8 +676,7 @@ contract MO { // Modus Operandi...
             (liquidity,,) = NFPM.increaseLiquidity(
                 INonfungiblePositionManager.IncreaseLiquidityParams(
                     ID, amount0, amount1, 0, 0, block.timestamp
-            )); 
-            liquidityUnderManagement += liquidity;
+            ));     liquidityUnderManagement += liquidity;
         }   pledges[address(this)].weth.debit += amount1;
             pledges[address(this)].work.debit += amount0;
     }
