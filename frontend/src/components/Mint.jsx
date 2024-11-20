@@ -186,13 +186,14 @@ export const Mint = () => {
         .then(async (value) => {
           const carryDebit = await getUserInfo(addressMO).then(userInfo => {return userInfo.actualUsd})
 
-          const wethUsdBalance = value[1].weth_usd_balance
-          const workEthBalance = value[1].work_eth_balance
+          const wethEthBalance = value[1].weth_eth_balance
+          const workUSDeBalance = value[1].work_usd_balance
           const price = value[1].ethPrice
 
-          const insurableValue = wethUsdBalance + (workEthBalance * price) - carryDebit
+          const insurableValue = chooseButton.current === "DEPOSIT" ? wethEthBalance * price * 0.9 - carryDebit : workUSDeBalance - carryDebit * 0.8
 
           setTotalSupplyCap(value[0])
+
           setInsurable(insurableValue > 0 ? insurableValue : 0)
 
           console.log("CARRY DEBIT ",carryDebit, addressMO)
@@ -204,7 +205,7 @@ export const Mint = () => {
     } catch (error) {
       console.error(error)
     }
-  }, [getDepositInfo, getTotalSupply, getWalletBalance, getUserInfo, addressMO])
+  }, [getDepositInfo, getTotalSupply, getWalletBalance, getUserInfo, addressMO, chooseButton])
 
   const handleChangeValue = useCallback((e) => {
     const regex = /^\d*(\.\d*)?$|^$/
@@ -217,7 +218,7 @@ export const Mint = () => {
     if (originalValue[0] === ".") originalValue = "0" + originalValue
 
     if (regex.test(originalValue)) {
-      if (chooseButton === "MINT" || !chooseCurrency || chooseButton == null) setInputValue(Number(originalValue).toFixed())
+      if (chooseButton.current === "MINT" || !chooseCurrency || chooseButton == null) setInputValue(Number(originalValue).toFixed())
       else setInputValue(originalValue)
     }
   }, [chooseButton, chooseCurrency])
@@ -440,7 +441,7 @@ export const Mint = () => {
 
     if (notifications[0] && !connected) setTimeout(() => setStorage([]), 500)
 
-  }, [updateTotalSupply, setStorage, account, connected, currentPrice, quid, notifications, isProcessing])
+  }, [updateTotalSupply, setStorage, account, connected, currentPrice, quid, notifications, swipeStatus])
 
   useEffect(() => {
     if (swipeStatus) {
