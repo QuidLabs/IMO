@@ -34,15 +34,18 @@ APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygX
 one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
 maturity, when any holder  
-
 may `redeem` 1 QD for $1.  
-Voting incentivised by a 6  
-x 55k QD lotto, distributed  
+
+This is also the reason that  
+spreading liquidations over  
+time is possible as such...   
+voting is incentivised by a   
+6 x 55k QD lotto, dealt out  
 in `onERC721Received`...  
 
 - electric ignition system (nervous system):  
   `deposit` ΞTH if nervous about its price,  
-  or USDe to maximise your time value of $
+  or stables to maximise their time value of $
 
 - `repackNFT`: fuel management system...  
    most of the functionality is internal (send  
@@ -52,14 +55,14 @@ in `onERC721Received`...
   (TWAP) and air density (tick range)
 
 - `redeem` engine has a cooling system for absorbing  
-  ~~liabilities~~ breaks, ~~clutch~~ CDP hydraulic `withdraw` 
-  - cannot withdraw without steering (`vote`)...  
+  liabilities (breaks), and hydraulic `withdraw` (clutch)
+  - cannot withdraw without steering (`vote`),  
   and suspension is related: determines your  
   ride quality (`fold` suspension/liquidation)
 
-Speaking of car...one more useful  
+Speaking of cars...one more useful  
 analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** *lux*  
 (let there be light); regarding lime,  
 note 🇺🇦 [70/30](https://www.instagram.com/p/DAgKU2dxtUq/) here  corresponds  
-to the initial capitalisation of QD...  
+to the initial [capitalisation]() of QD...  
 Earth's surface is also 71% liquid. 
