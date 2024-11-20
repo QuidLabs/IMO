@@ -196,9 +196,6 @@ export const Mint = () => {
 
           setInsurable(insurableValue > 0 ? insurableValue : 0)
 
-          console.log("CARRY DEBIT ",carryDebit, addressMO)
-          console.log("WORK + WTH: ", insurableValue + carryDebit)
-
           setWalletEthBalance(value[2].eth)
           setWalletUSDeBalances(value[2].usde)
         })
