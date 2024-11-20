@@ -103,14 +103,15 @@ contract MO { // Modus Operandi...
     function setMetrics(uint avg_roi) public
         onlyQuid { AVG_ROI = avg_roi;
     }
-    function dollar_amt_to_qd_amt(uint cap, uint amt)
-        public view returns (uint) { return (cap < 100) ?
-        FullMath.mulDiv(amt, 100 + (100 - cap), 100) : amt;
+    function dollar_amt_to_qd_amt(uint cap, uint amt) 
+        public view returns (uint) { 
+        return FullMath.mulDiv(amt,
+        100 + (100 - cap), 100);
     } 
     // different from eponymous function in ERC20...
-    function qd_amt_to_dollar_amt(uint cap, uint amt)
-        public view returns (uint) { return (cap < 100) ?
-        FullMath.mulDiv(amt, cap, 100) : amt;
+    function qd_amt_to_dollar_amt(uint cap, 
+        uint amt) public view returns (uint) { 
+        return FullMath.mulDiv(amt, cap, 100);
     }
 
     function set_price_eth(bool up,
@@ -142,7 +143,7 @@ contract MO { // Modus Operandi...
     function capitalisation(uint qd, bool burn)
         public view returns (uint, uint) { // ^ in QD
         (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
-         uint price = getPrice(sqrtPriceX96); // in $
+        uint price = getPrice(sqrtPriceX96); // in $
         Offer memory pledge = pledges[address(this)];
         // collateral may be sold or claimed in fold
         uint collateral = FullMath.mulDiv(price,
@@ -160,9 +161,11 @@ contract MO { // Modus Operandi...
         uint total = QUID.totalSupply();
         if (qd > 0) { total = (burn) ?
             total - qd : total + qd;
-        }   return ((total - assets), 
-                FullMath.mulDiv(100, 
-                    assets, total));
+        }
+        if (assets >= total) { return (0, 100); }
+            else { return ((total - assets),
+        FullMath.mulDiv(100, assets, total));
+        }
     }
 
     // helpers allow treating QD balances
@@ -636,7 +639,7 @@ contract MO { // Modus Operandi...
                     // "It's like inch by inch, and step by
                     // step, I'm closin' in on your position
                     // and [eviction] is my mission"
-                    // Euler’s disk 💿 erasure code
+                    // Euler’s disk 💿 erasure code TODO
                     pledge.work.credit -= amount;
                     pledge.last = block.timestamp;
                 } else { // "it don't get no better than this, you catch my [dust]"

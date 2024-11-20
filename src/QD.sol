@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
-import {IMorpho, Position, MarketParams} from "./interfaces/morpho/IMorpho.sol";
+import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
@@ -62,7 +62,7 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
-    mapping (address => bool) public winners;
+    mapping (address => bool) public winners; // TODO prevent dust users
     // ^the mapping prevents lotto duplicates
     address payable public Moulinette; // MO
     address public immutable USDC;
@@ -110,22 +110,22 @@ contract Quid is ERC20,
         address token, uint amount)
         internal returns (uint usd) {
         bool isDollar = false; // $
-        if (token == address(SDAI) // TODO make sure cost is calculated correctly in mint based on dollar value
+        if (token == address(SDAI)
          || token == address(SFRAX) 
          || token == address(SUSDE)) {
-            isDollar = true; usd =_min(amount,
-            ERC4626(token).convertToAssets(
-            ERC4626(token).balanceOf(from)));
-            perVault[token] += usd; // metrics
-            
-            amount = ERC4626(token).convertToShares(usd);
+            isDollar = true; amount = _min(
+                ERC4626(token).balanceOf(from),
+                ERC4626(token).convertToShares(amount)
+            );
+            usd = ERC4626(token).convertToAssets(amount);        
             ERC4626(token).transferFrom(msg.sender,
                             address(this), amount);
-
-        }  else if (token == address(DAI)  ||
-                    token == address(FRAX) ||
-                    token == address(USDE) ||
-                    token == USDC) { 
+                            perVault[token] += usd;
+        }  
+        else if (token == address(DAI)  ||
+                 token == address(FRAX) ||
+                 token == address(USDE) ||
+                 token == USDC) { 
                 isDollar = true; usd = _min(amount,
                 ERC20(token).balanceOf(from));
                 address vault = vaults[token];
@@ -138,7 +138,8 @@ contract Quid is ERC20,
                                 usd, address(this));
                 } 
                 else { ERC20(USDC).transferFrom(
-                        from, Moulinette, usd); }
+                        from, Moulinette, usd); 
+                }
         } require(isDollar && amount > 0, "$");
     }
     function qd_amt_to_dollar_amt(uint qd_amt) public
@@ -168,7 +169,8 @@ contract Quid is ERC20,
 
         return usdc ? total + 
         perVault[USDC] * 1e12 : total;
-    }
+    } // TODO exclude DAI which is borrowed?
+    // TODO decrement USDC which is in UNI?
 
     function vote(uint new_vote) external {
         uint batch = currentBatch(); // 0-16
@@ -235,7 +237,7 @@ contract Quid is ERC20,
         uint value) public override(ERC20) returns (bool) {
         MO(Moulinette).transferHelper(from, to, value);
                       _transferHelper(from, to, value);
-        if (msg.sender != Moulinette) { // used in fold...
+        if (msg.sender != Moulinette) { // used in fold
             super.transferFrom(from, to, value);
         }
     }
@@ -423,12 +425,10 @@ contract Quid is ERC20,
                     FullMath.mulDiv(total, 
                         PENNY * 2 / 10, WAD));
         }   require(amount > 0, "no thing");
-        (, uint cap) = MO(Moulinette).capitalisation(0, false);
-        if (cap > 77) {
-            
-            
-        } 
-        // TODO do not pay out more DAI
+        (uint delta, // how much is neede for 100% backed... 
+         uint cap) = MO(Moulinette).capitalisation(0, false);
+                        if (cap < 100) { this.morph(delta) } 
+        
         uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                     perVault[SDAI], total), WAD);
                                     dai = _min(perVault[SDAI], dai);
@@ -453,18 +453,20 @@ contract Quid is ERC20,
         return dai + frax + usde; // total drawn in $
     }
 
-    /*
+    /*    
     function morph(uint delta) public onlyGenerators { // reserve bailout
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
             IMorpho(MORPHO), params, address(this)
-        ); 
+        ); // TODO auto ? IMorpho(MORPHO).accrueInterest(params);
+
+        uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
+            IMorpho(MORPHO), params, address(this)
+        );
         
-        IMorpho(MORPHO).accrueInterest(params);
-        Position memory p = IMorpho(MORPHO).position(ID, address(this));
 
         if (borrowed > 0) {
-
+            
         }
           
         IMorpho(MORPHO).withdraw(
@@ -473,6 +475,10 @@ contract Quid is ERC20,
             address(this),
             msg.sender
         );
+
+        // TODO calculate amount of sUSDe to send
+        // based on value of sUSDe and $ amount 
+        // needed (cap based on perVault[USDe])
 
         IMorpho(MORPHO).supplyCollateral(params,
             amount, address(this), ""
