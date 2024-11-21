@@ -65,6 +65,7 @@ contract Quid is ERC20,
     mapping (address => bool) public winners; // TODO prevent dust users
     // ^the mapping prevents lotto duplicates
     address payable public Moulinette; // MO
+    // en.wiktionary.org/wiki/moulinette
     address public immutable USDC;
     address public immutable DAI;
     address public immutable SDAI;
@@ -72,17 +73,14 @@ contract Quid is ERC20,
     address public immutable FRAX;
     address public immutable USDE;
     address public immutable SUSDE;
+    uint public COLLATERAL; // ^
     uint constant WAD = 1e18;
     modifier onlyGenerators {
         address sender = msg.sender;
         require(sender == Moulinette ||
                 sender == address(this), "!?");
         _;
-    } // en.wiktionary.org/wiki/MOulinette
-    modifier postLaunch { // of the windmill
-        require(currentBatch() > 0, "after");
-        _;
-    }
+    } 
     constructor(address _mo, // спутник
         address _usde, address _susde,
         address _frax, address _sfrax,
@@ -98,6 +96,7 @@ contract Quid is ERC20,
         vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
         deployed = START; Moulinette = payable(_mo);
         ERC20(DAI).approve(_sdai, type(uint256).max);
+        ERC20(DAI).approve(MORPHO, type(uint256).max);
         ERC20(FRAX).approve(_sfrax,  type(uint256).max);
         ERC20(USDE).approve(_susde,  type(uint256).max);
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
@@ -322,7 +321,7 @@ contract Quid is ERC20,
             uint batch = currentBatch(); //
             if (token == address(this)) { _mint(pledge, amount);
                 consideration[pledge][batch] += amount; // redeemable
-                require(msg.sender == Moulinette, "no authorisation");
+                require(msg.sender == Moulinette, "keine authorisation");
             }   else if (block.timestamp <= START + DAYS && batch < 16) {
                     uint in_days = ((block.timestamp - START) / 1 days);
                     require(amount >= 10 * WAD, "mint more QD");
@@ -425,9 +424,9 @@ contract Quid is ERC20,
                     FullMath.mulDiv(total, 
                         PENNY * 2 / 10, WAD));
         }   require(amount > 0, "no thing");
-        (uint delta, // how much is neede for 100% backed... 
-         uint cap) = MO(Moulinette).capitalisation(0, false);
-                        if (cap < 100) { this.morph(delta) } 
+        
+        (uint delta, ) = MO(Moulinette).capitalisation(0, false);
+        this.morph(delta);
         
         uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                     perVault[SDAI], total), WAD);
@@ -452,48 +451,37 @@ contract Quid is ERC20,
         } 
         return dai + frax + usde; // total drawn in $
     }
-
-    /*    
+  
     function morph(uint delta) public onlyGenerators { // reserve bailout
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
             IMorpho(MORPHO), params, address(this)
-        ); // TODO auto ? IMorpho(MORPHO).accrueInterest(params);
+        ); 
+        if (delta == 0 && borrowed > 0) {
+            ERC4626(SDAI).withdraw(borrowed, 
+                address(this), address(this));
+                perVault[SDAI] -= borrowed;
 
-        uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
-            IMorpho(MORPHO), params, address(this)
-        );
-        
-
-        if (borrowed > 0) {
+            IMorpho(MORPHO).repay(params,
+                borrowed, 0, address(this), "");
             
-        }
-          
-        IMorpho(MORPHO).withdraw(
-            params,
-            amount, 0,
-            address(this),
-            msg.sender
-        );
-
-        // TODO calculate amount of sUSDe to send
-        // based on value of sUSDe and $ amount 
-        // needed (cap based on perVault[USDe])
-
-        IMorpho(MORPHO).supplyCollateral(params,
-            amount, address(this), ""
-        );
-
-        // TODO unstake sDAI into DAI
-        // 
-        IMorpho(MORPHO).repay(params,
-            amount, 0, address(this),
-            ""
-        );
-
-        IMorpho(MORPHO).borrow(params,
-            amount, 0, address(this),
-            address(this)
-        );
-    } */
+            IMorpho(MORPHO).withdrawCollateral(params,
+                COLLATERAL, address(this), address(this)
+            );
+        } else if (delta > 0) {
+            uint collat = delta + delta / 5;
+            if (perVault[SUSDE] > collat) {
+                IMorpho(MORPHO).supplyCollateral(params,
+                    ERC4626(SUSDE).convertToShares(
+                        collat), address(this), ""
+                );
+                (uint dai, ) = IMorpho(MORPHO).borrow(params,
+                    delta, 0, address(this), address(this)
+                );  
+                perVault[SDAI] += dai; 
+                ERC4626(SDAI).deposit(
+                    dai, address(this));
+            }
+        }        
+    } 
 }

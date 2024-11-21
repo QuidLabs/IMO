@@ -580,7 +580,7 @@ contract MO { // Modus Operandi...
                     state.minting -= state.cap;
                     state.repay -= state.cap;
                 }   (, state.cap) = capitalisation(state.delta, false);
-                if (state.minting > state.delta || state.cap > 77) { // TODO morpho
+                if (state.minting > state.delta || state.cap > 69) { 
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
