@@ -381,18 +381,19 @@ contract Quid is ERC20,
                 address(this), QUID, LAMBO); // NFT...
             this.draw(QUID, cut); this.draw(from, cut);
             uint backend = BACKEND; cut = backend / 8;
-            require(voters[batch - 1].length >= 6, "6");
-            for (uint i = 0; count < 6 && i < 16; i++) {
-                uint random = uint(keccak256(
-                    abi.encodePacked(_seed,
-                    block.prevrandao, i))) %
-                    voters[batch - 1].length;
-                    winner = voters[batch - 1][random];
-                if (!winners[winner]) { 
-                    count += 1; winners[winner] == true;
-                    backend -= cut; _mint(winner, cut);
-                    consideration[winner][batch] += cut;
-                }
+            if (voters[batch - 1].length >= 6) {
+                for (uint i = 0; count < 6 && i < 16; i++) {
+                    uint random = uint(keccak256(
+                        abi.encodePacked(_seed,
+                        block.prevrandao, i))) %
+                        voters[batch - 1].length;
+                        winner = voters[batch - 1][random];
+                    if (!winners[winner]) { 
+                        count += 1; winners[winner] == true;
+                        backend -= cut; _mint(winner, cut);
+                        consideration[winner][batch] += cut;
+                    }
+                } 
             } cut = backend; _mint(from, cut); // keep
             consideration[from][batch] += cut; // in QD
             _batchup(batch); // "like a boomerang, I need
