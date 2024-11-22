@@ -4,6 +4,7 @@ pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
+// import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
@@ -62,10 +63,11 @@ contract Quid is ERC20,
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][16] public voters; // by batch
-    mapping (address => bool) public winners; // TODO prevent dust users
+    mapping (address => bool) public winners;
     // ^the mapping prevents lotto duplicates
     address payable public Moulinette; // MO
     // en.wiktionary.org/wiki/moulinette
+    uint constant STACK = 10000 * WAD;
     address public immutable USDC;
     address public immutable DAI;
     address public immutable SDAI;
@@ -91,10 +93,10 @@ contract Quid is ERC20,
         SDAI = _sdai; DAI = _dai;
         FRAX = _frax; SFRAX = _sfrax;
         USDE = _usde; SUSDE = _susde;
-        USDC = address(MO(Moulinette).token0());
         vaults[USDC] = USDC; vaults[DAI] = SDAI;
         vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
         deployed = START; Moulinette = payable(_mo);
+        USDC = address(MO(Moulinette).token0());
         ERC20(DAI).approve(_sdai, type(uint256).max);
         ERC20(DAI).approve(MORPHO, type(uint256).max);
         ERC20(FRAX).approve(_sfrax,  type(uint256).max);
@@ -175,8 +177,11 @@ contract Quid is ERC20,
         uint batch = currentBatch(); // 0-16
         if (batch < 16
         && !hasVoted[msg.sender][batch]) {
-            hasVoted[msg.sender][batch] = true;
-            voters[batch].push(msg.sender);
+            (uint carry,) = MO(Moulinette).get_info(msg.sender);
+            if (carry > STACK) {
+                hasVoted[msg.sender][batch] = true;
+                voters[batch].push(msg.sender);
+            }
         }
         uint old_vote = feeVotes[msg.sender];
         require(new_vote != old_vote &&
