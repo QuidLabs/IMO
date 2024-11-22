@@ -12,6 +12,7 @@ import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
+// import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 
 contract MO { // Modus Operandi...
@@ -345,9 +346,10 @@ contract MO { // Modus Operandi...
     // calculates the coverage absorption for each
     // insurer by first determining their share %
     // and then adjusting based on average ROI...
-    // (insurers w/ higher avg. ROI absorb more)
+    // (insurers with higher ROI absorb more)
     // "you never count your money while you're
     // sittin' at the table...there'll be time
+    
     function redeem(uint amount) // QD
         external {
         uint share = FullMath.mulDiv(WAD,
@@ -358,8 +360,9 @@ contract MO { // Modus Operandi...
         // as this % supply is not 1:1 backed; also includes
         // any remaining debt on a fully liquidated pledge,
         // and QD minted in fold() as insurance coverage...
-        // maximum $ pledge would absorb if redeemed all QD...
+        
         uint absorb = FullMath.mulDiv(pledges[address(this)].carry.credit,
+            // maximum $ pledge would absorb if it redeemed all its QD...
             FullMath.mulDiv(WAD, pledges[msg.sender].carry.credit, SUM),
             WAD);  // if not 100% of the mature QD is being redeemed...
         if (WAD > share) {
@@ -431,7 +434,8 @@ contract MO { // Modus Operandi...
                 amount = dollar_amt_to_qd_amt(cap, amount);
                 QUID.mint(msg.sender, amount, address(QUID));
             }
-        } else { uint withdrawable; // of ETH collateral (work.debit)
+        } else { 
+            uint withdrawable; // amount of ETH collateral (work.debit)
             if (pledge.work.credit > 0) { // see if we owe debt on it
                 uint debit = FullMath.mulDiv(price, pledge.work.debit, WAD);
                 uint buffered = debit - debit / 5;
@@ -580,7 +584,7 @@ contract MO { // Modus Operandi...
                     state.minting -= state.cap;
                     state.repay -= state.cap;
                 }   (, state.cap) = capitalisation(state.delta, false);
-                if (state.minting > state.delta || state.cap > 77) { // TODO morpho
+                if (state.minting > state.delta || state.cap > 69) { 
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
