@@ -4,7 +4,7 @@ pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
 import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
-// import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
@@ -24,26 +24,28 @@ interface ICollection is IERC721 {
 // http://42.fr Piscine...
 import "./MOulinette.sol";
 contract Quid is ERC20,
-    IERC721Receiver {
+    IERC721Receiver,
+    ReentrancyGuard {
     uint public AVG_ROI;
     uint public START;
     // "Walked in the
     // kitchen, found a
-    // [Pod] to [Piscine]" ~ tune chi
-    Pod[44][16] Piscine; // 16 batches
-    uint constant PENNY = 1e16;
+    // [Pod] to [Piscine]" ~ 2 tune chi
+    Pod[44][24] Piscine; // 24 batches
+    uint constant PENNY = 1e16; 
     uint constant LAMBO = 16508;
     // 44th day stores batch's total...
-    uint constant public DAYS = 43 days;
+    uint constant public DAYS = 42 days;
     uint public START_PRICE = 50 * PENNY;
+    // "keep it 8 more than 92 with me..."
     struct Pod { uint credit; uint debit; }
     // "they want their grievances aired on the assumption
     // that all right-thinking persons would be persuaded
     // that problems of the world can be solved," by true
-    // dough, Pierre, not your usual money, version mint
-    uint constant GRIEVANCES = 134420 * WAD; // in USDe
-    uint constant BACKEND = 444477 * WAD; // per batch
-    mapping(address => uint[16]) public consideration;
+    // dough, Pierre, not your usual money...version mint
+    uint constant GRIEVANCES = 113310303333333333333333;
+    uint constant BACKEND = 666699333333333333333333;
+    mapping(address => uint[24]) public consideration;
     // of legally sufficient value, bargained-for in
     // an exchange agreement, for the breach of which
     // Moulinette gives an equitable remedy, and whose
@@ -53,7 +55,7 @@ contract Quid is ERC20,
     uint[90] public WEIGHTS; // sum of weights
     mapping(address => uint) internal perVault;
     mapping(address => address) internal vaults;
-    mapping (address => bool[16]) public hasVoted;
+    mapping (address => bool[24]) public hasVoted;
     // when a token-holder votes for a fee, their
     // QD balance is applied to the total weights
     // for that fee (weights are the balances)...
@@ -62,7 +64,12 @@ contract Quid is ERC20,
     uint public deployed; uint internal K = 17;
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
-    address[][16] public voters; // by batch
+    address[][24] public voters; // by batch
+    // based on British Columbia's legislated
+    // deposit-return system for leverage 
+    // containers, entitled to limit... 
+    // total mature batches to only 24,
+    // 12 in each batch (jury members)...
     mapping (address => bool) public winners;
     // ^the mapping prevents lotto duplicates
     address payable public Moulinette; // MO
@@ -170,12 +177,13 @@ contract Quid is ERC20,
 
         return usdc ? total + 
         perVault[USDC] * 1e12 : total;
-    } // TODO exclude DAI which is borrowed?
-    // TODO decrement USDC which is in UNI?
-
+    } 
+    // TODO decrement USDC which is in UNI? metrics in repack
+    // require(msg.sender.code.length == 0, "re-entrancy");
+    // require(msg.sender == tx.origin, "re-entrancy");
     function vote(uint new_vote) external {
-        uint batch = currentBatch(); // 0-16
-        if (batch < 16
+        uint batch = currentBatch(); // 0-24
+        if (batch < 24
         && !hasVoted[msg.sender][batch]) {
             (uint carry,) = MO(Moulinette).get_info(msg.sender);
             if (carry > STACK) {
@@ -197,19 +205,17 @@ contract Quid is ERC20,
         public view returns (uint batch) {
         batch = (block.timestamp - deployed) / DAYS;
         // for the last 8 batches to be 
-        // redeemable, batch reaches 24
-        require(batch < 25, "42");
+        // redeemable, batch reaches 32,
+        // for 24 mature batches total
+        // require(batch < 33, "3 years");
     }
     function matureBatches()
         public view returns (uint) {
         uint batch = currentBatch();
         if (batch < 8) { return 0; }
-        else if (batch < 25) {
+        else if (batch < 33) {
             return batch - 8;
-        } else { return 16; }
-        // over 16 would result
-        // in index out of bounds
-        // in matureBalanceOf()...
+        } else { return 24; }
     }
     function matureBalanceOf(address account)
         public view returns (uint total) {
@@ -327,7 +333,7 @@ contract Quid is ERC20,
             if (token == address(this)) { _mint(pledge, amount);
                 consideration[pledge][batch] += amount; // redeemable
                 require(msg.sender == Moulinette, "keine authorisation");
-            }   else if (block.timestamp <= START + DAYS && batch < 16) {
+            }   else if (block.timestamp <= START + DAYS && batch < 24) {
                     uint in_days = ((block.timestamp - START) / 1 days);
                     require(amount >= 10 * WAD, "mint more QD");
                     require(Piscine[batch][43].credit + amount <
@@ -370,7 +376,7 @@ contract Quid is ERC20,
         address from, // previous owner...
         uint tokenId, bytes calldata data)
         external override returns (bytes4) {
-        uint batch = currentBatch(); // 1 - 16 (2 years)
+        uint batch = currentBatch(); // 1 - 24 (3 years)
         require(block.timestamp > START + DAYS, "early");
         require(data.length >= 32, "insufficient bytes");
         bytes32 _seed = abi.decode(data[:32], (bytes32));
@@ -380,9 +386,9 @@ contract Quid is ERC20,
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT...
             this.draw(QUID, cut); this.draw(from, cut);
-            uint backend = BACKEND; cut = backend / 8;
-            if (voters[batch - 1].length >= 6) {
-                for (uint i = 0; count < 6 && i < 16; i++) {
+            uint backend = BACKEND; cut = backend / 12;
+            if (voters[batch - 1].length >= 10) {
+                for (uint i = 0; count < 10 && i < 30; i++) {
                     uint random = uint(keccak256(
                         abi.encodePacked(_seed,
                         block.prevrandao, i))) %
@@ -404,8 +410,9 @@ contract Quid is ERC20,
 
     function _batchup (uint batch)
         internal { Pod memory day =
+        require(batch > 1 && batch < 25, "!");
         Piscine[batch - 1][43];
-        require(batch < 17, "!");
+        
         AVG_ROI += FullMath.mulDiv(WAD,
         day.credit - day.debit, day.debit);
         MO(Moulinette).setMetrics(AVG_ROI /
@@ -430,64 +437,61 @@ contract Quid is ERC20,
                     FullMath.mulDiv(total, 
                         PENNY * 2 / 10, WAD));
         }   require(amount > 0, "no thing");
-        
         (uint delta, ) = MO(Moulinette).capitalisation(0, false);
-        this.morph(delta);
-        
+        uint borrowed = this.morph(delta); // can't go below this
+        // amount in DAI, because we need to pay it back to Morpho
         uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                     perVault[SDAI], total), WAD);
-                                    dai = _min(perVault[SDAI], dai);
-
-        uint frax = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
-                                    perVault[SFRAX], total), WAD);
-                                    frax = _min(perVault[SFRAX], frax);
-
+                                    dai = _min(perVault[SDAI] -
+                                                borrowed, dai);    
         uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                     perVault[SUSDE], total), WAD);
-                                    usde = _min(perVault[SUSDE], usde);
-               
-        if (dai > 0) { ERC4626(SDAI).withdraw(dai, to,
-            address(this)); perVault[SDAI] -= dai;
-        }
-        if (frax > 0) { ERC4626(SFRAX).withdraw(frax, to,
-            address(this)); perVault[SFRAX] -= frax;
-        }
-        if (usde > 0) { ERC4626(SUSDE).withdraw(usde, to,
-            address(this)); perVault[SUSDE] -= usde;
-        } 
-        return dai + frax + usde; // total drawn in $
+                                    usde = _min(perVault[SUSDE] - 
+                                                COLLATERAL, usde);
+        uint frax = _min(perVault[SFRAX], amount - (dai + usde));
+        if (dai > 0) { 
+            ERC4626(SDAI).withdraw(dai, 
+                    to, address(this)); 
+                    perVault[SDAI] -= dai;
+        } if (frax > 0) { 
+              ERC4626(SFRAX).withdraw(frax, 
+                        to, address(this)); 
+                        perVault[SFRAX] -= frax;
+        } if (usde > 0) { 
+                ERC4626(SUSDE).withdraw(usde, 
+                        to, address(this)); 
+                        perVault[SUSDE] -= usde;
+        } return dai + frax + usde; // total $
     }
-  
-    function morph(uint delta) public onlyGenerators { // reserve bailout
+
+    function morph(uint delta) public onlyGenerators returns (uint borrowed) { 
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
-        uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
-            IMorpho(MORPHO), params, address(this)
-        ); 
+        borrowed = MorphoBalancesLib.expectedBorrowAssets(IMorpho(MORPHO), 
+            params, address(this)); 
         if (delta == 0 && borrowed > 0) {
             ERC4626(SDAI).withdraw(borrowed, 
                 address(this), address(this));
                 perVault[SDAI] -= borrowed;
-
             IMorpho(MORPHO).repay(params,
                 borrowed, 0, address(this), "");
             
             IMorpho(MORPHO).withdrawCollateral(params,
                 COLLATERAL, address(this), address(this)
             );
-        } else if (delta > 0) {
-            uint collat = delta + delta / 5;
-            if (perVault[SUSDE] > collat) {
-                IMorpho(MORPHO).supplyCollateral(params,
-                    ERC4626(SUSDE).convertToShares(
-                        collat), address(this), ""
-                );
-                (uint dai, ) = IMorpho(MORPHO).borrow(params,
-                    delta, 0, address(this), address(this)
-                );  
-                perVault[SDAI] += dai; 
-                ERC4626(SDAI).deposit(
-                    dai, address(this));
-            }
-        }        
+        } else if (delta > 0) { 
+            uint collat = delta + delta / 5; // safe margin
+            collat = _min(collat, perVault[SUSDE] - COLLATERAL);
+            IMorpho(MORPHO).supplyCollateral(params,
+                ERC4626(SUSDE).convertToShares(
+                    collat), address(this), ""
+            ); 
+            COLLATERAL += collat; delta = collat - collat / 5;
+            (uint dai, ) = IMorpho(MORPHO).borrow(params, delta, 
+                0, address(this), address(this));  
+
+            perVault[SDAI] += dai; 
+            ERC4626(SDAI).deposit(
+                dai, address(this));
+        } return borrowed; 
     } 
 }
