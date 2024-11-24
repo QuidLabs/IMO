@@ -409,10 +409,9 @@ contract Quid is ERC20,
     }
 
     function _batchup (uint batch)
-        internal { Pod memory day =
+        internal { 
         require(batch > 1 && batch < 25, "!");
-        Piscine[batch - 1][43];
-        
+        Pod memory day = Piscine[batch - 1][43];
         AVG_ROI += FullMath.mulDiv(WAD,
         day.credit - day.debit, day.debit);
         MO(Moulinette).setMetrics(AVG_ROI /

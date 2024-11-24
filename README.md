@@ -81,7 +81,7 @@ note 🇺🇦 [70/30](https://x.com/gunsnrosesgirl3/status/1860255482373341296) 
 to the initial [capitalisation]() of QD:  
 Earth's surface is ~70% liquid;    
 
-No astonaughts in the ocean, as  
+No astronaughts in the ocean, as  
 in the opening scene of Titanic,  
 where the screenplay starts with  
 Brock, tether going underwater...  
