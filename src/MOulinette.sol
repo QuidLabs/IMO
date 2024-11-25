@@ -432,8 +432,7 @@ contract MO is ReentrancyGuard {
         LAST_TWAP_TICK = tick; // chinches
         uint price = getPrice(sqrtPriceX96);
         Offer memory pledge = pledges[msg.sender];
-        require(flashLoanProtect[msg.sender] != block.number,
-                "can't fold and withdraw in the same block");
+        require(_canWithdraw(msg.sender), "!");
         if (quid) { // amount is in units of QD
             require(amount >= RACK, "too small");
             if (msg.value > 0) { amount1 = msg.value;
@@ -683,7 +682,7 @@ contract MO is ReentrancyGuard {
     // relay (which turns on & off the alternator, if below
     // or above 14 volts, respectively, re-charging battery)
     function repackNFT(uint amount0,uint amount1, uint price)
-        public nonReentrant { uint128 liquidity;
+        public /*nonReentrant*/ { uint128 liquidity;
         if (pledges[address(this)].last != 0) {
         // not the first time callign repackNFT
             if ((LAST_TWAP_TICK > UPPER_TICK
