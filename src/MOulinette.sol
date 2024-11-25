@@ -432,7 +432,8 @@ contract MO is ReentrancyGuard {
         LAST_TWAP_TICK = tick; // chinches
         uint price = getPrice(sqrtPriceX96);
         Offer memory pledge = pledges[msg.sender];
-        require(_canWithdraw(msg.sender), "!");
+        require(flashLoanProtect[sender] != block.number,
+                "can't fold & withdraw in same block");
         if (quid) { // amount is in units of QD
             require(amount >= RACK, "too small");
             if (msg.value > 0) { amount1 = msg.value;

@@ -376,7 +376,7 @@ contract Quid is ERC20,
         address from, // previous owner...
         uint tokenId, bytes calldata data)
         external override returns (bytes4) {
-        uint batch = currentBatch(); // 1 - 24 (3 years)
+        uint batch = currentBatch(); // 1 - 25 (3 years)
         require(block.timestamp > START + DAYS, "early");
         require(data.length >= 32, "insufficient bytes");
         bytes32 _seed = abi.decode(data[:32], (bytes32));

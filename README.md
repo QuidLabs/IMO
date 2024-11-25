@@ -8,9 +8,16 @@ bro Johnny~~ QuiD (ERC20).
 
 Both contracts have an `ID`:  
 for `MORPHO` in the ERC20;   
-and in our second contract  
-(bound to the ERC20, QD),  
-it's for Uni (USDC<>WETH).  
+and in our second contract,
+a concentrated liquidity   
+optimiser (bound to QD,  
+the ERC20) for Uniswap.  
+
+QD works like a bond to  
+incentivise stablecoins  
+to be staked, allowing  
+to underwrite downside  
+risk for pooled WETH.
 
 Minting 800M over 3yr:  
 8 chances  to `mint` QD  
@@ -33,10 +40,9 @@ well as deductibles do...
 exceed $ solvency capital;  
 levering long while buying     
 protetion (at the same time)  
-hedges against liquidations...  
-they're gradated harmonically.
+hedges against liquidations.
  
-deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
+Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
 APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygXEXJ_d9) relative to  
 one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
@@ -70,9 +76,8 @@ DIRECT, INDIRECT, OR [UNUSUAL](https://github.com/QuidLabs/IMO/blob/main/src/QD.
 DAMAGES ARISING OUT OF LIVE [PERFORMANCE](https://x.com/lex_node/status/1845182121553559770):
 
 - `redeem` engine has a cooling system for absorbing  
-  liabilities (breaks), and hydraulic `withdraw` (clutch)
-  - cannot withdraw without steering (`vote`),  
-  and suspension is related: determines your  
+  liabilities (breaks), and hydraulic `withdraw` (clutch)  
+  - and suspension is related: determines your  
   ride quality (`fold` ~~suspension~~ liquidations)
 
 - electric ignition system (nervous system):  
