@@ -8,7 +8,7 @@ bro Johnny~~ QuiD (ERC20).
 
 Both contracts have an `ID`:  
 for `MORPHO` in the ERC20;   
-and in our second contract,
+and in our second contract,  
 a concentrated liquidity   
 optimiser (bound to QD,  
 the ERC20) for Uniswap.  
@@ -32,18 +32,16 @@ whose preferred form is
 **USDe** (others accepted). 
 
 Over time, retained fees  
-from ΞTH deployed into  
+from WETH deployed into  
 UniV3 adds solvency, as  
 well as deductibles do... 
   
-ΞTH underwritten cannot  
-exceed $ solvency capital;  
-levering long while buying     
-protetion (at the same time)  
-hedges against liquidations.
- 
+Levering long while buying     
+protection (at the same time)  
+hedges against liquidations.  
 Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
 APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygXEXJ_d9) relative to  
+
 one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
 maturity, when any holder  
@@ -90,4 +88,3 @@ DAMAGES ARISING OUT OF LIVE [PERFORMANCE](https://x.com/lex_node/status/18451821
     - controlled by the electrical system,  
   as are its sensors, observing temp.  
   (tick) and air density (ticks' range)
-
