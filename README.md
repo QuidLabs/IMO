@@ -39,8 +39,8 @@ well as deductibles do...
 Levering long while buying     
 protection (at the same time)  
 hedges against liquidations.  
-Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
-APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygXEXJ_d9) relative to  
+Deductible is initially 357bp;   
+APY is distributed relative to  
 
 one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
@@ -60,28 +60,23 @@ fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/gunsnrosesgirl3/status/1860
 
 © 2022-2027 QuidMint Foundation  
 THIS README IS PROVIDED "AS IS"   
+THE CONTENTS OF README ARE  
+SUITABLE FOR [IMPLEMENTATION](https://x.com/lex_node/status/1845182121553559770)  
+WITHOUT INFRINGING ANY 3RD  
+PARTY PATENTS, COPYRIGHTS,  
+OR TRADEMARKS; WARRANTIES,  
+EXPRESS OR IMPLIED, INCLUDING,  
+NOT LIMITED TO, MERCHANTABILITY  
+WARRANTIES OF [FITNESS](https://x.com/QuidMint/status/1840815343364677821) FOR A  
+ PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/mint).  
 
-THE CONTENTS OF README ARE SUITABLE FOR  
-IMPLEMENTATION WITHOUT INFRINGING ANY 3RD  
-PARTY PATENTS, COPYRIGHTS, OR TRADEMARKS;
-
-WARRANTIES, EXPRESS OR IMPLIED, INCLUDING,  
-NOT LIMITED TO, MERCHANTABILITY WARRANTIES  
-OF [FITNESS](https://x.com/QuidMint/status/1840815343364677821) FOR A PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/mint).  
-
-COPYRIGHT HOLDERS WILL NOT BE LIABLE FOR  
-DIRECT, INDIRECT, OR [UNUSUAL](https://github.com/QuidLabs/IMO/blob/main/src/QD.sol#L42)/CONSEQUENTIAL  
-DAMAGES ARISING OUT OF LIVE [PERFORMANCE](https://x.com/lex_node/status/1845182121553559770):
-
-- `redeem` engine has a cooling system for absorbing  
-  liabilities (breaks), and hydraulic `withdraw` (clutch)  
-  - and suspension is related: determines your  
-  ride quality (`fold` ~~suspension~~ liquidations)
-
+- `redeem` engine has a cooling system for  
+  absorbing liabilities (breaks); hydraulic  
+  `withdraw` (clutch); `fold` (~~suspension~~  
+  liquidations) determines your ride quality 
 - electric ignition system (nervous system):  
   `deposit` ΞTH if nervous about its price,  
   or stables to maximise their time value of $
-
 - `repackNFT`: fuel management system...  
    most of the functionality is internal (send  
     wei gas to cylinders, combined with air)
