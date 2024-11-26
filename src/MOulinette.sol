@@ -378,7 +378,7 @@ contract MO is ReentrancyGuard {
         
         uint absorb = FullMath.mulDiv(pledges[address(this)].carry.credit,
         // maximum $ pledge would absorb if it redeemed all its QD...
-        FullMath.mulDiv(WAD, pledges[msg.sender].carry.credit, SUM),
+        FullMath.mulDiv(WAD, pledges[msg.sender].carry.credit, SUM), 
         WAD);  // if not 100% of the mature QD is being redeemed...
         if (WAD > share) {
             absorb = FullMath.mulDiv(absorb,
