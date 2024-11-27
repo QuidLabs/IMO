@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
+
 import { OFTCore} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTCore.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
-import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
+import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-
-import "./interfaces/IERC721.sol";
+ 
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -95,7 +96,7 @@ contract Quid is
     constructor(address _mo, // спутник
         address _usde, address _susde,
         address _frax, address _sfrax,
-        address _sdai, address _dai,
+        address _sdai, address _dai
     ) ERC20("QU!D", "QD", 18)
         OFTCore(18, LZ, QUID) {
         START = block.timestamp;
