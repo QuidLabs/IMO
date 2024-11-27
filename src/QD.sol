@@ -3,7 +3,8 @@
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
 
-import { OFTCore} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTCore.sol";
+// import { OFTCore} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTCore.sol";
+import { OFT } from "@layerzerolabs/oft-evm/contracts/OFT.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
@@ -26,8 +27,7 @@ interface ICollection is IERC721 {
 }
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is 
-    OFTCore, ERC20,
+contract Quid is OFT,
     IERC721Receiver,
     ReentrancyGuard {
     uint public AVG_ROI;
@@ -96,9 +96,8 @@ contract Quid is
     constructor(address _mo, // спутник
         address _usde, address _susde,
         address _frax, address _sfrax,
-        address _sdai, address _dai
-    ) ERC20("QU!D", "QD", 18)
-        OFTCore(18, LZ, QUID) {
+        address _sdai, address _dai) 
+        OFT("QU!D", "QD", LZ, QUID) {
         START = block.timestamp;
         /* START = 1733333333; */
         SDAI = _sdai; DAI = _dai;
@@ -490,68 +489,5 @@ contract Quid is
                         to, address(this)); 
                         perVault[SUSDE] -= usde;
         } return dai + frax + usde; // total $
-    }
-
-    /**
-     * @dev Retrieves the address of the underlying ERC20 implementation.
-     * @return The address of the OFT token.
-     *
-     * @dev In the case of OFT, address(this) and erc20 are the same contract.
-     */
-    function token() public view returns (address) {
-        return address(this);
-    }
-
-    /**
-     * @notice Indicates whether the OFT contract requires approval of the 'token()' to send.
-     * @return requiresApproval Needs approval of the underlying token implementation.
-     *
-     * @dev In the case of OFT where the contract IS the token, approval is NOT required.
-     */
-    function approvalRequired() external pure virtual returns (bool) {
-        return false;
-    }
-
-    /**
-     * @dev Burns tokens from the sender's specified balance.
-     * @param _from The address to debit the tokens from.
-     * @param _amountLD The amount of tokens to send in local decimals.
-     * @param _minAmountLD The minimum amount to send in local decimals.
-     * @param _dstEid The destination chain ID.
-     * @return amountSentLD The amount sent in local decimals.
-     * @return amountReceivedLD The amount received in local decimals on the remote.
-     */
-    function _debit(
-        address _from,
-        uint256 _amountLD,
-        uint256 _minAmountLD,
-        uint32 _dstEid
-    ) internal virtual override returns (uint256 amountSentLD, uint256 amountReceivedLD) {
-        (amountSentLD, amountReceivedLD) = _debitView(_amountLD, _minAmountLD, _dstEid);
-
-        // @dev In NON-default OFT, amountSentLD could be 100, with a 10% fee, the amountReceivedLD amount is 90,
-        // therefore amountSentLD CAN differ from amountReceivedLD.
-
-        // @dev Default OFT burns on src.
-        _burn(_from, amountSentLD);
-    }
-
-    /**
-     * @dev Credits tokens to the specified address.
-     * @param _to The address to credit the tokens to.
-     * @param _amountLD The amount of tokens to credit in local decimals.
-     * @dev _srcEid The source chain ID.
-     * @return amountReceivedLD The amount of tokens ACTUALLY received in local decimals.
-     */
-    function _credit(
-        address _to,
-        uint256 _amountLD,
-        uint32 /*_srcEid*/
-    ) internal virtual override returns (uint256 amountReceivedLD) {
-        if (_to == address(0x0)) _to = address(0xdead); // _mint(...) does not support address(0x0)
-        // @dev Default OFT mints on dst.
-        _mint(_to, _amountLD);
-        // @dev In the case of NON-default OFT, the _amountLD MIGHT not be == amountReceivedLD.
-        return _amountLD;
     }
 }
