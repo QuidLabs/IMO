@@ -9,7 +9,6 @@ import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
-import {AggregatorV3Interface} from "./interfaces/AggregatorV3Interface.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
 // import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
@@ -139,7 +138,7 @@ contract MO is ReentrancyGuard {
         token1.approve(_nfpm, type(uint256).max);
     }
 
-    // present value of the expected cash flows
+    // present value of the expected cash flows...
     function capitalisation(uint qd, bool burn)
         public view returns (uint, uint) { // ^ in QD
         (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
@@ -230,22 +229,6 @@ contract MO is ReentrancyGuard {
         }   pledges[who].carry.credit = credit;
         SUM += credit; // update sum with new share
         console.log("CreditHelper...", credit, who);
-    }
-
-    // TODO use volatility for setFee in addition to medianiser 
-    function getVolatility() public view returns (uint price) { 
-        address chainlink = 0xF3140662cE17fDee0A6675F9a511aDbc4f394003; 
-        (, int answer,, // TODO insert mainnet address instead of Sepolia
-        uint timeStamp,) = AggregatorV3Interface(chainlink).latestRoundData();
-        uint8 answerDigits = AggregatorV3Interface(chainlink).decimals();
-        price = uint(answer);
-        require(timeStamp > 0 
-            && timeStamp <= block.timestamp 
-            && answer >= 0, "volatility");
-        // Aggregator returns an 8-digit precision, 
-        // but we handle the case of future changes
-        if (answerDigits > 18) { price /= 10 ** (answerDigits - 18); }
-        else if (answerDigits < 18) { price *= 10 ** (18 - answerDigits); } 
     }
 
     function getPrice(uint160 sqrtPriceX96)
@@ -392,7 +375,7 @@ contract MO is ReentrancyGuard {
         amount = qd_amt_to_dollar_amt(cap, amount);
         console.log("AbsorbAmount...", amount);
         
-        if (amount > absorb) {
+        require((amount * 70 / 100) >= (amount - absorb), "?!"); // { TODO
             amount -= absorb;
             amount -= QUID.draw(
             msg.sender, amount);
@@ -413,7 +396,7 @@ contract MO is ReentrancyGuard {
                     token0.transfer(msg.sender, usdc / 1e12 + amount0);
                 }
             }    pledges[address(this)].carry.credit -= absorb;
-        } else { pledges[address(this)].carry.credit -= amount; }
+        // } else { pledges[address(this)].carry.credit -= amount; }
         // "I said see you at the top, and they misunderstood me:
         // I hold no resentment in my heart, that's that maturity;
     } // and we don't keep it on us anymore," ain't no securities
@@ -432,8 +415,8 @@ contract MO is ReentrancyGuard {
         LAST_TWAP_TICK = tick; // chinches
         uint price = getPrice(sqrtPriceX96);
         Offer memory pledge = pledges[msg.sender];
-        require(flashLoanProtect[sender] != block.number,
-                "can't fold & withdraw in same block");
+        require(flashLoanProtect[msg.sender] != block.number,
+                    "can't fold & withdraw in same block");
         if (quid) { // amount is in units of QD
             require(amount >= RACK, "too small");
             if (msg.value > 0) { amount1 = msg.value;
@@ -451,16 +434,15 @@ contract MO is ReentrancyGuard {
                 amount = dollar_amt_to_qd_amt(cap, amount);
                 QUID.mint(msg.sender, amount, address(QUID));
             }
-        } else { 
-            uint withdrawable; // amount of ETH collateral (work.debit)
+        } else { uint withdrawable; // of ETH collateral (work.debit)
             if (pledge.work.credit > 0) { // see if we owe debt on it
-                uint debit = FullMath.mulDiv(price, pledge.work.debit, WAD);
+                uint debit = FullMath.mulDiv( // dollar value of ETH
+                    price, pledge.work.debit, WAD);
                 uint buffered = debit - debit / 5;
                 require(buffered >= pledge.work.credit, "CR!");
                 withdrawable = FullMath.mulDiv(WAD,
                     buffered - pledge.work.credit, price);
-            }
-            uint transfer = amount;
+            }   uint transfer = amount;
             if (transfer > withdrawable) {
                 withdrawable = FullMath.mulDiv(
                     WAD, pledge.work.credit, price
@@ -486,7 +468,7 @@ contract MO is ReentrancyGuard {
             
             WETH9.withdraw(transfer); amount1 -= transfer;
             (bool success, ) = msg.sender.call{value: transfer}("");
-            require(success, "raw"); if (amount1 > 0) { repackNFT(
+            require(success, "raw"); if (amount1 > 0) { _repackNFT(
                                          amount0, amount1, price); }
         }   pledges[msg.sender] = pledge;
     }
@@ -518,7 +500,7 @@ contract MO is ReentrancyGuard {
                 FullMath.mulDiv(pledges[address(this)].weth.credit,
                     price * 90 / 100, WAD), "over-encumbered");
         }           pledges[beneficiary] = pledge;
-                    repackNFT(0, amount, price);
+                    _repackNFT(0, amount, price);
     }
     
     // "Entropy" comes from a Greek word for transformation;
@@ -672,7 +654,7 @@ contract MO is ReentrancyGuard {
         }   pledges[beneficiary] = pledge;
     } 
 
-    // fold() doesn't repackNFT (only withdraw, deposit, redeem)
+    // fold() doesn't _repackNFT (only withdraw, deposit, redeem)
     // "to improve is to change, to perfect is to change often,"
     // we want to make sure that all of the WETH deposited to
     // this contract is always in range (collecting), since
@@ -681,11 +663,11 @@ contract MO is ReentrancyGuard {
     // range is roughly 7% below and above tick, it's how
     // voltage regulators watch the currents and control the
     // relay (which turns on & off the alternator, if below
-    // or above 14 volts, respectively, re-charging battery)
-    function repackNFT(uint amount0,uint amount1, uint price)
-        public /*nonReentrant*/ { uint128 liquidity;
+    // or above 12 volts, respectively, re-charging battery)
+    function _repackNFT(uint amount0,uint amount1, 
+        uint price) internal { uint128 liquidity;
         if (pledges[address(this)].last != 0) {
-        // not the first time callign repackNFT
+        // not the first time calling _repackNFT
             if ((LAST_TWAP_TICK > UPPER_TICK
               || LAST_TWAP_TICK < LOWER_TICK)
               && block.timestamp - pledges[address(this)].last >= 1 hours) {
@@ -717,5 +699,9 @@ contract MO is ReentrancyGuard {
                     liquidityUnderManagement += liquidity;
         }   pledges[address(this)].weth.debit += amount1;
             pledges[address(this)].work.debit += amount0;
+    }
+    function repackNFT() external nonReentrant {
+        (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
+        _repackNFT(0, 0, getPrice(sqrtPriceX96));
     }
 }

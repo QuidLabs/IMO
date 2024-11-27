@@ -10,8 +10,7 @@ QD is supported by an `ID`
 for a Morpho lien, as well  
 as an `ID` for [selling puts](https://x.com/futurenomics/status/1766173245949014373)  
 in a concentrated liquidity   
-[optimiser](https://x.com/guil_lambert/status/1772423853316219051) (bound to QD,  
-the ERC20) for Uniswap.  
+[optimiser](https://x.com/guil_lambert/status/1772423853316219051) for Uniswap...  
 
 QD works like a [bond](https://vimeo.com/1033224030) to  
 incentivise stablecoins  
