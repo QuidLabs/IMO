@@ -102,14 +102,14 @@ contract MO is ReentrancyGuard {
     function setMetrics(uint avg_roi) public
         onlyQuid { AVG_ROI = avg_roi;
     }
-    function dollar_amt_to_qd_amt(uint cap, uint amt) 
-        public view returns (uint) { 
-        return FullMath.mulDiv(amt,
-        100 + (100 - cap), 100);
+    function dollar_amt_to_qd_amt(uint cap, 
+        uint amt) public pure returns (uint) { 
+            return FullMath.mulDiv(amt,
+            100 + (100 - cap), 100);
     } 
-    // different from eponymous function in ERC20...
+    // not same as eponymous function in QD
     function qd_amt_to_dollar_amt(uint cap, 
-        uint amt) public view returns (uint) { 
+        uint amt) public pure returns (uint) { 
         return FullMath.mulDiv(amt, cap, 100);
     } 
     

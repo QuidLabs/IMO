@@ -31,4 +31,7 @@ forge-std = { git = "https://github.com/foundry-rs/forge-std" }
 
 remappings = [
     '@openzeppelin/=lib/openzeppelin-contracts/',
+    '@layerzerolabs/lz-evm-oapp-v2/=lib/LayerZero-v2/oapp/',
+    '@layerzerolabs/lz-evm-protocol-v2/=lib/LayerZero-v2/protocol/',
+    '@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/messagelib/'
 ]

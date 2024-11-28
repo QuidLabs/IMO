@@ -452,20 +452,22 @@ contract Quid is
             IMorpho(MORPHO).withdrawCollateral(params,
                 COLLATERAL, address(this), address(this)
             );
-        } else if (delta > 0 &&  perVault[SUSDE] > delta) { 
-            uint collat = delta + delta / 5; // safe margin
+        } else if (delta > 0 && perVault[SUSDE] > delta) { 
+            uint collat = delta + delta / 5; // safety margin
             collat = _min(collat, perVault[SUSDE] - COLLATERAL);
-            IMorpho(MORPHO).supplyCollateral(params,
-                ERC4626(SUSDE).convertToShares(
-                    collat), address(this), ""
-            ); 
-            COLLATERAL += collat; delta = collat - collat / 5;
-            (dai, ) = IMorpho(MORPHO).borrow(params, delta, 
-                0, address(this), address(this));  
+            if (collat > 0) {
+                IMorpho(MORPHO).supplyCollateral(params,
+                    ERC4626(SUSDE).convertToShares(
+                        collat), address(this), ""
+                ); 
+                COLLATERAL += collat; delta = collat - collat / 5;
+                (dai, ) = IMorpho(MORPHO).borrow(params, delta, 
+                    0, address(this), address(this));  
 
-            perVault[SDAI] += dai; 
-            ERC4626(SDAI).deposit(
-            dai, address(this));
+                perVault[SDAI] += dai; 
+                ERC4626(SDAI).deposit(
+                dai, address(this));
+            }
         }   dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                    perVault[SDAI], total), WAD);
                                    dai = _min(perVault[SDAI] - 
