@@ -12,7 +12,7 @@ as an `ID` for [selling puts](https://x.com/futurenomics/status/1766173245949014
 in a concentrated liquidity   
 [optimiser](https://x.com/guil_lambert/status/1772423853316219051) for Uniswap...  
 
-QD works like a [bond](https://vimeo.com/1033224030) to  
+QD works like a [bond](https://www.investopedia.com/terms/z/zero-couponbond.asp) to  
 incentivise stablecoins  
 to be staked, allowing  
 to underwrite downside  

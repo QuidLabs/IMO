@@ -2,17 +2,15 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete
-
-// import { OFTCore} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTCore.sol";
-import { OFT } from "@layerzerolabs/oft-evm/contracts/OFT.sol";
+// import {OFTCore} from "./interfaces/LZ/oapp/contracts/oft/OFTCore.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
- 
+
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -27,7 +25,8 @@ interface ICollection is IERC721 {
 }
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is OFT,
+contract Quid is 
+    ERC20, /* OFTCore,*/
     IERC721Receiver,
     ReentrancyGuard {
     uint public AVG_ROI;
@@ -97,7 +96,8 @@ contract Quid is OFT,
         address _usde, address _susde,
         address _frax, address _sfrax,
         address _sdai, address _dai) 
-        OFT("QU!D", "QD", LZ, QUID) {
+        ERC20("QU!D", "QD", 18) {
+        // OFTCore(18, LZ, QUID) { TODO
         START = block.timestamp;
         /* START = 1733333333; */
         SDAI = _sdai; DAI = _dai;
@@ -191,7 +191,7 @@ contract Quid is OFT,
         if (carry > STACK) { hasVoted[msg.sender][batch] = true;
                 voters[batch].push(msg.sender); }
         }     uint old_vote = feeVotes[msg.sender];
-        old_vote = old_vote == 0 ? 17 : old_votee;
+        old_vote = old_vote == 0 ? 17 : old_vote;
         require(new_vote != old_vote &&
                 new_vote <= 89, "bad vote");
         // +11 max vote = 9.0% deductible...
@@ -327,9 +327,9 @@ contract Quid is OFT,
                         balance_from, from_vote);
     }
 
-    function mint(address pledge, uint amount, address token)
-        public returns (uint cost, uint shares) { // 7 possible $
-            uint batch = currentBatch(); //
+    function mint(address pledge, // tied to Offer struct in MO
+        uint amount, address token) public nonReentrant returns 
+            (uint cost, uint shares) { uint batch = currentBatch(); 
             if (token == address(this)) { _mint(pledge, amount);
                 consideration[pledge][batch] += amount; // redeemable
                 require(msg.sender == Moulinette, "keine authorisation");
@@ -356,9 +356,9 @@ contract Quid is OFT,
                     Piscine[batch][43].debit += cost;
                     MO(Moulinette).mint(pledge, cost, amount);
                 }
-        } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
+        } address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675; 
+         address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
-        address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
        address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch
@@ -379,7 +379,6 @@ contract Quid is OFT,
         external override returns (bytes4) {
         uint batch = currentBatch(); // 1 - 25 (3 years)
         require(block.timestamp > START + DAYS, "early");
-        bytes32 _seed = abi.decode(data[:32], (bytes32));
         if (tokenId == LAMBO && ICollection(F8N).ownerOf(
             LAMBO) == address(this)) { address winner;
             uint cut = GRIEVANCES / 2; uint count = 0;
@@ -387,8 +386,8 @@ contract Quid is OFT,
                 address(this), QUID, LAMBO); // NFT...
             this.morph(QUID, cut); this.morph(from, cut);
             uint backend = BACKEND; cut = backend / 12;
-            if (voters[batch - 1].length >= 10
-                && data.length >= 32) { // lotto
+            if (voters[batch - 1].length >= 10 && data.length >= 32) { 
+                bytes32 _seed = abi.decode(data[:32], (bytes32));
                 for (uint i = 0; count < 10 && i < 30; i++) {
                     uint random = uint(keccak256(
                         abi.encodePacked(_seed,
@@ -442,6 +441,7 @@ contract Quid is OFT,
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
                         IMorpho(MORPHO), params, address(this)); 
         
+        uint dai; uint usde; uint frax;
         if (delta == 0 && borrowed > 0) {
             ERC4626(SDAI).withdraw(borrowed, 
                 address(this), address(this));
@@ -460,22 +460,22 @@ contract Quid is OFT,
                     collat), address(this), ""
             ); 
             COLLATERAL += collat; delta = collat - collat / 5;
-            (uint dai, ) = IMorpho(MORPHO).borrow(params, delta, 
+            (dai, ) = IMorpho(MORPHO).borrow(params, delta, 
                 0, address(this), address(this));  
 
             perVault[SDAI] += dai; 
             ERC4626(SDAI).deposit(
-                dai, address(this));
-        }
-        uint dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
-                                    perVault[SDAI], total), WAD);
-                                    dai = _min(perVault[SDAI] -
-                                                borrowed, dai);    
-        uint usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
-                                    perVault[SUSDE], total), WAD);
-                                    usde = _min(perVault[SUSDE] - 
-                                                COLLATERAL, usde);
-        uint frax = _min(perVault[SFRAX], amount - (dai + usde));
+            dai, address(this));
+        }   dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
+                                   perVault[SDAI], total), WAD);
+                                   dai = _min(perVault[SDAI] - 
+                                              borrowed, dai);    
+        
+        usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
+                                perVault[SUSDE], total), WAD);
+                                usde = _min(perVault[SUSDE] - 
+                                            COLLATERAL, usde);
+        frax = _min(perVault[SFRAX], amount - (dai + usde));
         if (dai > 0) { 
             ERC4626(SDAI).withdraw(dai, 
                     to, address(this)); 
@@ -488,6 +488,6 @@ contract Quid is OFT,
                 ERC4626(SUSDE).withdraw(usde, 
                         to, address(this)); 
                         perVault[SUSDE] -= usde;
-        } return dai + frax + usde; // total $
+        } return (dai + frax + usde); // total $
     }
 }

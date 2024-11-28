@@ -375,27 +375,25 @@ contract MO is ReentrancyGuard {
         amount = qd_amt_to_dollar_amt(cap, amount);
         console.log("AbsorbAmount...", amount);
         
-        require((amount * 70 / 100) >= (amount - absorb), "?!"); // { TODO
-            amount -= absorb;
-            amount -= QUID.draw(
-            msg.sender, amount);
-            if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
-                if (usdc > amount) { token0.transfer(msg.sender, amount); }
-                else { (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
-                    LAST_TWAP_TICK = tick; amount -= usdc;
-                    (uint amount0, uint amount1) = _withdrawAndCollect(
-                        LiquidityAmounts.getLiquidityForAmounts(sqrtPriceX96,
-                            TickMath.getSqrtPriceAtTick(LOWER_TICK),
-                            TickMath.getSqrtPriceAtTick(UPPER_TICK),
-                            amount / (2 * 1e12), FullMath.mulDiv(WAD,
-                            amount / 2, getPrice(sqrtPriceX96))));
-                    require(amount0 > 0 && amount1 > 0, "nothing was withdrawn");
-                    amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
-                        abi.encodePacked(address(token1), POOL_FEE, address(token0)),
-                        address(this), block.timestamp, amount1, 0));
-                    token0.transfer(msg.sender, usdc / 1e12 + amount0);
-                }
-            }    pledges[address(this)].carry.credit -= absorb;
+        amount -= _min(absorb, amount / 3);
+        amount -= QUID.morph(msg.sender, amount);
+        if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
+            if (usdc > amount) { token0.transfer(msg.sender, amount); }
+            else { (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
+                LAST_TWAP_TICK = tick; amount -= usdc;
+                (uint amount0, uint amount1) = _withdrawAndCollect(
+                    LiquidityAmounts.getLiquidityForAmounts(sqrtPriceX96,
+                        TickMath.getSqrtPriceAtTick(LOWER_TICK),
+                        TickMath.getSqrtPriceAtTick(UPPER_TICK),
+                        amount / (2 * 1e12), FullMath.mulDiv(WAD,
+                        amount / 2, getPrice(sqrtPriceX96))));
+                require(amount0 > 0 && amount1 > 0, "nothing was withdrawn");
+                amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
+                    abi.encodePacked(address(token1), POOL_FEE, address(token0)),
+                    address(this), block.timestamp, amount1, 0));
+                token0.transfer(msg.sender, usdc / 1e12 + amount0);
+            }
+        }    pledges[address(this)].carry.credit -= absorb;
         // } else { pledges[address(this)].carry.credit -= amount; }
         // "I said see you at the top, and they misunderstood me:
         // I hold no resentment in my heart, that's that maturity;
@@ -414,9 +412,9 @@ contract MO is ReentrancyGuard {
         int24 tick,,,,,) = POOL.slot0();
         LAST_TWAP_TICK = tick; // chinches
         uint price = getPrice(sqrtPriceX96);
-        Offer memory pledge = pledges[msg.sender];
-        require(flashLoanProtect[msg.sender] != block.number,
-                    "can't fold & withdraw in same block");
+        Offer memory pledge = pledges[msg.sender]; // TODO uncomment
+        // require(flashLoanProtect[msg.sender] != block.number,
+        //             "can't fold & withdraw in same block");
         if (quid) { // amount is in units of QD
             require(amount >= RACK, "too small");
             if (msg.value > 0) { amount1 = msg.value;
