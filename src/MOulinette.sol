@@ -37,6 +37,7 @@ contract MO is ReentrancyGuard {
     IUniswapV3Pool POOL; ISwapRouter ROUTER;
     uint128 liquidityUnderManagement; // UniV3
     mapping(address => uint) flashLoanProtect;
+    // TODO storage perecentage delta in vol
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
@@ -60,7 +61,7 @@ contract MO is ReentrancyGuard {
      // with a fixed charge (deductible) payable
      // upfront (upon deposit), 1/2 on withdrawal
      // deducted as a % FEE from the $ value which
-     // is either being deposited or moved in fold
+     // is either being deposited, or moved in fold
     struct Pod { // for pledge.weth this amounts to
         uint credit; // sum[amt x price at deposit]
         uint debit; //  quantity of tokens pledged
@@ -162,7 +163,7 @@ contract MO is ReentrancyGuard {
             total - qd : total + qd;
         }   if (assets >= total) { return (0, 100); }
             else { return ((total - assets),
-        FullMath.mulDiv(100, assets, total));
+            FullMath.mulDiv(100, assets, total));
         }
     }
 
@@ -185,7 +186,7 @@ contract MO is ReentrancyGuard {
             // transferred for ROI pro rata
             uint ratio = FullMath.mulDiv(WAD,
                 amount, QUID.balanceOf(from));
-            require(ratio <= WAD, "insufficient balance");
+            require(ratio <= WAD, "not enough");
             console.log("TransferHelperEvent...", ratio);
             // proportionally transfer debit...
             uint debit = FullMath.mulDiv(ratio,
@@ -345,20 +346,20 @@ contract MO is ReentrancyGuard {
     // (insurers with higher ROI absorb more)
     // "you never count your money while you're
     // sittin' at the table...there'll be time
-    function redeem(uint amount) // amount QD
-        external nonReentrant { 
+    function redeem(uint amount) // into $
+        external nonReentrant { // amount QD
         amount = _min(QUID.matureBalanceOf(
                         msg.sender), amount);
         require(amount > 0, "let it steep");
         // we're talking tea-bills here...right?
         uint share = FullMath.mulDiv(WAD, amount, 
                 QUID.matureBalanceOf(msg.sender));
-                        
+            
         // coverage includes 30% of all QD minted in QUID.mint
         // as this % supply is not 1:1 backed; also includes
         // any remaining debt on a fully liquidated pledge,
         // and QD minted in fold() as insurance coverage...
-        
+        uint batch = QUID.currentBatch();
         uint absorb = FullMath.mulDiv(pledges[address(this)].carry.credit,
         // maximum $ pledge would absorb if it redeemed all its QD...
         FullMath.mulDiv(WAD, pledges[msg.sender].carry.credit, SUM), 
@@ -612,24 +613,27 @@ contract MO is ReentrancyGuard {
             state.collat = FullMath.mulDiv(pledge.work.debit, state.price, WAD);
             if (state.collat > pledge.work.credit) { state.liquidate = false; }
         }   // "things have gotten closer to the sun, and I've done things
-            // in small doses, so don't think that I'm pushing you away"
-            // "when iron spit, cats fold, infact they
-        if (state.liquidate && // get their life froze"
-            (block.timestamp - pledge.last > 1 hours)) {
-            (, state.cap) = capitalisation(state.repay, true);
-            amount = _min(dollar_amt_to_qd_amt(state.cap,
+            // in small doses, so don't think that I'm pushing you away;
+            // iron spits, cats fold, infact they get their life froze"
+        if (state.liquidate) { // "⚡️ strikes and the 🏀 court lights
+            (, state.cap) = capitalisation(state.repay, true); // get
+            amount = _min(dollar_amt_to_qd_amt(state.cap, // dim...
                 state.repay), QUID.balanceOf(beneficiary));  
             QUID.transferFrom(beneficiary, address(this), amount);
             amount = qd_amt_to_dollar_amt(state.cap, amount);
             pledge.work.credit -= amount; // -- $ value of QD
-            // "lightnin' ⚡️ strikes and the 🏀 court lights...
-            if (pledge.work.credit > state.collat) { // get dim"
-                if (pledge.work.credit > RACK) { // assumes that
-                // liquidation bot doesn't skip a chance to win
-                    // amount = _min(RACK, );
-                    amount = pledge.work.debit / 727;
-                    pledge.work.debit -= amount;
+            state.delta = block.timestamp - pledge.last; 
+            if (pledge.work.credit > state.collat) { 
+                if (pledge.work.credit > RACK / 10
+                    && state.delta >= 10 minutes) { 
+                    // liquidation bot doesn't
+                    // skip a chance to fold()
+                    state.delta /= 10 minutes; 
+                    amount = _min(pledge.work.debit,
+                        FullMath.mulDiv(state.delta, 
+                            pledge.work.debit, 4362));
                     pledges[address(this)].weth.debit += amount;
+                    pledge.work.debit -= amount;
                     amount = _min(pledge.work.credit,
                         FullMath.mulDiv(state.price,
                                         amount, WAD));
@@ -640,7 +644,6 @@ contract MO is ReentrancyGuard {
                     // Euler’s disk 💿 erasure code 
                     pledge.work.credit -= amount;
                     pledge.last = block.timestamp;
-                    // pledge.last.debit = ;
                 } else { // "it don't get no better than this, you catch my [dust]"
                     // otherwise we run into a vacuum leak (infinite contraction)
                     pledges[address(this)].weth.debit += pledge.work.debit;
@@ -659,7 +662,7 @@ contract MO is ReentrancyGuard {
     // burn & mint is relatively costly in terms of gas, we
     // want to do that rarely...so as a rule of thumb, the
     // range is roughly 7% below and above tick, it's how
-    // voltage regulators watch the currents and control the
+    // voltage regulators watch the currents and control a
     // relay (which turns on & off the alternator, if below
     // or above 12 volts, respectively, re-charging battery)
     function _repackNFT(uint amount0,uint amount1, 

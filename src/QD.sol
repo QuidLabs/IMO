@@ -1,16 +1,15 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-import "lib/forge-std/src/console.sol"; // TODO delete logging, npm install within evm/*
+import "lib/forge-std/src/console.sol"; // TODO delete logging
 // import {OFTCore} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTCore.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
-import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-
+import {IERC721} from "./interfaces/IERC721.sol";
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -40,21 +39,7 @@ contract Quid is
     // 44th day stores batch's total...
     uint constant public DAYS = 42 days;
     uint public START_PRICE = 50 * PENNY;
-    // "keep it 8 more than 92 with me..."
     struct Pod { uint credit; uint debit; }
-    // "they want their grievances aired on the assumption
-    // that all right-thinking persons would be persuaded
-    // that problems of the world can be solved," by true
-    // dough, Pierre, not your usual money...version mint
-    uint constant GRIEVANCES = 113310303333333333333333;
-    uint constant BACKEND = 666699333333333333333333;
-    mapping(address => uint[24]) public consideration;
-    // of legally sufficient value, bargained-for in
-    // an exchange agreement, for the breach of which
-    // Moulinette gives an equitable remedy, and whose
-    // performance is recognised as reasonable duty or
-    // tender (an unconditional offer to perform)...
-    uint constant public MAX_PER_DAY = 777_777 * WAD;
     uint[90] public WEIGHTS; // sum of weights
     mapping(address => uint) internal perVault;
     mapping(address => address) internal vaults;
@@ -68,11 +53,6 @@ contract Quid is
     uint public SUM; // sum(weights[0...k]):
     mapping (address => uint) public feeVotes;
     address[][24] public voters; // by batch
-    // based on British Columbia's legislated
-    // deposit-return system for leverage 
-    // containers, entitled to limit... 
-    // total mature batches to only 24,
-    // 12 in each batch (jury members)...
     mapping (address => bool) public winners;
     // ^the mapping prevents lotto duplicates
     address payable public Moulinette; // MO
@@ -112,7 +92,12 @@ contract Quid is
         ERC20(FRAX).approve(_sfrax,  type(uint256).max);
         ERC20(USDE).approve(_susde,  type(uint256).max);
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
-    }
+    } uint constant GRIEVANCES = 113310303333333333333333;
+    uint constant BACKEND = 666699333333333333333333; // QD
+    mapping(address => uint[24]) public consideration;
+    // https://www.law.cornell.edu/wex/consideration
+    uint constant public MAX_PER_DAY = 777_777 * WAD;
+    
     function _min(uint _a, uint _b) internal
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
@@ -159,7 +144,7 @@ contract Quid is
             (block.timestamp - START) / 1 days
         );  amount = (in_days * PENNY
             + START_PRICE) * qd_amt / WAD;
-    }
+    } // the curtent ^^^^ to mint() 
     function get_total_supply_cap()
         public view returns (uint) {
         uint batch = currentBatch();
@@ -227,7 +212,7 @@ contract Quid is
     
     // turning a generator is what redeems it
     function turn(address from, uint value)
-        public onlyGenerators returns (bool) {
+        public onlyGenerators returns {
             MO(Moulinette).transferHelper(
             from, address(0), value); _transferHelper(
             from, address(0), value); // burn shouldn't
@@ -236,20 +221,19 @@ contract Quid is
     function transfer(address to, uint value)
         public override(ERC20) returns (bool) {
         uint sent = MO(Moulinette).transferHelper(
-            msg.sender, to, value); 
-            if (sent > 0) {
-                _transferHelper(msg.sender,
-                to, sent); super.transfer(
-                                to, sent);
-            }
+                        msg.sender, to, value); 
+        if (sent > 0) {
+            _transferHelper(msg.sender, to, sent); 
+            return super.transfer(to, sent);
+        }
     }
     function transferFrom(address from, address to,
         uint value) public override(ERC20) returns (bool) {
         MO(Moulinette).transferHelper(from, to, value);
                       _transferHelper(from, to, value);
         if (msg.sender != Moulinette) { // used in fold
-            super.transferFrom(from, to, value);
-        }
+            return super.transferFrom(from, to, value);
+        } else return true; // 
     }
 
     /** https://x.com/QuidMint/status/1833820062714601782
@@ -327,35 +311,34 @@ contract Quid is
                         balance_from, from_vote);
     }
 
-    function mint(address pledge, // tied to Offer struct in MO
-        uint amount, address token) public nonReentrant returns 
-            (uint cost, uint shares) { uint batch = currentBatch(); 
-            if (token == address(this)) { _mint(pledge, amount);
-                consideration[pledge][batch] += amount; // redeemable
-                require(msg.sender == Moulinette, "keine authorisation");
-            }   else if (block.timestamp <= START + DAYS && batch < 24) {
-                    uint in_days = ((block.timestamp - START) / 1 days);
-                    require(amount >= 10 * WAD, "mint more QD");
-                    require(Piscine[batch][43].credit + amount <
-                            (in_days + 1) * MAX_PER_DAY, "cap");
-                    // Yesterday's price is NOT today's price,
-                    // and when I think I'm running low, you're
-                    uint price = in_days * PENNY + START_PRICE;
-                    cost = _minAmount(pledge, token,
-                        FullMath.mulDiv(price, amount,
-                        WAD)); // _minAmount may return less
-                    // so we must calculate amount twice here:
-                    amount = FullMath.mulDiv(WAD, cost, price);
-                    consideration[pledge][batch] += amount;
-                    _mint(pledge, amount); // totalSupply++
-                    consideration[pledge][batch] += amount;
-                    Piscine[batch][in_days].credit += amount;
-                    Piscine[batch][in_days].debit += cost;
-                    // 44th row is the total for the batch
-                    Piscine[batch][43].credit += amount;
-                    Piscine[batch][43].debit += cost;
-                    MO(Moulinette).mint(pledge, cost, amount);
-                }
+    function mint(address pledge, uint amount, address token) 
+        public nonReentrant { uint batch = currentBatch(); 
+        if (token == address(this)) { _mint(pledge, amount);
+            consideration[pledge][batch] += amount; // redeemable
+            require(msg.sender == Moulinette, "keine authorisation");
+        }   else if (block.timestamp <= START + DAYS && batch < 24) {
+                uint in_days = ((block.timestamp - START) / 1 days);
+                require(amount >= 10 * WAD, "mint more QD");
+                require(Piscine[batch][43].credit + amount <
+                        (in_days + 1) * MAX_PER_DAY, "cap");
+                // Yesterday's price is NOT today's price,
+                // and when I think I'm running low, you're
+                uint price = in_days * PENNY + START_PRICE;
+                uint cost = _minAmount(pledge, token,
+                    FullMath.mulDiv(price, amount,
+                    WAD)); // _minAmount may return less
+                // so we must calculate amount twice here:
+                amount = FullMath.mulDiv(WAD, cost, price);
+                consideration[pledge][batch] += amount;
+                _mint(pledge, amount); // totalSupply++
+                consideration[pledge][batch] += amount;
+                Piscine[batch][in_days].credit += amount;
+                Piscine[batch][in_days].debit += cost;
+                // 44th row is the total for the batch
+                Piscine[batch][43].credit += amount;
+                Piscine[batch][43].debit += cost;
+                MO(Moulinette).mint(pledge, cost, amount);
+            }
         } // address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675; 
          address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;

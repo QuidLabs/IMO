@@ -10,14 +10,12 @@ via_ir = true
 # optimizer_runs = 10_000_000
 
 # @see {@link https://github.com/foundry-rs/foundry/issues/4060}
-
 # [profile.default.optimizer_details]
 # constantOptimizer = true
 # yul = true
 
 # [profile.default.optimizer_details.yulDetails]
 # stackAllocation = true
-
 bytecode_hash = "none"
 deny_warnings = false
 cbor_metadata = false
