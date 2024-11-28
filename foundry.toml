@@ -5,12 +5,12 @@ src = 'src'
 out = 'out'
 libs = ['lib']
 via_ir = true
-
 # fuzz_runs = 500
 # optimizer = true
 # optimizer_runs = 10_000_000
 
 # @see {@link https://github.com/foundry-rs/foundry/issues/4060}
+
 # [profile.default.optimizer_details]
 # constantOptimizer = true
 # yul = true
@@ -28,10 +28,11 @@ verbosity = 3
 [profile.dependencies]
 solmate = { git = "https://github.com/Rari-Capital/solmate" }
 forge-std = { git = "https://github.com/foundry-rs/forge-std" }
+LayerZero-v2 = { git = "https://github.com/LayerZero-Labs/" }
 
-remappings = [
+remappings = [ 
     '@openzeppelin/=lib/openzeppelin-contracts/',
-    '@layerzerolabs/lz-evm-oapp-v2/=lib/LayerZero-v2/oapp/',
-    '@layerzerolabs/lz-evm-protocol-v2/=lib/LayerZero-v2/protocol/',
-    '@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/messagelib/'
+    '@layerzerolabs/lz-evm-oapp-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/',
+    '@layerzerolabs/lz-evm-protocol-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/protocol/',
+    '@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib/'
 ]

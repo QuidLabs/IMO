@@ -1,8 +1,8 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-import "lib/forge-std/src/console.sol"; // TODO delete
-// import {OFTCore} from "./interfaces/LZ/oapp/contracts/oft/OFTCore.sol";
+import "lib/forge-std/src/console.sol"; // TODO delete logging, npm install within evm/*
+// import {OFTCore} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTCore.sol";
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
@@ -26,7 +26,7 @@ interface ICollection is IERC721 {
 // http://42.fr Piscine...
 import "./MOulinette.sol";
 contract Quid is 
-    ERC20, /* OFTCore,*/
+    ERC20, /*OFTCore,*/
     IERC721Receiver,
     ReentrancyGuard {
     uint public AVG_ROI;
@@ -97,7 +97,7 @@ contract Quid is
         address _frax, address _sfrax,
         address _sdai, address _dai) 
         ERC20("QU!D", "QD", 18) {
-        // OFTCore(18, LZ, QUID) { TODO
+        /* OFTCore(18, LZ, QUID) { */ 
         START = block.timestamp;
         /* START = 1733333333; */
         SDAI = _sdai; DAI = _dai;
@@ -356,7 +356,7 @@ contract Quid is
                     Piscine[batch][43].debit += cost;
                     MO(Moulinette).mint(pledge, cost, amount);
                 }
-        } address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675; 
+        } // address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675; 
          address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
        address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
