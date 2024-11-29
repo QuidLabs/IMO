@@ -113,7 +113,7 @@ contract Quid is
                 ERC4626(token).balanceOf(from),
                 ERC4626(token).convertToShares(amount)
             );
-            usd = ERC4626(token).convertToAssets(amount);        
+            usd = ERC4626(token).convertToAssets(amount);
             ERC4626(token).transferFrom(msg.sender,
                             address(this), amount);
                             perVault[token] += usd;
@@ -135,7 +135,7 @@ contract Quid is
                                 usd, address(this));
                 } 
                 else { ERC20(USDC).transferFrom(
-                        from, Moulinette, usd); 
+                        from, Moulinette, usd);
                 }
         } require(isDollar && amount > 0, "$");
     }
@@ -144,7 +144,7 @@ contract Quid is
             (block.timestamp - START) / 1 days
         );  amount = (in_days * PENNY
             + START_PRICE) * qd_amt / WAD;
-    } // the curtent ^^^^ to mint() 
+    } // the current ^^^^ to mint()
     function get_total_supply_cap()
         public view returns (uint) {
         uint batch = currentBatch();
@@ -174,8 +174,8 @@ contract Quid is
         && !hasVoted[msg.sender][batch]) {
             (uint carry,) = MO(Moulinette).get_info(msg.sender);
         if (carry > STACK) { hasVoted[msg.sender][batch] = true;
-                voters[batch].push(msg.sender); }
-        }     uint old_vote = feeVotes[msg.sender];
+                             voters[batch].push(msg.sender); }
+        } uint old_vote = feeVotes[msg.sender];
         old_vote = old_vote == 0 ? 17 : old_vote;
         require(new_vote != old_vote &&
                 new_vote <= 89, "bad vote");
@@ -212,18 +212,18 @@ contract Quid is
     
     // turning a generator is what redeems it
     function turn(address from, uint value)
-        public onlyGenerators returns {
-            MO(Moulinette).transferHelper(
-            from, address(0), value); _transferHelper(
-            from, address(0), value); // burn shouldn't
-            // affect carry.debit values of `from` or `to`
+        public onlyGenerators returns (uint) {
+            _transferHelper(from, address(0), value);
+            // carry.debit will be untouched here
+            return MO(Moulinette).transferHelper(
+                from, address(0), value); // burn
     }
     function transfer(address to, uint value)
         public override(ERC20) returns (bool) {
         uint sent = MO(Moulinette).transferHelper(
-                        msg.sender, to, value); 
+                        msg.sender, to, value);
         if (sent > 0) {
-            _transferHelper(msg.sender, to, sent); 
+            _transferHelper(msg.sender, to, sent);
             return super.transfer(to, sent);
         }
     }
@@ -231,7 +231,7 @@ contract Quid is
         uint value) public override(ERC20) returns (bool) {
         MO(Moulinette).transferHelper(from, to, value);
                       _transferHelper(from, to, value);
-        if (msg.sender != Moulinette) { // used in fold
+        if (msg.sender != Moulinette) { // used in fold...
             return super.transferFrom(from, to, value);
         } else return true; // 
     }
@@ -282,7 +282,7 @@ contract Quid is
         require(amount > WAD, "insufficient QD");
         int i; // must be int otherwise tx reverts
         // when we go below 0 in the while loop...
-        if (to == address(0)) {
+        if (to == address(0)) { // called by MO
             i = int(matureBatches());
             _burn(from, amount);
             // no _calculateMedian `to`
@@ -293,16 +293,15 @@ contract Quid is
                balance_to, to_vote, this.balanceOf(to));
             _calculateMedian(this.balanceOf(to), to_vote,
                                 balance_to, to_vote);
-        }   
+        } 
         while (amount > 0 && i >= 0) { uint k = uint(i);
-            uint amt = consideration[from][k];
+            uint amt = consideration[from][k]; // QD...
             console.log("TransferHelper...", amt);
             if (amt > 0) { amt = _min(amount, amt);
                 consideration[from][k] -= amt;
-                // `to` may be address(0) but it's
-                // irrelevant, wastes a bit of gas
-                consideration[to][k] += amt;
-                amount -= amt;
+                if (to == address(0)) {
+                    consideration[to][k] += amt;
+                }   amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
         console.log("MedianTransferHelper...FROM",
@@ -311,8 +310,8 @@ contract Quid is
                         balance_from, from_vote);
     }
 
-    function mint(address pledge, uint amount, address token) 
-        public nonReentrant { uint batch = currentBatch(); 
+    function mint(address pledge, uint amount, address token)
+        public nonReentrant { uint batch = currentBatch(); // $
         if (token == address(this)) { _mint(pledge, amount);
             consideration[pledge][batch] += amount; // redeemable
             require(msg.sender == Moulinette, "keine authorisation");
@@ -339,7 +338,7 @@ contract Quid is
                 Piscine[batch][43].debit += cost;
                 MO(Moulinette).mint(pledge, cost, amount);
             }
-        } // address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675; 
+        } // address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
          address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
        address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
@@ -368,8 +367,8 @@ contract Quid is
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT...
             this.morph(QUID, cut); this.morph(from, cut);
-            uint backend = BACKEND; cut = backend / 12;
-            if (voters[batch - 1].length >= 10 && data.length >= 32) { 
+            uint backend = BACKEND; cut = backend / 12; // voire dire...
+            if (voters[batch - 1].length >= 10 && data.length >= 32) {
                 bytes32 _seed = abi.decode(data[:32], (bytes32));
                 for (uint i = 0; count < 10 && i < 30; i++) {
                     uint random = uint(keccak256(
@@ -377,7 +376,7 @@ contract Quid is
                         block.prevrandao, i))) %
                         voters[batch - 1].length;
                         winner = voters[batch - 1][random];
-                    if (!winners[winner]) { 
+                    if (!winners[winner]) {
                         count += 1; winners[winner] == true;
                         backend -= cut; _mint(winner, cut);
                         consideration[winner][batch] += cut;
@@ -391,7 +390,7 @@ contract Quid is
         } return this.onERC721Received.selector;
     }
 
-    function _batchup (uint batch) internal { 
+    function _batchup (uint batch) internal {
         require(batch > 1 && batch < 25, "!");
         Pod memory day = Piscine[batch - 1][43];
         AVG_ROI += FullMath.mulDiv(WAD,
@@ -402,7 +401,7 @@ contract Quid is
     }
     function batchup()
         public nonReentrant {
-        if (block.timestamp > 
+        if (block.timestamp >
         START + DAYS + 3 days) {
         _batchup(currentBatch());
     }}
@@ -415,18 +414,18 @@ contract Quid is
             // use it for the Uniswap LP position,
             // converting to WETH in MO.withdraw
             if (msg.sender == address(this)) {
-                amount = _min(amount, 
-                    FullMath.mulDiv(total, 
+                amount = _min(amount,
+                    FullMath.mulDiv(total,
                         PENNY * 2 / 10, WAD));
         }   require(amount > 0, "no thing");
         (uint delta, ) = MO(Moulinette).capitalisation(0, false);
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
-                        IMorpho(MORPHO), params, address(this)); 
+                        IMorpho(MORPHO), params, address(this));
         
         uint dai; uint usde; uint frax;
         if (delta == 0 && borrowed > 0) {
-            ERC4626(SDAI).withdraw(borrowed, 
+            ERC4626(SDAI).withdraw(borrowed,
                 address(this), address(this));
                 perVault[SDAI] -= borrowed;
             IMorpho(MORPHO).repay(params,
@@ -435,7 +434,7 @@ contract Quid is
             IMorpho(MORPHO).withdrawCollateral(params,
                 COLLATERAL, address(this), address(this)
             );
-        } else if (delta > 0 && perVault[SUSDE] > delta) { 
+        } else if (delta > 0 && perVault[SUSDE] > delta) {
             uint collat = delta + delta / 5; // safety margin
             collat = _min(collat, perVault[SUSDE] - COLLATERAL);
             if (collat > 0) {
@@ -444,34 +443,34 @@ contract Quid is
                         collat), address(this), ""
                 ); 
                 COLLATERAL += collat; delta = collat - collat / 5;
-                (dai, ) = IMorpho(MORPHO).borrow(params, delta, 
-                    0, address(this), address(this));  
+                (dai, ) = IMorpho(MORPHO).borrow(params, delta,
+                    0, address(this), address(this));
 
-                perVault[SDAI] += dai; 
+                perVault[SDAI] += dai;
                 ERC4626(SDAI).deposit(
                 dai, address(this));
             }
         }   dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                    perVault[SDAI], total), WAD);
-                                   dai = _min(perVault[SDAI] - 
-                                              borrowed, dai);    
+                                   dai = _min(perVault[SDAI] -
+                                              borrowed, dai);
         
         usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                 perVault[SUSDE], total), WAD);
-                                usde = _min(perVault[SUSDE] - 
+                                usde = _min(perVault[SUSDE] -
                                             COLLATERAL, usde);
         frax = _min(perVault[SFRAX], amount - (dai + usde));
-        if (dai > 0) { 
-            ERC4626(SDAI).withdraw(dai, 
-                    to, address(this)); 
+        if (dai > 0) {
+            ERC4626(SDAI).withdraw(dai,
+                    to, address(this));
                     perVault[SDAI] -= dai;
-        } if (frax > 0) { 
-              ERC4626(SFRAX).withdraw(frax, 
-                        to, address(this)); 
+        } if (frax > 0) {
+              ERC4626(SFRAX).withdraw(frax,
+                        to, address(this));
                         perVault[SFRAX] -= frax;
-        } if (usde > 0) { 
-                ERC4626(SUSDE).withdraw(usde, 
-                        to, address(this)); 
+        } if (usde > 0) {
+                ERC4626(SUSDE).withdraw(usde,
+                        to, address(this));
                         perVault[SUSDE] -= usde;
         } return (dai + frax + usde); // total $
     }

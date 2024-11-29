@@ -17,7 +17,7 @@ import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {FixedPointMathLib} from "lib/solmate/src/utils/FixedPointMathLib.sol";
 
-contract MO is ReentrancyGuard { 
+contract MO is ReentrancyGuard {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
     ERC20 public immutable token1;
@@ -86,7 +86,7 @@ contract MO is ReentrancyGuard {
              == address(this), "42");
     } 
     modifier onlyQuid {
-        require(msg.sender 
+        require(msg.sender
             == address(QUID),
             "unauthorised"); _;
     }
@@ -103,16 +103,16 @@ contract MO is ReentrancyGuard {
     function setMetrics(uint avg_roi) public
         onlyQuid { AVG_ROI = avg_roi;
     }
-    function dollar_amt_to_qd_amt(uint cap, 
-        uint amt) public pure returns (uint) { 
+    function dollar_amt_to_qd_amt(uint cap,
+        uint amt) public pure returns (uint) {
             return FullMath.mulDiv(amt,
             100 + (100 - cap), 100);
-    } 
+    }
     // not same as eponymous function in QD
-    function qd_amt_to_dollar_amt(uint cap, 
-        uint amt) public pure returns (uint) { 
+    function qd_amt_to_dollar_amt(uint cap,
+        uint amt) public pure returns (uint) {
         return FullMath.mulDiv(amt, cap, 100);
-    } 
+    }
     
     function set_price_eth(bool up,
         bool refresh) external {
@@ -214,7 +214,7 @@ contract MO is ReentrancyGuard {
         uint share = FullMath.mulDiv(WAD,
             balance, QUID.totalSupply());
         console.log("CreditHelperShare...", share, who);
-        credit = share;
+        credit = share; // workaround from using NFT
         if (debit > 0 && QUID.currentBatch() > 0) {
             // projected ROI if QD is $1...
             uint roi = FullMath.mulDiv(WAD,
@@ -343,7 +343,7 @@ contract MO is ReentrancyGuard {
     // calculates the coverage absorption for each
     // insurer by first determining their share %
     // and then adjusting based on average ROI...
-    // (insurers with higher ROI absorb more)
+    // (insurers with higher ROI absorb more) 
     // "you never count your money while you're
     // sittin' at the table...there'll be time
     function redeem(uint amount) // into $
@@ -351,7 +351,11 @@ contract MO is ReentrancyGuard {
         amount = _min(QUID.matureBalanceOf(
                         msg.sender), amount);
         require(amount > 0, "let it steep");
-        // we're talking tea-bills here...right?
+        // be said of tea, bill, or a mountain,
+        // we're talking...accountant of monte
+        // crystal: the moments when potential 
+        // risks stop being hypothetical and 
+        // become part of realised book value
         uint share = FullMath.mulDiv(WAD, amount, 
                 QUID.matureBalanceOf(msg.sender));
             
@@ -367,7 +371,7 @@ contract MO is ReentrancyGuard {
         if (WAD > share) {
             absorb = FullMath.mulDiv(absorb,
                                 share, WAD);
-        }   QUID.turn(msg.sender, amount);
+        } absorb = QUID.turn(msg.sender, amount);
 
         console.log("AbsorbInRedeem...", absorb);
         // helper function called by turn
@@ -472,7 +476,7 @@ contract MO is ReentrancyGuard {
         }   pledges[msg.sender] = pledge;
     }
 
-    function deposit(address beneficiary, uint amount, 
+    function deposit(address beneficiary, uint amount,
         bool long) external nonReentrant payable {
         Offer memory pledge = pledges[beneficiary];
         (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
@@ -511,7 +515,7 @@ contract MO is ReentrancyGuard {
     // the halo of a street-lamp, I turn my [straddle] to
     // the cold and damp...know when to hold 'em...know
     // when to..." 
-    function fold(address beneficiary, uint amount, bool sell) 
+    function fold(address beneficiary, uint amount, bool sell)
         external payable nonReentrant { FoldState memory state;
         (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
         LAST_TWAP_TICK = tick; state.price = getPrice(sqrtPriceX96);
@@ -581,7 +585,7 @@ contract MO is ReentrancyGuard {
                     state.minting -= state.cap;
                     state.repay -= state.cap;
                 }   (, state.cap) = capitalisation(state.delta, false);
-                if (state.minting > state.delta || state.cap > 69) { 
+                if (state.minting > state.delta || state.cap > 69) {
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
@@ -618,19 +622,19 @@ contract MO is ReentrancyGuard {
         if (state.liquidate) { // "⚡️ strikes and the 🏀 court lights
             (, state.cap) = capitalisation(state.repay, true); // get
             amount = _min(dollar_amt_to_qd_amt(state.cap, // dim...
-                state.repay), QUID.balanceOf(beneficiary));  
+                state.repay), QUID.balanceOf(beneficiary));
             QUID.transferFrom(beneficiary, address(this), amount);
             amount = qd_amt_to_dollar_amt(state.cap, amount);
             pledge.work.credit -= amount; // -- $ value of QD
-            state.delta = block.timestamp - pledge.last; 
-            if (pledge.work.credit > state.collat) { 
+            state.delta = block.timestamp - pledge.last;
+            if (pledge.work.credit > state.collat) {
                 if (pledge.work.credit > RACK / 10
-                    && state.delta >= 10 minutes) { 
+                    && state.delta >= 10 minutes) {
                     // liquidation bot doesn't
                     // skip a chance to fold()
                     state.delta /= 10 minutes; 
                     amount = _min(pledge.work.debit,
-                        FullMath.mulDiv(state.delta, 
+                        FullMath.mulDiv(state.delta,
                             pledge.work.debit, 4362));
                     pledges[address(this)].weth.debit += amount;
                     pledge.work.debit -= amount;
