@@ -24,7 +24,7 @@ interface ICollection is IERC721 {
 }
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is 
+contract Quid is // TODO ERC6909 
     ERC20, /*OFTCore,*/
     IERC721Receiver,
     ReentrancyGuard {
@@ -96,7 +96,7 @@ contract Quid is
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     } uint constant GRIEVANCES = 113310303333333333333333;
     uint constant BACKEND = 666699333333333333333333; // QD
-    mapping(address => uint[24]) public consideration;
+    mapping(address => uint[24]) public consideration; // TODO ERC6909 balanceOf
     // https://www.law.cornell.edu/wex/consideration
     uint constant public MAX_PER_DAY = 777_777 * WAD;
     
@@ -190,6 +190,15 @@ contract Quid is
                          stake, new_vote);
     }
 
+    function _batchup(uint batch) internal {
+        require(batch > 1 && batch < 25, "!");
+        Pod memory day = Piscine[batch - 1][43];
+        AVG_ROI += FullMath.mulDiv(WAD,
+        day.credit - day.debit, day.debit);
+        MO(Moulinette).setMetrics(AVG_ROI /
+            (DAYS / 1 days) * batch);
+            START = block.timestamp;
+    }
     function currentBatch()
         public view returns (uint batch) {
         batch = (block.timestamp - deployed) / DAYS;
@@ -409,15 +418,6 @@ contract Quid is
         } return this.onERC721Received.selector;
     }
 
-    function _batchup(uint batch) internal {
-        require(batch > 1 && batch < 25, "!");
-        Pod memory day = Piscine[batch - 1][43];
-        AVG_ROI += FullMath.mulDiv(WAD,
-        day.credit - day.debit, day.debit);
-        MO(Moulinette).setMetrics(AVG_ROI /
-            (DAYS / 1 days) * batch);
-            START = block.timestamp;
-    }
     function batchup()
         public nonReentrant {
         if (block.timestamp >

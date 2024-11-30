@@ -47,7 +47,6 @@ contract MO is ReentrancyGuard {
         external returns (uint, uint) {
         Offer memory pledge = pledges[who];
         return (pledge.carry.debit, QUID.balanceOf(who));
-        // never need pledge.carry.credit in the frontend,
         // this is more of an internal tracking variable
     }   function get_more_info(address who) view
         external returns (uint, uint, uint, uint) {
@@ -368,10 +367,10 @@ contract MO is ReentrancyGuard {
         // any remaining debt on a fully liquidated pledge,
         // and QD minted in fold() as insurance coverage...
         uint absorb = FullMath.mulDiv(FullMath.mulDiv(
-            // maximum $ pledge would absorb if redeemed all its QD
-            pledges[address(this)].carry.credit, FullMath.mulDiv(WAD, 
-            pledges[msg.sender].carry.credit, SUM), WAD), _min(
-            QUID.currentBatch() - QUID.lastRedeem(msg.sender), 1), 16);  
+        // maximum $ pledge would absorb if redeemed all its QD
+        pledges[address(this)].carry.credit, FullMath.mulDiv(WAD, 
+        pledges[msg.sender].carry.credit, SUM), WAD), _min(
+        QUID.currentBatch() - QUID.lastRedeem(msg.sender), 1), 16);  
     
         if (WAD > share) { // not redeeming 100%
             absorb = FullMath.mulDiv(absorb,
