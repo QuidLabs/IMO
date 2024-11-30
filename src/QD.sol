@@ -34,9 +34,10 @@ contract Quid is
     // kitchen, found a
     // [Pod] to [Piscine]" ~ 2 tune chi
     Pod[44][24] Piscine; // 24 batches
-    uint constant PENNY = 1e16; 
-    uint constant LAMBO = 16508;
-    // 44th day stores batch's total...
+    uint constant PENNY = 1e16; // 0.01
+    // in for a penny, in for a pound...
+    uint constant LAMBO = 16508; // NFT
+    // 44th day stores batch's total... 
     uint constant public DAYS = 42 days;
     uint public START_PRICE = 50 * PENNY;
     struct Pod { uint credit; uint debit; }
@@ -44,6 +45,7 @@ contract Quid is
     mapping(address => uint) internal perVault;
     mapping(address => address) internal vaults;
     mapping (address => bool[24]) public hasVoted;
+    mapping (address => uint) public lastRedeem;
     // when a token-holder votes for a fee, their
     // QD balance is applied to the total weights
     // for that fee (weights are the balances)...
@@ -139,6 +141,8 @@ contract Quid is
                 }
         } require(isDollar && amount > 0, "$");
     }
+    function lastRedeem(address who) public view 
+        returns (uint) { return lastRedeem[who]; }
     function qd_amt_to_dollar_amt(uint qd_amt) public
         view returns (uint amount) { uint in_days = (
             (block.timestamp - START) / 1 days
@@ -214,6 +218,7 @@ contract Quid is
     function turn(address from, uint value)
         public onlyGenerators returns (uint) {
             _transferHelper(from, address(0), value);
+            lastRedeem[from] = currentBatch();
             // carry.debit will be untouched here
             return MO(Moulinette).transferHelper(
                 from, address(0), value); // burn
@@ -225,7 +230,7 @@ contract Quid is
         if (sent > 0) {
             _transferHelper(msg.sender, to, sent);
             return super.transfer(to, sent);
-        }
+        } else return false;
     }
     function transferFrom(address from, address to,
         uint value) public override(ERC20) returns (bool) {
@@ -390,7 +395,7 @@ contract Quid is
         } return this.onERC721Received.selector;
     }
 
-    function _batchup (uint batch) internal {
+    function _batchup(uint batch) internal {
         require(batch > 1 && batch < 25, "!");
         Pod memory day = Piscine[batch - 1][43];
         AVG_ROI += FullMath.mulDiv(WAD,

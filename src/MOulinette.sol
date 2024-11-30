@@ -69,8 +69,8 @@ contract MO is ReentrancyGuard {
     ...SUM of (QD / total QD) x (ROI / avg ROI) */
     uint public SUM = 1; uint public AVG_ROI = 1;
     struct Offer { Pod weth; Pod carry; Pod work;
-    uint last; } // timestamp of last liquidation,
-    // % that's been liquidated (smaller over time)
+    Pod last; } // timestamp of last liquidation,
+    // amt that was liquidated (smaller over time)
     // for address(this) it's time since NFPM.burn
     // work is like a checking account (credit can
     // be drawn against it) while weth is savings,
@@ -94,6 +94,10 @@ contract MO is ReentrancyGuard {
     function _min(uint _a, uint _b)
         internal pure returns (uint) {
         return (_a < _b) ? _a : _b;
+    }
+    function _max(uint _a, uint _b)
+        internal pure returns (uint) {
+        return (_a > _b) ? _a : _b;
     }
     function setFee(uint index)
         public onlyQuid { FEE =
@@ -363,15 +367,18 @@ contract MO is ReentrancyGuard {
         // as this % supply is not 1:1 backed; also includes
         // any remaining debt on a fully liquidated pledge,
         // and QD minted in fold() as insurance coverage...
-        uint batch = QUID.currentBatch();
-        uint absorb = FullMath.mulDiv(pledges[address(this)].carry.credit,
-        // maximum $ pledge would absorb if it redeemed all its QD...
-        FullMath.mulDiv(WAD, pledges[msg.sender].carry.credit, SUM), 
-        WAD);  // if not 100% of the mature QD is being redeemed...
-        if (WAD > share) {
+        uint absorb = FullMath.mulDiv(FullMath.mulDiv(
+            // maximum $ pledge would absorb if redeemed all its QD
+            pledges[address(this)].carry.credit, FullMath.mulDiv(WAD, 
+            pledges[msg.sender].carry.credit, SUM), WAD), _min(
+            QUID.currentBatch() - QUID.lastRedeem(msg.sender), 1), 16);  
+    
+        if (WAD > share) { // not redeeming 100%
             absorb = FullMath.mulDiv(absorb,
                                 share, WAD);
-        } absorb = QUID.turn(msg.sender, amount);
+        }
+        // uint last = QUID.lastRedeem();
+        absorb = QUID.turn(msg.sender, amount);
 
         console.log("AbsorbInRedeem...", absorb);
         // helper function called by turn
@@ -392,7 +399,7 @@ contract MO is ReentrancyGuard {
                         TickMath.getSqrtPriceAtTick(UPPER_TICK),
                         amount / (2 * 1e12), FullMath.mulDiv(WAD,
                         amount / 2, getPrice(sqrtPriceX96))));
-                require(amount0 > 0 && amount1 > 0, "nothing was withdrawn");
+                require(amount0 > 0 && amount1 > 0, "nothing withdrawn");
                 amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token1), POOL_FEE, address(token0)),
                     address(this), block.timestamp, amount1, 0));
@@ -428,10 +435,10 @@ contract MO is ReentrancyGuard {
                 amount1; pledge.work.debit += amount1;
             }   uint debit = FullMath.mulDiv(price,
                              pledge.work.debit, WAD);
-            uint buffered = debit - (debit / 5);
-            require(buffered >= pledge.work.credit
-            && buffered > 0, "CR"); amount = _min(
-                amount, buffered - pledge.work.credit);
+            uint haircut = debit - (debit / 5);
+            require(haircut >= pledge.work.credit
+            && haircut > 0, "CR"); amount = _min(
+                amount, haircut - pledge.work.credit);
             if (amount > 0) { pledge.work.credit += amount;
                 (, uint cap) = capitalisation(amount, false);
                 amount = dollar_amt_to_qd_amt(cap, amount);
@@ -441,10 +448,10 @@ contract MO is ReentrancyGuard {
             if (pledge.work.credit > 0) { // see if we owe debt on it
                 uint debit = FullMath.mulDiv( // dollar value of ETH
                     price, pledge.work.debit, WAD);
-                uint buffered = debit - debit / 5;
-                require(buffered >= pledge.work.credit, "CR!");
+                uint haircut = debit - debit / 5;
+                require(haircut >= pledge.work.credit, "CR!");
                 withdrawable = FullMath.mulDiv(WAD,
-                    buffered - pledge.work.credit, price);
+                    haircut - pledge.work.credit, price);
             }   uint transfer = amount;
             if (transfer > withdrawable) {
                 withdrawable = FullMath.mulDiv(
@@ -626,7 +633,7 @@ contract MO is ReentrancyGuard {
             QUID.transferFrom(beneficiary, address(this), amount);
             amount = qd_amt_to_dollar_amt(state.cap, amount);
             pledge.work.credit -= amount; // -- $ value of QD
-            state.delta = block.timestamp - pledge.last;
+            state.delta = block.timestamp - pledge.last.credit;
             if (pledge.work.credit > state.collat) {
                 if (pledge.work.credit > RACK / 10
                     && state.delta >= 10 minutes) {
@@ -634,8 +641,10 @@ contract MO is ReentrancyGuard {
                     // skip a chance to fold()
                     state.delta /= 10 minutes; 
                     amount = _min(pledge.work.debit,
-                        FullMath.mulDiv(state.delta,
-                            pledge.work.debit, 4362));
+                                _max(pledge.last.debit +
+                                    pledge.last.debit / 28,
+                                    FullMath.mulDiv(state.delta,
+                                        pledge.work.debit, 6048)));
                     pledges[address(this)].weth.debit += amount;
                     pledge.work.debit -= amount;
                     amount = _min(pledge.work.credit,
@@ -647,13 +656,15 @@ contract MO is ReentrancyGuard {
                     // and [eviction] is my mission"
                     // Euler’s disk 💿 erasure code 
                     pledge.work.credit -= amount;
-                    pledge.last = block.timestamp;
+                    pledge.last.credit = block.timestamp;
+                    pledge.last.debit = amount;
                 } else { // "it don't get no better than this, you catch my [dust]"
                     // otherwise we run into a vacuum leak (infinite contraction)
                     pledges[address(this)].weth.debit += pledge.work.debit;
                      pledges[address(this)].carry.credit += pledge.work.credit;
                     // debt surplus absorbed ^^^^^^^^^ as if it were coverage
                     pledge.work.credit = 0; pledge.work.debit = 0; // reset
+                    pledge.last.credit = 0; pledge.last.debit = 0; // storage
                 }
             }
         }   pledges[beneficiary] = pledge;
@@ -671,11 +682,10 @@ contract MO is ReentrancyGuard {
     // or above 12 volts, respectively, re-charging battery)
     function _repackNFT(uint amount0,uint amount1, 
         uint price) internal { uint128 liquidity;
-        if (pledges[address(this)].last != 0) {
-        // not the first time calling _repackNFT
-            if ((LAST_TWAP_TICK > UPPER_TICK
-              || LAST_TWAP_TICK < LOWER_TICK)
-              && block.timestamp - pledges[address(this)].last >= 1 hours) {
+        if (pledges[address(this)].last.credit != 0) {
+            // not the first time _repackNFT is called
+            if ((LAST_TWAP_TICK > UPPER_TICK || LAST_TWAP_TICK < LOWER_TICK) &&
+                block.timestamp - pledges[address(this)].last.credit >= 1 hours) {
                 (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
                 (uint collected0,
                  uint collected1) = _withdrawAndCollect(liquidity);
@@ -683,9 +693,9 @@ contract MO is ReentrancyGuard {
                 pledges[address(this)].weth.debit -= collected1;
                 pledges[address(this)].work.debit -= collected0;
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
-                pledges[address(this)].last = block.timestamp;
+                pledges[address(this)].last.credit = block.timestamp;
             }
-        } if (liquidity > 0 || ID == 0) {
+        } if (liquidity > 0 || ID == 0) { // first time or repack...
             (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
             (amount0, amount1) = _swap(amount0, amount1, price);
             (ID, liquidityUnderManagement,,) = NFPM.mint(
