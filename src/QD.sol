@@ -217,28 +217,57 @@ contract Quid is
     // turning a generator is what redeems it
     function turn(address from, uint value)
         public onlyGenerators returns (uint) {
-            _transferHelper(from, address(0), value);
-            lastRedeem[from] = currentBatch();
-            // carry.debit will be untouched here
-            return MO(Moulinette).transferHelper(
-                from, address(0), value); // burn
+        lastRedeem[from] = currentBatch();
+        _transferHelper(from, address(0), value);
+        // carry.debit will be untouched here
+        return MO(Moulinette).transferHelper(
+            from, address(0), value); // burn
     }
-    function transfer(address to, uint value)
+    function transfer(address to, uint amount)
         public override(ERC20) returns (bool) {
+        uint balance_from = this.balanceOf(from);
+        uint value = _min(amount, balance_from);
+        uint from_vote = feeVotes[from];
+        bool result = true;
+        if (to == Moulinette) {
+            _burn(msg.sender, value);
+        } else {
+            uint to_vote = feeVotes[to];
+            uint balance_to = this.balanceOf(to);
+            result = super.transfer(to, value);
+            _calculateMedian(this.balanceOf(to),
+                to_vote, balance_to, to_vote);
+        }
         uint sent = MO(Moulinette).transferHelper(
-                        msg.sender, to, value);
+            msg.sender, to, value, balance_from);
+        if (value != sent) {
+            _mint(msg.sender, amount - sent);
+        }
         if (sent > 0) {
             _transferHelper(msg.sender, to, sent);
-            return super.transfer(to, sent);
-        } else return false;
+            _calculateMedian(this.balanceOf(from), 
+                from_vote, balance_from, from_vote);
+        }
+        return result;
     }
     function transferFrom(address from, address to,
-        uint value) public override(ERC20) returns (bool) {
-        MO(Moulinette).transferHelper(from, to, value);
-                      _transferHelper(from, to, value);
-        if (msg.sender != Moulinette) { // used in fold...
-            return super.transferFrom(from, to, value);
-        } else return true; // 
+        uint amount) public override(ERC20) returns (bool) {
+        uint balance_from = this.balanceOf(from);
+        uint value = _min(amount, balance_from);
+        uint from_vote = feeVotes[to];
+        bool result = true;
+        if (msg.sender != Moulinette) { 
+            uint to_vote = feeVotes[to];
+            uint balance_to = this.balanceOf(to);
+            result = super.transferFrom(from, to, value);
+            _calculateMedian(this.balanceOf(to), to_vote,
+                                balance_to, to_vote);
+        } MO(Moulinette).transferHelper(
+        from, to, value, balance_from);
+        _transferHelper(from, to, value);
+        _calculateMedian(this.balanceOf(from),
+            from_vote, balance_from, from_vote);
+        return result;
     }
 
     /** https://x.com/QuidMint/status/1833820062714601782
@@ -281,24 +310,13 @@ contract Quid is
 
     function _transferHelper(address from,
         address to, uint amount) internal {
-        uint from_vote = feeVotes[from]; 
-        uint balance_from = this.balanceOf(from);
-        amount = _min(amount, this.balanceOf(from));
         require(amount > WAD, "insufficient QD");
         int i; // must be int otherwise tx reverts
         // when we go below 0 in the while loop...
-        if (to == address(0)) { // called by MO
+        if (to == address(0)) { 
             i = int(matureBatches());
             _burn(from, amount);
-            // no _calculateMedian `to`
-        }   else { i = int(currentBatch());
-            uint to_vote = feeVotes[to];
-            uint balance_to = this.balanceOf(to);
-            console.log("MedianTransferHelper...TO",
-               balance_to, to_vote, this.balanceOf(to));
-            _calculateMedian(this.balanceOf(to), to_vote,
-                                balance_to, to_vote);
-        } 
+        }   else { i = int(currentBatch()); } 
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k]; // QD...
             console.log("TransferHelper...", amt);
@@ -309,10 +327,6 @@ contract Quid is
                 }   amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-        console.log("MedianTransferHelper...FROM",
-           balance_from, from_vote);
-        _calculateMedian(balance_from, from_vote,
-                        balance_from, from_vote);
     }
 
     function mint(address pledge, uint amount, address token)

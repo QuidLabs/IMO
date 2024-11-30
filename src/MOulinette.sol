@@ -173,8 +173,8 @@ contract MO is ReentrancyGuard {
 
     // helpers allow treating QD balances
     // uniquely without needing ERC721...
-    function transferHelper(address from,
-        address to, uint amount)
+    function transferHelper(address from, address to, 
+        uint amount, uint priorBalance)
         onlyQuid public returns (uint) {
             if (to == address(this)) {
                 uint credit = pledges[from].work.credit;
@@ -189,7 +189,7 @@ contract MO is ReentrancyGuard {
             // determine % of total balance
             // transferred for ROI pro rata
             uint ratio = FullMath.mulDiv(WAD,
-                amount, QUID.balanceOf(from));
+                amount, priorBalance);
             require(ratio <= WAD, "not enough");
             console.log("TransferHelperEvent...", ratio);
             // proportionally transfer debit...
