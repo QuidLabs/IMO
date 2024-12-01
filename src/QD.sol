@@ -244,17 +244,12 @@ contract Quid is
         } else if (to != address(0)) {
             uint to_vote = feeVotes[to];
             uint balance_to = this.balanceOf(to);
-            console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
             result = super.transfer(to, value);
-            console.log("BBBBBBBBBBBBBBBBBBBBBBBBBB");
             _calculateMedian(this.balanceOf(to),
                 to_vote, balance_to, to_vote);
-                console.log("CCCCCCCCCCCCCCCCCCCCCCCCCCCC");
         } _transferHelper(msg.sender, to, value);
-        console.log("DDDDDDDDDDDDDDDDDDDDDDDDDDDD");
         uint sent = MO(Moulinette).transferHelper(
             msg.sender, to, value, balance_from);
-        console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEE");
         if (value != sent) { value = amount - sent;
             _mint(msg.sender, value);
             consideration[msg.sender][currentBatch()] += value;
