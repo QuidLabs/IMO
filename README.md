@@ -57,7 +57,7 @@ fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/gunsnrosesgirl3/status/1860
 [corresponds](https://www.instagram.com/p/C_t_orDph5p/) to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
 30% APY must be generated  
 in aggregate to reach... 💯%  
-[split]() between swap fees and   
+[split](https://x.com/QuidMint/status/1863257152481108154) between swap fees and   
 staking rewards from stables. 
 
 © 2022-2027 QuidMint Foundation  
