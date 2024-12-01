@@ -191,7 +191,8 @@ contract Quid is
     }
 
     function _batchup(uint batch) internal {
-        require(batch > 1 && batch < 25, "!");
+        batch = _min(1, batch);
+        require(batch < 25, "!");
         Pod memory day = Piscine[batch - 1][43];
         AVG_ROI += FullMath.mulDiv(WAD,
         day.credit - day.debit, day.debit);
