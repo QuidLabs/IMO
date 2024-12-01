@@ -415,7 +415,10 @@ contract Quid is
             // never settled and overcame the get owe"
         } return this.onERC721Received.selector;
     }
-
+    // failsafe to reboot
+    // in case NFT owner
+    // is unavailable to
+    // rest the clock...
     function batchup()
         public nonReentrant {
         if (block.timestamp >
