@@ -196,6 +196,8 @@ contract MO is ReentrancyGuard {
             console.log("DebitTransferHelper...", debit);
             pledges[to].carry.debit += debit;
             pledges[from].carry.debit -= debit;
+            // pledges[address[this]].carry.debit
+            // remains constant, and individually
             // pledge.carry.credit in helper...
             // QD minted in coverage claims or
             // over-collateralisation does not
@@ -481,15 +483,15 @@ contract MO is ReentrancyGuard {
         Offer memory pledge = pledges[beneficiary];
         (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
         LAST_TWAP_TICK = tick; uint price = getPrice(sqrtPriceX96);
-        if (amount > 0) { WETH9.transferFrom( //
+        if (amount > 0) { WETH9.transferFrom(
             msg.sender, address(this), amount);
         } else { require(msg.value > 0, "ETH!"); }
         if (msg.value > 0) { amount += msg.value;
             WETH9.deposit{ value: msg.value }();
         }   if (long) { pledge.work.debit += amount;
             pledges[address(this)].work.credit += amount;
-        }   else { // 
-            uint in_dollars = FullMath.mulDiv(price, amount, WAD);
+        } 
+        else { uint in_dollars = FullMath.mulDiv(price, amount, WAD);
             uint deductible = FullMath.mulDiv(in_dollars, FEE, WAD);
             // change deductible to be in units of ETH instead...
             deductible = FullMath.mulDiv(WAD, deductible, price);
@@ -647,10 +649,9 @@ contract MO is ReentrancyGuard {
                     // "It's like inch by inch, and step by
                     // step, I'm closin' in on your position
                     // and [eviction] is my mission"
-                    // Euler’s disk 💿 erasure code 
-                    pledge.work.credit -= amount;
-                    pledge.last.credit = block.timestamp;
                     pledge.last.debit = amount;
+                    pledge.work.credit -= amount;
+                    pledge.last.credit = block.timestamp; // up to 
                 } else { // "it don't get no better than this, you catch my [dust]"
                     // otherwise we run into a vacuum leak (infinite contraction)
                     pledges[address(this)].weth.debit += pledge.work.debit;
