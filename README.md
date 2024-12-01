@@ -53,8 +53,8 @@ voting is incentivised by a
 12 x 55k QD lotto, dealt out  
 in `onERC721Received`...  
  
-fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/gunsnrosesgirl3/status/1860255482373341296)   
-[corresponds](https://www.instagram.com/p/C_t_orDph5p/) to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
+fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
+corresponds to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
 30% APY must be generated  
 in aggregate to reach... 💯%  
 [split](https://x.com/QuidMint/status/1863257152481108154) between swap fees and   
