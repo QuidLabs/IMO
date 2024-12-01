@@ -131,7 +131,7 @@ contract Quid is
                 perVault[vault] += usd;
                 if (vault != USDC) {
                     ERC20(token).transferFrom(from,
-                                    address(this), usd);
+                                address(this), usd);
 
                     amount = ERC4626(vault).deposit(
                                 usd, address(this));
@@ -241,24 +241,21 @@ contract Quid is
         bool result = true;
         if (to == Moulinette) {
             _burn(msg.sender, value);
-        } else {
+        } else if (to != address(0)) {
             uint to_vote = feeVotes[to];
             uint balance_to = this.balanceOf(to);
             result = super.transfer(to, value);
             _calculateMedian(this.balanceOf(to),
                 to_vote, balance_to, to_vote);
-        }
+        } _transferHelper(msg.sender, to, sent);
         uint sent = MO(Moulinette).transferHelper(
             msg.sender, to, value, balance_from);
-        if (value != sent) {
-            _mint(msg.sender, amount - sent);
-        }
-        if (sent > 0) {
-            _transferHelper(msg.sender, to, sent);
-            _calculateMedian(this.balanceOf(msg.sender), 
-                from_vote, balance_from, from_vote);
-        }
-        return result;
+        if (value != sent) { _mint(msg.sender, 
+                              amount - sent);
+        } else { _calculateMedian(
+            this.balanceOf(msg.sender), from_vote, 
+                          balance_from, from_vote);
+        } return result;
     }
     function transferFrom(address from, address to,
         uint amount) public override(ERC20) returns (bool) {
@@ -395,7 +392,7 @@ contract Quid is
             uint cut = GRIEVANCES / 2; uint count = 0;
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT...
-            this.morph(QUID, cut); this.morph(from, cut);
+            // this.morph(QUID, cut); this.morph(from, cut);
             uint backend = BACKEND; cut = backend / 12; // voire dire...
             if (voters[batch - 1].length >= 10 && data.length >= 32) {
                 bytes32 _seed = abi.decode(data[:32], (bytes32));

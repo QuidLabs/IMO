@@ -57,8 +57,8 @@ fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/gunsnrosesgirl3/status/1860
 [corresponds](https://www.instagram.com/p/C_t_orDph5p/) to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
 30% APY must be generated  
 in aggregate to reach... 💯%  
-[split](https://x.com/VitalikButerin/status/1511642234562752512) between swap fees and   
-staking rewards from stables.
+[split]() between swap fees and   
+staking rewards from stables. 
 
 © 2022-2027 QuidMint Foundation  
 THIS README IS PROVIDED "AS IS"   
@@ -68,7 +68,7 @@ WITHOUT INFRINGING ANY 3RD
 
 PARTY PATENTS, COPYRIGHTS,  
 OR TRADEMARKS; WARRANTIES,  
-EXPRESS OR IMPLIED, INCLUDING,  
+EXPRESS OR IMPLIED, [INCLUDING](https://x.com/gonbegood/status/1838180646734180611),  
 NOT LIMITED TO, MERCHANTABILITY  
 WARRANTIES OF [FITNESS](https://x.com/QuidMint/status/1840815343364677821) FOR A  
  PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/mint).  
