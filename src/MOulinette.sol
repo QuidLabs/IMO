@@ -370,19 +370,18 @@ contract MO is ReentrancyGuard {
         if (WAD > share) { // not redeeming 100%
             absorb = FullMath.mulDiv(absorb,
                                 share, WAD);
-        }
-        // uint last = QUID.lastRedeem();
+        } // helper function called by turn
+        // handles PLEDGE.CARRY.CREDIT--
         absorb = QUID.turn(msg.sender, amount);
 
         console.log("AbsorbInRedeem...", absorb);
-        // helper function called by turn
-        // handles PLEDGE.CARRY.CREDIT--
+       
         (, uint cap) = capitalisation(0, false);
         amount = qd_amt_to_dollar_amt(cap, amount);
         console.log("AbsorbAmount...", amount);
         
-        amount -= _min(absorb, amount / 3);
-        amount -= QUID.morph(msg.sender, amount);
+        abosrb = _min(absorb, amount / 3); 
+        amount -= absorb; amount -= QUID.morph(msg.sender, amount);
         if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
             if (usdc > amount) { token0.transfer(msg.sender, amount); }
             else { (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
@@ -685,8 +684,11 @@ contract MO is ReentrancyGuard {
                  uint collected1) = _withdrawAndCollect(liquidity);
                 amount0 += collected0; amount1 += collected1;
                 // temporary displacement just like _creditHelper
-                pledges[address(this)].weth.debit -= collected1;
-                pledges[address(this)].work.debit -= collected0;
+                pledges[address(this)].weth.debit -= _min(collected1, 
+                pledges[address(this)].weth.debit);
+                
+                pledges[address(this)].work.debit -= _min(_collected0,
+                pledges[address(this)].work.debit);
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
                 pledges[address(this)].last.credit = block.timestamp;
             }

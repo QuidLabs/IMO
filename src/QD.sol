@@ -46,9 +46,9 @@ contract Quid is
     mapping(address => address) internal vaults;
     mapping (address => bool[24]) public hasVoted;
     mapping (address => uint) internal lastRedeemed;
-    // when a token-holder votes for a fee, their
-    // QD balance is applied to the total weights
-    // for that fee (weights are the balances)...
+    // token-holders vote for deductibles, and their
+    // QD balances are applied to the total weights
+    // for the voted % (weights are the balances)
     // index 0 is the largest possible vote = 9%
     // index 89 represents the smallest one = 1%
     uint public deployed; uint internal K = 17;
@@ -271,7 +271,7 @@ contract Quid is
             _calculateMedian(this.balanceOf(to), to_vote,
                                 balance_to, to_vote);
         } MO(Moulinette).transferHelper(
-        from, to, value, balance_from);
+          from, to, value, balance_from);
         _transferHelper(from, to, value);
         _calculateMedian(this.balanceOf(from),
             from_vote, balance_from, from_vote);
@@ -337,9 +337,9 @@ contract Quid is
     }
 
     function mint(address pledge, uint amount, address token)
-        public nonReentrant { uint batch = currentBatch(); // $
-        if (token == address(this)) { _mint(pledge, amount);
-            consideration[pledge][batch] += amount; // redeemable
+        public nonReentrant { uint batch = currentBatch(); // 0-24
+        if (token == address(this)) { _mint(pledge, amount); // QD
+            consideration[pledge][batch] += amount; // redeemable...
             require(msg.sender == Moulinette, "keine authorisation");
         }   else if (block.timestamp <= START + DAYS && batch < 24) {
                 uint in_days = ((block.timestamp - START) / 1 days);
@@ -350,8 +350,8 @@ contract Quid is
                 // and when I think I'm running low, you're
                 uint price = in_days * PENNY + START_PRICE;
                 uint cost = _minAmount(pledge, token,
-                    FullMath.mulDiv(price, amount,
-                    WAD)); // _minAmount may return less
+                    FullMath.mulDiv(price, amount, WAD));
+                // _minAmount may return less being paid,
                 // so we must calculate amount twice here:
                 amount = FullMath.mulDiv(WAD, cost, price);
                 consideration[pledge][batch] += amount;
@@ -392,7 +392,7 @@ contract Quid is
             uint cut = GRIEVANCES / 2; uint count = 0;
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT...
-            // this.morph(QUID, cut); this.morph(from, cut);
+            // this.morph(QUID, cut); this.morph(from, cut); // TODO uncomment
             uint backend = BACKEND; cut = backend / 12; // voire dire...
             if (voters[batch - 1].length >= 10 && data.length >= 32) {
                 bytes32 _seed = abi.decode(data[:32], (bytes32));
@@ -452,23 +452,23 @@ contract Quid is
                 borrowed, 0, address(this), "");
             
             IMorpho(MORPHO).withdrawCollateral(params,
-                COLLATERAL, address(this), address(this)
-            );
-        } else if (delta > 0 && perVault[SUSDE] > delta) {
+                COLLATERAL, address(this), address(this));
+        } 
+        else if (delta > 0 && perVault[SUSDE] > delta) {
             uint collat = delta + delta / 5; // safety margin
             collat = _min(collat, perVault[SUSDE] - COLLATERAL);
             if (collat > 0) {
                 IMorpho(MORPHO).supplyCollateral(params,
                     ERC4626(SUSDE).convertToShares(
-                        collat), address(this), ""
-                ); 
+                        collat), address(this), "");
+
                 COLLATERAL += collat; delta = collat - collat / 5;
-                (dai, ) = IMorpho(MORPHO).borrow(params, delta,
-                    0, address(this), address(this));
+                (dai, ) = IMorpho(MORPHO).borrow(params, delta, 0, 
+                                    address(this), address(this));
 
                 perVault[SDAI] += dai;
                 ERC4626(SDAI).deposit(
-                dai, address(this));
+                    dai, address(this));
             }
         }   dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                    perVault[SDAI], total), WAD);
