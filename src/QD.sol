@@ -244,12 +244,17 @@ contract Quid is
         } else if (to != address(0)) {
             uint to_vote = feeVotes[to];
             uint balance_to = this.balanceOf(to);
+            console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAA");
             result = super.transfer(to, value);
+            console.log("BBBBBBBBBBBBBBBBBBBBBBBBBB");
             _calculateMedian(this.balanceOf(to),
                 to_vote, balance_to, to_vote);
+                console.log("CCCCCCCCCCCCCCCCCCCCCCCCCCCC");
         } _transferHelper(msg.sender, to, value);
+        console.log("DDDDDDDDDDDDDDDDDDDDDDDDDDDD");
         uint sent = MO(Moulinette).transferHelper(
             msg.sender, to, value, balance_from);
+        console.log("EEEEEEEEEEEEEEEEEEEEEEEEEEEE");
         if (value != sent) { value = amount - sent;
             _mint(msg.sender, value);
             consideration[msg.sender][currentBatch()] += value;
@@ -326,10 +331,9 @@ contract Quid is
         }   else { i = int(currentBatch()); } 
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k]; // QD...
-            console.log("TransferHelper...", amt);
             if (amt > 0) { amt = _min(amount, amt);
                 consideration[from][k] -= amt;
-                if (to == address(0)) {
+                if (to != address(0)) {
                     consideration[to][k] += amt;
                 }   amount -= amt;
             }   i -= 1;
