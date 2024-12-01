@@ -247,14 +247,14 @@ contract Quid is
             result = super.transfer(to, value);
             _calculateMedian(this.balanceOf(to),
                 to_vote, balance_to, to_vote);
-        } _transferHelper(msg.sender, to, sent);
+        } _transferHelper(msg.sender, to, value);
         uint sent = MO(Moulinette).transferHelper(
             msg.sender, to, value, balance_from);
-        if (value != sent) { _mint(msg.sender, 
-                              amount - sent);
-        } else { _calculateMedian(
-            this.balanceOf(msg.sender), from_vote, 
-                          balance_from, from_vote);
+        if (value != sent) { value = amount - sent;
+            _mint(msg.sender, value);
+            consideration[msg.sender][currentBatch()] += value;
+        } else { _calculateMedian(this.balanceOf(msg.sender), 
+                        from_vote, balance_from, from_vote);
         } return result;
     }
     function transferFrom(address from, address to,
