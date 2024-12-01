@@ -24,7 +24,7 @@ interface ICollection is IERC721 {
 }
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is // TODO ERC6909 
+contract Quid is 
     ERC20, /*OFTCore,*/
     IERC721Receiver,
     ReentrancyGuard {
@@ -45,7 +45,7 @@ contract Quid is // TODO ERC6909
     mapping(address => uint) internal perVault;
     mapping(address => address) internal vaults;
     mapping (address => bool[24]) public hasVoted;
-    mapping (address => uint) public lastRedeem;
+    mapping (address => uint) internal lastRedeemed;
     // when a token-holder votes for a fee, their
     // QD balance is applied to the total weights
     // for that fee (weights are the balances)...
@@ -96,7 +96,7 @@ contract Quid is // TODO ERC6909
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     } uint constant GRIEVANCES = 113310303333333333333333;
     uint constant BACKEND = 666699333333333333333333; // QD
-    mapping(address => uint[24]) public consideration; // TODO ERC6909 balanceOf
+    mapping(address => uint[24]) public consideration; 
     // https://www.law.cornell.edu/wex/consideration
     uint constant public MAX_PER_DAY = 777_777 * WAD;
     
@@ -142,7 +142,7 @@ contract Quid is // TODO ERC6909
         } require(isDollar && amount > 0, "$");
     }
     function lastRedeem(address who) public view 
-        returns (uint) { return lastRedeem[who]; }
+        returns (uint) { return lastRedeemed[who]; }
     function qd_amt_to_dollar_amt(uint qd_amt) public
         view returns (uint amount) { uint in_days = (
             (block.timestamp - START) / 1 days
@@ -226,17 +226,18 @@ contract Quid is // TODO ERC6909
     // turning a generator is what redeems it
     function turn(address from, uint value)
         public onlyGenerators returns (uint) {
-        lastRedeem[from] = currentBatch();
+        uint balance_from = this.balanceOf(from);
+        lastRedeemed[from] = currentBatch();
         _transferHelper(from, address(0), value);
-        // carry.debit will be untouched here
-        return MO(Moulinette).transferHelper(
-            from, address(0), value); // burn
+        // carry.debit will be untouched here...
+        return MO(Moulinette).transferHelper(from,
+                address(0), value, balance_from); 
     }
     function transfer(address to, uint amount)
         public override(ERC20) returns (bool) {
-        uint balance_from = this.balanceOf(from);
+        uint balance_from = this.balanceOf(msg.sender);
         uint value = _min(amount, balance_from);
-        uint from_vote = feeVotes[from];
+        uint from_vote = feeVotes[msg.sender];
         bool result = true;
         if (to == Moulinette) {
             _burn(msg.sender, value);
@@ -254,7 +255,7 @@ contract Quid is // TODO ERC6909
         }
         if (sent > 0) {
             _transferHelper(msg.sender, to, sent);
-            _calculateMedian(this.balanceOf(from), 
+            _calculateMedian(this.balanceOf(msg.sender), 
                 from_vote, balance_from, from_vote);
         }
         return result;

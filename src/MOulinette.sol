@@ -173,8 +173,8 @@ contract MO is ReentrancyGuard {
     // helpers allow treating QD balances
     // uniquely without needing ERC721...
     function transferHelper(address from, address to, 
-        uint amount, uint priorBalance)
-        onlyQuid public returns (uint) {
+        uint amount, uint priorBalance) onlyQuid 
+            public returns (uint) {
             if (to == address(this)) {
                 uint credit = pledges[from].work.credit;
                 (, uint cap) = capitalisation(amount, true);
@@ -286,7 +286,7 @@ contract MO is ReentrancyGuard {
     } // adjust to the nearest multiple of our tick width
     function _adjustTicks(int24 twap) internal pure returns
         (int24 adjustedIncrease, int24 adjustedDecrease) {
-        // dynamic width of the gap depending on volume TODO
+        // dynamic width of the gap depending on % delta vol TODO
         int256 upper = int256(WAD + (WAD / 28));
         int256 lower = int256(WAD - (WAD / 28));
         int24 increase = int24((int256(twap) * upper) / int256(WAD));
@@ -354,11 +354,7 @@ contract MO is ReentrancyGuard {
         amount = _min(QUID.matureBalanceOf(
                         msg.sender), amount);
         require(amount > 0, "let it steep");
-        // be said of tea, bill, or a mountain,
-        // we're talking...accountant of monte
-        // crystal: the moments when potential 
-        // risks stop being hypothetical and 
-        // become part of realised book value
+        // can be said of tea, or a t-bill too
         uint share = FullMath.mulDiv(WAD, amount, 
                 QUID.matureBalanceOf(msg.sender));
             
@@ -367,9 +363,9 @@ contract MO is ReentrancyGuard {
         // any remaining debt on a fully liquidated pledge,
         // and QD minted in fold() as insurance coverage...
         uint absorb = FullMath.mulDiv(FullMath.mulDiv(
-        // maximum $ pledge would absorb if redeemed all its QD
-        pledges[address(this)].carry.credit, FullMath.mulDiv(WAD, 
-        pledges[msg.sender].carry.credit, SUM), WAD), _min(
+        // max $ pledge would absorb if redeemed all its QD
+        pledges[address(this)].carry.credit, FullMath.mulDiv(
+        WAD, pledges[msg.sender].carry.credit, SUM), WAD), _min(
         QUID.currentBatch() - QUID.lastRedeem(msg.sender), 1), 16);  
     
         if (WAD > share) { // not redeeming 100%
@@ -689,6 +685,7 @@ contract MO is ReentrancyGuard {
                 (uint collected0,
                  uint collected1) = _withdrawAndCollect(liquidity);
                 amount0 += collected0; amount1 += collected1;
+                // temporary displacement just like _creditHelper
                 pledges[address(this)].weth.debit -= collected1;
                 pledges[address(this)].work.debit -= collected0;
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
@@ -717,5 +714,7 @@ contract MO is ReentrancyGuard {
     function repackNFT() external nonReentrant {
         (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
         _repackNFT(0, 0, getPrice(sqrtPriceX96));
+        // TODO test ID before and after, after
+        // set_price_eth
     }
 }
