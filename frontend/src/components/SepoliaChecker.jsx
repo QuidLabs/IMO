@@ -21,12 +21,10 @@ export const SepoliaChecker = () => {
         try {
           const currentChainId = await window.ethereum.request({ method: 'eth_chainId' })
 
-          if (currentChainId.toLowerCase() === '0xaa36a7') {
-            return
-          }
+          if (currentChainId.toLowerCase() === '0xaa36a7') return
+          
 
           setNotifications('info', 'Requesting to switch to Sepolia Testnet...')
-          await new Promise(resolve => setTimeout(resolve, 500)) 
 
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
