@@ -1,10 +1,12 @@
 
 ## IM`Offer` 
 
-as inspiration for [ERC777](https://ethereum-magicians.org/t/erc-7770-fractional-reserve-token/21103):  
+as inspiration for [ERC777](https://ethereum-magicians.org/t/erc-7770-fractional-reserve-token/21103),  
+with a [30%](https://rulebook.centralbank.ae/en/rulebook/article-2-minimum-guarantee-fund) reserve ratio:  
 ~~mom.sol~~ **MO**(**M**oulinette),  
 and her lookalike, ~~my big  
-bro Johnny~~ QuiD (ERC20).  
+bro Johnny~~ QuiD (ERC20,  
+but similar to ERC6909).  
 
 QD is supported by an `ID`  
 for a Morpho lien, as well  

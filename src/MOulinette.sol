@@ -29,7 +29,7 @@ contract MO is ReentrancyGuard {
     uint24 constant POOL_FEE = 500;
     uint constant REV = POOL_FEE / 10;
     INonfungiblePositionManager NFPM;
-    int24 internal LAST_TWAP_TICK;
+    int24 internal LAST_TICK;
     int24 internal UPPER_TICK;
     int24 internal LOWER_TICK;
     uint internal _ETH_PRICE; // TODO delete
@@ -236,6 +236,58 @@ contract MO is ReentrancyGuard {
         console.log("CreditHelper...", credit, who);
     }
 
+    function _repackNFT(uint amount0,uint amount1, 
+        uint price) internal { uint128 liquidity;
+        if (pledges[address(this)].last.credit != 0) {
+            // not the first time _repackNFT is called
+            if ((LAST_TICK > UPPER_TICK || LAST_TICK < LOWER_TICK) &&
+                // "to improve is to change, to perfect is to change often"
+                block.timestamp - pledges[address(this)].last.credit >= 1 hours) {
+                // we want to make sure that all of the WETH deposited to this
+                // contract is always in range (collecting), and range is ~7% 
+                // below and above tick, as voltage regulators watch currents 
+                // and control a relay (which turns on & off the alternator, 
+                // if below or above 12 volts, (re-charging battery as such)
+                (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
+                (uint collected0,
+                 uint collected1) = _withdrawAndCollect(liquidity);
+                amount0 += collected0; amount1 += collected1;
+                // temporary displacement just like _creditHelper
+                pledges[address(this)].weth.debit -= _min(collected1, 
+                pledges[address(this)].weth.debit);
+                
+                pledges[address(this)].work.debit -= _min(_collected0,
+                pledges[address(this)].work.debit);
+                NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
+                pledges[address(this)].last.credit = block.timestamp;
+            }
+        } if (liquidity > 0 || ID == 0) { // first time or repack...
+            (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TICK);
+            (amount0, amount1) = _swap(amount0, amount1, price);
+            (ID, liquidityUnderManagement,,) = NFPM.mint(
+                INonfungiblePositionManager.MintParams({ token0: address(token0),
+                    token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK,
+                    tickUpper: UPPER_TICK, amount0Desired: amount0,
+                    amount1Desired: amount1, amount0Min: 0, amount1Min: 0,
+                    recipient: address(this), deadline: block.timestamp }));
+        } // else no need to repack NFT, only collect LP fees
+        else { (uint collected0, uint collected1) = _collect();
+            amount0 += collected0; amount1 += collected1;
+            (amount0, amount1) = _swap(amount0, amount1, price);
+            (liquidity,,) = NFPM.increaseLiquidity(
+                INonfungiblePositionManager.IncreaseLiquidityParams(
+                    ID, amount0, amount1, 0, 0, block.timestamp));
+                    liquidityUnderManagement += liquidity;
+        }   pledges[address(this)].weth.debit += amount1;
+            pledges[address(this)].work.debit += amount0;
+    }
+    function repackNFT() public nonReentrant {
+        (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
+        _repackNFT(0, 0, getPrice(sqrtPriceX96));
+        // TODO test ID before and after, after
+        // set_price_eth
+    }
+
     function getPrice(uint160 sqrtPriceX96)
         public view returns (uint) {
         if (_ETH_PRICE > 0) { // TODO b4 12/12
@@ -387,7 +439,7 @@ contract MO is ReentrancyGuard {
         if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
             if (usdc > amount) { token0.transfer(msg.sender, amount); }
             else { (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
-                LAST_TWAP_TICK = tick; amount -= usdc;
+                LAST_TICK = tick; amount -= usdc;
                 (uint amount0, uint amount1) = _withdrawAndCollect(
                     LiquidityAmounts.getLiquidityForAmounts(sqrtPriceX96,
                         TickMath.getSqrtPriceAtTick(LOWER_TICK),
@@ -417,7 +469,7 @@ contract MO is ReentrancyGuard {
         uint amount0; uint amount1;
         (uint160 sqrtPriceX96,
         int24 tick,,,,,) = POOL.slot0();
-        LAST_TWAP_TICK = tick; // chinches
+        LAST_TICK = tick; // chinches
         uint price = getPrice(sqrtPriceX96);
         Offer memory pledge = pledges[msg.sender]; // TODO uncomment
         // require(flashLoanProtect[msg.sender] != block.number,
@@ -482,7 +534,7 @@ contract MO is ReentrancyGuard {
         bool long) external nonReentrant payable {
         Offer memory pledge = pledges[beneficiary];
         (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
-        LAST_TWAP_TICK = tick; uint price = getPrice(sqrtPriceX96);
+        LAST_TICK = tick; uint price = getPrice(sqrtPriceX96);
         if (amount > 0) { WETH9.transferFrom(
             msg.sender, address(this), amount);
         } else { require(msg.value > 0, "ETH!"); }
@@ -520,7 +572,7 @@ contract MO is ReentrancyGuard {
     function fold(address beneficiary, uint amount, bool sell)
         external payable nonReentrant { FoldState memory state;
         (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
-        LAST_TWAP_TICK = tick; state.price = getPrice(sqrtPriceX96);
+        LAST_TICK = tick; state.price = getPrice(sqrtPriceX96);
         // call in collateral that's insured, or liquidate;
         // if there is an insured event, QD may be minted,
         // or simply clear the debt of a long position...
@@ -578,8 +630,7 @@ contract MO is ReentrancyGuard {
                     state.deductible = amount;
                     state.minting = state.collat -
                         FullMath.mulDiv( // deducted
-                            state.collat, FEE, WAD
-                        );
+                            state.collat, FEE, WAD);
                 } if (state.repay > 0) { // capitalise into credit
                     state.cap = _min(state.minting, state.repay);
                     // ^^^^^^ variable reused to save space...
@@ -635,11 +686,16 @@ contract MO is ReentrancyGuard {
                     // liquidation bot doesn't
                     // skip a chance to fold()
                     state.delta /= 10 minutes; 
+                    // six of this per hour...
+                    // TODO reset billable hours when
+                    // enough consecutive states collat
+                    // is 
                     amount = _min(pledge.work.debit,
                                 _max(pledge.last.debit +
                                     pledge.last.debit / 28,
                                     FullMath.mulDiv(state.delta,
                                         pledge.work.debit, 6048)));
+                                        // 1008 hours is 42 days...
                     pledges[address(this)].weth.debit += amount;
                     pledge.work.debit -= amount;
                     amount = _min(pledge.work.credit,
@@ -652,10 +708,8 @@ contract MO is ReentrancyGuard {
                     pledge.last.debit = amount;
                     pledge.work.credit -= amount;
                     pledge.last.credit = block.timestamp; // up to 
-                } else { // "it don't get no better than this, you catch my [dust]"
-                    // otherwise we run into a vacuum leak (infinite contraction)
-                    pledges[address(this)].weth.debit += pledge.work.debit;
-                     pledges[address(this)].carry.credit += pledge.work.credit;
+                } else { pledges[address(this)].weth.debit += pledge.work.debit;
+                    pledges[address(this)].carry.credit += pledge.work.credit;
                     // debt surplus absorbed ^^^^^^^^^ as if it were coverage
                     pledge.work.credit = 0; pledge.work.debit = 0; // reset
                     pledge.last.credit = 0; pledge.last.debit = 0; // storage
@@ -663,60 +717,17 @@ contract MO is ReentrancyGuard {
             }
         }   pledges[beneficiary] = pledge;
     } 
+    // to close the short call for, let's say 50% max profit... 
+    // Hitting a 50% target like this could happen if ETH falls
+    // far enough for that to happen or implied volatility has 
+    // decreased by that much. The result of legging out of 
+    // the short call like this would keep the risk capped, 
+    // lock in some gains, and maintain uncapped profit 
+    // exposure if there is a continuation down in ETH.
 
-    // fold() doesn't _repackNFT (only withdraw, deposit, redeem)
-    // "to improve is to change, to perfect is to change often,"
-    // we want to make sure that all of the WETH deposited to
-    // this contract is always in range (collecting), since
-    // burn & mint is relatively costly in terms of gas, we
-    // want to do that rarely...so as a rule of thumb, the
-    // range is roughly 7% below and above tick, it's how
-    // voltage regulators watch the currents and control a
-    // relay (which turns on & off the alternator, if below
-    // or above 12 volts, respectively, re-charging battery)
-    function _repackNFT(uint amount0,uint amount1, 
-        uint price) internal { uint128 liquidity;
-        if (pledges[address(this)].last.credit != 0) {
-            // not the first time _repackNFT is called
-            if ((LAST_TWAP_TICK > UPPER_TICK || LAST_TWAP_TICK < LOWER_TICK) &&
-                block.timestamp - pledges[address(this)].last.credit >= 1 hours) {
-                (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
-                (uint collected0,
-                 uint collected1) = _withdrawAndCollect(liquidity);
-                amount0 += collected0; amount1 += collected1;
-                // temporary displacement just like _creditHelper
-                pledges[address(this)].weth.debit -= _min(collected1, 
-                pledges[address(this)].weth.debit);
-                
-                pledges[address(this)].work.debit -= _min(_collected0,
-                pledges[address(this)].work.debit);
-                NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
-                pledges[address(this)].last.credit = block.timestamp;
-            }
-        } if (liquidity > 0 || ID == 0) { // first time or repack...
-            (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
-            (amount0, amount1) = _swap(amount0, amount1, price);
-            (ID, liquidityUnderManagement,,) = NFPM.mint(
-                INonfungiblePositionManager.MintParams({ token0: address(token0),
-                    token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK,
-                    tickUpper: UPPER_TICK, amount0Desired: amount0,
-                    amount1Desired: amount1, amount0Min: 0, amount1Min: 0,
-                    recipient: address(this), deadline: block.timestamp }));
-        } // else no need to repack NFT, only collect LP fees
-        else { (uint collected0, uint collected1) = _collect();
-            amount0 += collected0; amount1 += collected1;
-            (amount0, amount1) = _swap(amount0, amount1, price);
-            (liquidity,,) = NFPM.increaseLiquidity(
-                INonfungiblePositionManager.IncreaseLiquidityParams(
-                    ID, amount0, amount1, 0, 0, block.timestamp));
-                    liquidityUnderManagement += liquidity;
-        }   pledges[address(this)].weth.debit += amount1;
-            pledges[address(this)].work.debit += amount0;
-    }
-    function repackNFT() external nonReentrant {
-        (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
-        _repackNFT(0, 0, getPrice(sqrtPriceX96));
-        // TODO test ID before and after, after
-        // set_price_eth
-    }
+    // However, at times when not expecting continuation 
+    // it would be better to close both legs all at once 
+    // for clean profit capture on the strategy (sell bool)
+    // Deciding on tactical maneuvers—such as legging out
+    // would always be judged on a case-by-case basis...
 }
