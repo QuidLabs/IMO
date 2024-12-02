@@ -180,6 +180,29 @@ export const Mint = () => {
     return quid ? await quid.methods.qd_amt_to_dollar_amt(qdAmountBN).call() : 0
   }, [quid])
 
+  const handleChangeValue = useCallback((e) => {
+    const regex = /^\d*(\.\d*)?$|^$/
+
+    let originalValue = e.target.value
+
+    if (originalValue.length > 1 && originalValue[0] === "0" && originalValue[1] !== ".")
+      originalValue = originalValue.substring(1)
+
+    if (originalValue[0] === ".") originalValue = "0" + originalValue
+
+    if (regex.test(originalValue)) {
+      if (chooseButton.current === "MINT" || !chooseCurrency || chooseButton == null) setInputValue(Number(originalValue).toFixed())
+      else setInputValue(originalValue)
+    }
+  }, [chooseButton, chooseCurrency])
+
+  const setNotifications = useCallback((severity, message, status = false) => {
+    setStorage(prevNotifications => [
+      ...prevNotifications,
+      { severity: severity, message: message, status: status }
+    ])
+  }, [setStorage])
+
   const updateTotalSupply = useCallback(async () => {
     try {
       await Promise.all([getTotalSupply(), getDepositInfo(addressMO), getWalletBalance()])
@@ -203,29 +226,6 @@ export const Mint = () => {
       console.error(error)
     }
   }, [getDepositInfo, getTotalSupply, getWalletBalance, getUserInfo, addressMO, chooseButton])
-
-  const handleChangeValue = useCallback((e) => {
-    const regex = /^\d*(\.\d*)?$|^$/
-
-    let originalValue = e.target.value
-
-    if (originalValue.length > 1 && originalValue[0] === "0" && originalValue[1] !== ".")
-      originalValue = originalValue.substring(1)
-
-    if (originalValue[0] === ".") originalValue = "0" + originalValue
-
-    if (regex.test(originalValue)) {
-      if (chooseButton.current === "MINT" || !chooseCurrency || chooseButton == null) setInputValue(Number(originalValue).toFixed())
-      else setInputValue(originalValue)
-    }
-  }, [chooseButton, chooseCurrency])
-
-  const setNotifications = useCallback((severity, message, status = false) => {
-    setStorage(prevNotifications => [
-      ...prevNotifications,
-      { severity: severity, message: message, status: status }
-    ])
-  }, [setStorage])
 
   //================================================================================================
   // -------------------------- STARTING TRANSFERS TERMINAL METHOD ---------------------------------
