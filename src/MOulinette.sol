@@ -2,20 +2,21 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import {Quid} from "./QD.sol"; // ERC777
-import "lib/forge-std/src/console.sol"; // TODO delete
-import {WETH} from "lib/solmate/src/tokens/WETH.sol";
-import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import "lib/forge-std/src/console.sol"; // TODO delete logging and set_price_eth
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
-// import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
-import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
-// import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
+// import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO only for Sepolia
+import {WETH} from "lib/solmate/src/tokens/WETH.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
+import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
+import {FixedPointMathLib} from "lib/solmate/src/utils/FixedPointMathLib.sol";
 
-contract MO { // Modus Operandi...
+contract MO is ReentrancyGuard {
     using SafeTransferLib for ERC20;
     using SafeTransferLib for WETH;
     ERC20 public immutable token1;
@@ -24,15 +25,18 @@ contract MO { // Modus Operandi...
     uint public ID; // V3 NFT
     uint constant WAD = 1e18;
     uint public FEE = WAD / 28;
-    uint constant DIME = 10 * WAD;
+    uint constant RACK = 1000 * WAD;
     uint24 constant POOL_FEE = 500;
+    uint constant REV = POOL_FEE / 10;
     INonfungiblePositionManager NFPM;
-    int24 internal LAST_TWAP_TICK;
+    int24 internal LAST_TICK;
     int24 internal UPPER_TICK;
     int24 internal LOWER_TICK;
     uint internal _ETH_PRICE; // TODO delete
     IUniswapV3Pool POOL; ISwapRouter ROUTER;
     uint128 liquidityUnderManagement; // UniV3
+    mapping(address => uint) flashLoanProtect;
+    // TODO storage perecentage delta in vol
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
@@ -42,7 +46,6 @@ contract MO { // Modus Operandi...
         external returns (uint, uint) {
         Offer memory pledge = pledges[who];
         return (pledge.carry.debit, QUID.balanceOf(who));
-        // never need pledge.carry.credit in the frontend,
         // this is more of an internal tracking variable
     }   function get_more_info(address who) view
         external returns (uint, uint, uint, uint) {
@@ -56,22 +59,16 @@ contract MO { // Modus Operandi...
      // with a fixed charge (deductible) payable
      // upfront (upon deposit), 1/2 on withdrawal
      // deducted as a % FEE from the $ value which
-     // is either being deposited or moved in fold
+     // is either being deposited, or moved in fold
     struct Pod { // for pledge.weth this amounts to
         uint credit; // sum[amt x price at deposit]
         uint debit; //  quantity of tokens pledged
     } /* carry.credit = contribution to weighted...
     ...SUM of (QD / total QD) x (ROI / avg ROI) */
     uint public SUM = 1; uint public AVG_ROI = 1;
-    // formal contracts require a pledge method of
-    // Offer to be enforaceable; one example is
-    // negotiable instruments, promissory notes
-    // or time based commitment to do / refrain
-    // from doing a specific future thing...
-    // bilateral...promise for a promise, aka
     struct Offer { Pod weth; Pod carry; Pod work;
-    uint last; } // timestamp of last liquidate &
-    // % that's been liquidated (smaller over time)
+    Pod last; } // timestamp of last liquidation,
+    // amt that was liquidated (smaller over time)
     // for address(this) it's time since NFPM.burn
     // work is like a checking account (credit can
     // be drawn against it) while weth is savings,
@@ -87,34 +84,38 @@ contract MO { // Modus Operandi...
              == address(this), "42");
     } 
     modifier onlyQuid {
-        require(msg.sender 
+        require(msg.sender
             == address(QUID),
             "unauthorised"); _;
     }
     receive() external payable {}
+    function _min(uint _a, uint _b)
+        internal pure returns (uint) {
+        return (_a < _b) ? _a : _b;
+    }
+    function _max(uint _a, uint _b)
+        internal pure returns (uint) {
+        return (_a > _b) ? _a : _b;
+    }
     function setFee(uint index)
         public onlyQuid { FEE =
         WAD / (index + 11); }
     // recall the 3rd Delphic maxim...
     mapping (address => Offer) pledges;
-    function _min(uint _a, uint _b)
-        internal pure returns (uint) {
-        return (_a < _b) ? _a : _b;
-    }
     function setMetrics(uint avg_roi) public
         onlyQuid { AVG_ROI = avg_roi;
     }
-    function dollar_amt_to_qd_amt(uint cap, uint amt) 
-        public view returns (uint) { 
-        return FullMath.mulDiv(amt,
-        100 + (100 - cap), 100);
-    } 
-    // different from eponymous function in ERC20...
-    function qd_amt_to_dollar_amt(uint cap, 
-        uint amt) public view returns (uint) { 
+    function dollar_amt_to_qd_amt(uint cap,
+        uint amt) public pure returns (uint) {
+            return FullMath.mulDiv(amt,
+            100 + (100 - cap), 100);
+    }
+    // not same as eponymous function in QD
+    function qd_amt_to_dollar_amt(uint cap,
+        uint amt) public pure returns (uint) {
         return FullMath.mulDiv(amt, cap, 100);
     }
-
+    
     function set_price_eth(bool up,
         bool refresh) external {
         (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
@@ -162,18 +163,17 @@ contract MO { // Modus Operandi...
         uint total = QUID.totalSupply();
         if (qd > 0) { total = (burn) ?
             total - qd : total + qd;
-        }
-        if (assets >= total) { return (0, 100); }
+        }   if (assets >= total) { return (0, 100); }
             else { return ((total - assets),
-        FullMath.mulDiv(100, assets, total));
+            FullMath.mulDiv(100, assets, total));
         }
     }
 
     // helpers allow treating QD balances
     // uniquely without needing ERC721...
-    function transferHelper(address from,
-        address to, uint amount)
-        onlyQuid public returns (uint) {
+    function transferHelper(address from, address to, 
+        uint amount, uint priorBalance) onlyQuid 
+            public returns (uint) {
             if (to == address(this)) {
                 uint credit = pledges[from].work.credit;
                 (, uint cap) = capitalisation(amount, true);
@@ -187,8 +187,8 @@ contract MO { // Modus Operandi...
             // determine % of total balance
             // transferred for ROI pro rata
             uint ratio = FullMath.mulDiv(WAD,
-                amount, QUID.balanceOf(from));
-            require(ratio <= WAD, "insufficient balance");
+                amount, priorBalance);
+            require(ratio <= WAD, "not enough");
             console.log("TransferHelperEvent...", ratio);
             // proportionally transfer debit...
             uint debit = FullMath.mulDiv(ratio,
@@ -196,6 +196,8 @@ contract MO { // Modus Operandi...
             console.log("DebitTransferHelper...", debit);
             pledges[to].carry.debit += debit;
             pledges[from].carry.debit -= debit;
+            // pledges[address[this]].carry.debit
+            // remains constant, and individually
             // pledge.carry.credit in helper...
             // QD minted in coverage claims or
             // over-collateralisation does not
@@ -216,7 +218,7 @@ contract MO { // Modus Operandi...
         uint share = FullMath.mulDiv(WAD,
             balance, QUID.totalSupply());
         console.log("CreditHelperShare...", share, who);
-        credit = share;
+        credit = share; // workaround from using NFT
         if (debit > 0 && QUID.currentBatch() > 0) {
             // projected ROI if QD is $1...
             uint roi = FullMath.mulDiv(WAD,
@@ -232,6 +234,58 @@ contract MO { // Modus Operandi...
         }   pledges[who].carry.credit = credit;
         SUM += credit; // update sum with new share
         console.log("CreditHelper...", credit, who);
+    }
+
+    function _repackNFT(uint amount0,uint amount1, 
+        uint price) internal { uint128 liquidity;
+        if (pledges[address(this)].last.credit != 0) {
+            // not the first time _repackNFT is called
+            if ((LAST_TICK > UPPER_TICK || LAST_TICK < LOWER_TICK) &&
+                // "to improve is to change, to perfect is to change often"
+                block.timestamp - pledges[address(this)].last.credit >= 1 hours) {
+                // we want to make sure that all of the WETH deposited to this
+                // contract is always in range (collecting), and range is ~7% 
+                // below and above tick, as voltage regulators watch currents 
+                // and control a relay (which turns on & off the alternator, 
+                // if below or above 12 volts, (re-charging battery as such)
+                (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
+                (uint collected0,
+                 uint collected1) = _withdrawAndCollect(liquidity);
+                amount0 += collected0; amount1 += collected1;
+                // temporary displacement just like _creditHelper
+                pledges[address(this)].weth.debit -= _min(collected1, 
+                pledges[address(this)].weth.debit);
+                
+                pledges[address(this)].work.debit -= _min(_collected0,
+                pledges[address(this)].work.debit);
+                NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
+                pledges[address(this)].last.credit = block.timestamp;
+            }
+        } if (liquidity > 0 || ID == 0) { // first time or repack...
+            (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TICK);
+            (amount0, amount1) = _swap(amount0, amount1, price);
+            (ID, liquidityUnderManagement,,) = NFPM.mint(
+                INonfungiblePositionManager.MintParams({ token0: address(token0),
+                    token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK,
+                    tickUpper: UPPER_TICK, amount0Desired: amount0,
+                    amount1Desired: amount1, amount0Min: 0, amount1Min: 0,
+                    recipient: address(this), deadline: block.timestamp }));
+        } // else no need to repack NFT, only collect LP fees
+        else { (uint collected0, uint collected1) = _collect();
+            amount0 += collected0; amount1 += collected1;
+            (amount0, amount1) = _swap(amount0, amount1, price);
+            (liquidity,,) = NFPM.increaseLiquidity(
+                INonfungiblePositionManager.IncreaseLiquidityParams(
+                    ID, amount0, amount1, 0, 0, block.timestamp));
+                    liquidityUnderManagement += liquidity;
+        }   pledges[address(this)].weth.debit += amount1;
+            pledges[address(this)].work.debit += amount0;
+    }
+    function repackNFT() public nonReentrant {
+        (uint160 sqrtPriceX96,,,,,,) = POOL.slot0();
+        _repackNFT(0, 0, getPrice(sqrtPriceX96));
+        // TODO test ID before and after, after
+        // set_price_eth
     }
 
     function getPrice(uint160 sqrtPriceX96)
@@ -285,7 +339,7 @@ contract MO { // Modus Operandi...
     } // adjust to the nearest multiple of our tick width
     function _adjustTicks(int24 twap) internal pure returns
         (int24 adjustedIncrease, int24 adjustedDecrease) {
-        // dynamic width of the gap depending on volume TODO
+        // dynamic width of the gap depending on % delta vol TODO
         int256 upper = int256(WAD + (WAD / 28));
         int256 lower = int256(WAD - (WAD / 28));
         int24 increase = int24((int256(twap) * upper) / int256(WAD));
@@ -301,16 +355,14 @@ contract MO { // Modus Operandi...
         uint scaled = amount0 * 1e12;
         uint in_usd = FullMath.mulDiv(
                 amount1, price, WAD);
-        if (in_usd > scaled && // from QUID.mint
+        if (in_usd > scaled && // from QUID.mint...
             token0.balanceOf(address(this)) > 0) {
             amount0 = _min((in_usd - scaled) / 1e12,
                 token0.balanceOf(address(this)));
-        }
-        else if (scaled > in_usd) { scaled = in_usd;
-            amount0 = in_usd / 1e12;
-        }
-        int delta = (int(in_usd) - int(scaled))
-                    / int(2 * price / 1e18);
+        } else if (scaled > in_usd) { scaled = in_usd;
+                            amount0 = in_usd / 1e12;
+        } int delta = (int(in_usd) - int(scaled))
+                      / int(2 * price / 1e18);
         uint selling;
         if (delta > 0) {
             selling = uint(delta);
@@ -334,72 +386,77 @@ contract MO { // Modus Operandi...
     function mint(address to, // used by ERC20.mint
         uint cost, uint minted) public onlyQuid {
         pledges[address(this)].carry.debit += cost;
+        pledges[address(this)].carry.credit += minted - cost;
         // ^needed for tracking total capitalisation...
         pledges[to].carry.debit += cost; // contingent
         // variable for ROI as well as redemption,
         // carry.credit gets reset in _creditHelper
-        pledges[to].carry.credit += minted / 3;
-        _creditHelper(to); // beneficiary of QD
+        pledges[to].carry.credit += minted;
+        _creditHelper(to); // beneficiary
     } 
 
     // call in QD's worth (обнал sans liabilities)
     // calculates the coverage absorption for each
     // insurer by first determining their share %
     // and then adjusting based on average ROI...
-    // (insurers with higher ROI absorb more)
+    // (insurers with higher ROI absorb more) 
     // "you never count your money while you're
     // sittin' at the table...there'll be time
-    
-    function redeem(uint amount) // QD
-        external {
-        uint share = FullMath.mulDiv(WAD,
-            amount, _min(QUID.matureBalanceOf(
-                        msg.sender), amount));
-
+    function redeem(uint amount) // into $
+        external nonReentrant { // amount QD
+        amount = _min(QUID.matureBalanceOf(
+                        msg.sender), amount);
+        require(amount > 0, "let it steep");
+        // can be said of tea, or a t-bill too
+        uint share = FullMath.mulDiv(WAD, amount, 
+                QUID.matureBalanceOf(msg.sender));
+            
         // coverage includes 30% of all QD minted in QUID.mint
         // as this % supply is not 1:1 backed; also includes
         // any remaining debt on a fully liquidated pledge,
         // and QD minted in fold() as insurance coverage...
-        
-        uint absorb = FullMath.mulDiv(pledges[address(this)].carry.credit,
-            // maximum $ pledge would absorb if it redeemed all its QD...
-            FullMath.mulDiv(WAD, pledges[msg.sender].carry.credit, SUM),
-            WAD);  // if not 100% of the mature QD is being redeemed...
-        if (WAD > share) {
+        uint absorb = FullMath.mulDiv(FullMath.mulDiv(
+        // max $ pledge would absorb if redeemed all its QD
+        pledges[address(this)].carry.credit, FullMath.mulDiv(
+        WAD, pledges[msg.sender].carry.credit, SUM), WAD), _min(
+        QUID.currentBatch() - QUID.lastRedeem(msg.sender), 1), 16);  
+    
+        if (WAD > share) { // not redeeming 100%
             absorb = FullMath.mulDiv(absorb,
                                 share, WAD);
-        }   QUID.turn(msg.sender, amount);
+        } // helper function called by turn
+        // handles PLEDGE.CARRY.CREDIT--
+        absorb = QUID.turn(msg.sender, amount);
 
         console.log("AbsorbInRedeem...", absorb);
-        // helper function called by turn
-        // handles PLEDGE.CARRY.CREDIT--
+       
         (, uint cap) = capitalisation(0, false);
         amount = qd_amt_to_dollar_amt(cap, amount);
         console.log("AbsorbAmount...", amount);
         
-        if (amount > absorb) {
-            amount -= absorb;
-            amount -= QUID.draw(
-            msg.sender, amount);
-            if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
-                if (usdc > amount) { token0.transfer(msg.sender, amount); }
-                else { (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
-                    LAST_TWAP_TICK = tick; amount -= usdc;
-                    (uint amount0, uint amount1) = _withdrawAndCollect(
-                        LiquidityAmounts.getLiquidityForAmounts(sqrtPriceX96,
-                            TickMath.getSqrtPriceAtTick(LOWER_TICK),
-                            TickMath.getSqrtPriceAtTick(UPPER_TICK),
-                            amount / (2 * 1e12), FullMath.mulDiv(WAD,
-                            amount / 2, getPrice(sqrtPriceX96))));
-                    require(amount0 > 0 && amount1 > 0, "nothing was withdrawn");
-                    amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
-                        abi.encodePacked(address(token1), POOL_FEE, address(token0)),
-                        address(this), block.timestamp, amount1, 0));
-                    token0.transfer(msg.sender, usdc / 1e12 + amount0);
-                }
-            }    pledges[address(this)].carry.credit -= absorb;
-        } else { pledges[address(this)].carry.credit -= amount; }
-    } 
+        abosrb = _min(absorb, amount / 3); 
+        amount -= absorb; amount -= QUID.morph(msg.sender, amount);
+        if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
+            if (usdc > amount) { token0.transfer(msg.sender, amount); }
+            else { (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
+                LAST_TICK = tick; amount -= usdc;
+                (uint amount0, uint amount1) = _withdrawAndCollect(
+                    LiquidityAmounts.getLiquidityForAmounts(sqrtPriceX96,
+                        TickMath.getSqrtPriceAtTick(LOWER_TICK),
+                        TickMath.getSqrtPriceAtTick(UPPER_TICK),
+                        amount / (2 * 1e12), FullMath.mulDiv(WAD,
+                        amount / 2, getPrice(sqrtPriceX96))));
+                require(amount0 > 0 && amount1 > 0, "nothing withdrawn");
+                amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
+                    abi.encodePacked(address(token1), POOL_FEE, address(token0)),
+                    address(this), block.timestamp, amount1, 0));
+                token0.transfer(msg.sender, usdc / 1e12 + amount0);
+            }
+        }    pledges[address(this)].carry.credit -= absorb;
+        // } else { pledges[address(this)].carry.credit -= amount; }
+        // "I said see you at the top, and they misunderstood me:
+        // I hold no resentment in my heart, that's that maturity;
+    } // and we don't keep it on us anymore," ain't no securities
 
     // Quid says if amount is QD...
     // ETH can only be withdrawn from
@@ -407,43 +464,42 @@ contract MO { // Modus Operandi...
     // deposited pledge.weth.debit,
     // call fold() before withdraw():
     // form of flash loan protection
-    function withdraw(uint amount,
-        bool quid) external payable {
+    function withdraw(uint amount, bool quid) 
+        external nonReentrant payable {
         uint amount0; uint amount1;
         (uint160 sqrtPriceX96,
         int24 tick,,,,,) = POOL.slot0();
-        LAST_TWAP_TICK = tick;
-        // TODO check block.timestamp different from
-        // saved value during fold() for msg.sender
+        LAST_TICK = tick; // chinches
         uint price = getPrice(sqrtPriceX96);
-        Offer memory pledge = pledges[msg.sender];
-        if (quid) { // amount is in units of QD...
-            require(amount >= DIME, "too small");
+        Offer memory pledge = pledges[msg.sender]; // TODO uncomment
+        // require(flashLoanProtect[msg.sender] != block.number,
+        //             "can't fold & withdraw in same block");
+        if (quid) { // amount is in units of QD
+            require(amount >= RACK, "too small");
             if (msg.value > 0) { amount1 = msg.value;
                 WETH9.deposit{ value: amount1 }();
                 pledges[address(this)].work.credit +=
                 amount1; pledge.work.debit += amount1;
             }   uint debit = FullMath.mulDiv(price,
                              pledge.work.debit, WAD);
-            uint buffered = debit - (debit / 5);
-            require(buffered >= pledge.work.credit
-            && buffered > 0, "CR"); amount = _min(
-                amount, buffered - pledge.work.credit);
+            uint haircut = debit - (debit / 5);
+            require(haircut >= pledge.work.credit
+            && haircut > 0, "CR"); amount = _min(
+                amount, haircut - pledge.work.credit);
             if (amount > 0) { pledge.work.credit += amount;
                 (, uint cap) = capitalisation(amount, false);
                 amount = dollar_amt_to_qd_amt(cap, amount);
                 QUID.mint(msg.sender, amount, address(QUID));
             }
-        } else { 
-            uint withdrawable; // amount of ETH collateral (work.debit)
+        } else { uint withdrawable; // of ETH collateral (work.debit)
             if (pledge.work.credit > 0) { // see if we owe debt on it
-                uint debit = FullMath.mulDiv(price, pledge.work.debit, WAD);
-                uint buffered = debit - debit / 5;
-                require(buffered >= pledge.work.credit, "CR!");
+                uint debit = FullMath.mulDiv( // dollar value of ETH
+                    price, pledge.work.debit, WAD);
+                uint haircut = debit - debit / 5;
+                require(haircut >= pledge.work.credit, "CR!");
                 withdrawable = FullMath.mulDiv(WAD,
-                    buffered - pledge.work.credit, price);
-            }
-            uint transfer = amount;
+                    haircut - pledge.work.credit, price);
+            }   uint transfer = amount;
             if (transfer > withdrawable) {
                 withdrawable = FullMath.mulDiv(
                     WAD, pledge.work.credit, price
@@ -465,31 +521,29 @@ contract MO { // Modus Operandi...
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
                     address(this), block.timestamp, amount0, 0)); amount0 = 0;
-            }
-            transfer = transfer > amount1 ? amount1 : transfer;
+            }       transfer = transfer > amount1 ? amount1 : transfer;
+            
             WETH9.withdraw(transfer); amount1 -= transfer;
             (bool success, ) = msg.sender.call{value: transfer}("");
-            require(success, "failed to withdraw raw ether");
-            if (amount1 > 0) {
-                repackNFT(amount0, amount1, price);
-            }
+            require(success, "raw"); if (amount1 > 0) { _repackNFT(
+                                         amount0, amount1, price); }
         }   pledges[msg.sender] = pledge;
     }
 
-    function deposit(address beneficiary, // pledge
-        uint amount, bool long) external payable {
+    function deposit(address beneficiary, uint amount,
+        bool long) external nonReentrant payable {
         Offer memory pledge = pledges[beneficiary];
         (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
-        LAST_TWAP_TICK = tick; uint price = getPrice(sqrtPriceX96);
-        if (amount > 0) { WETH9.transferFrom( //
+        LAST_TICK = tick; uint price = getPrice(sqrtPriceX96);
+        if (amount > 0) { WETH9.transferFrom(
             msg.sender, address(this), amount);
         } else { require(msg.value > 0, "ETH!"); }
         if (msg.value > 0) { amount += msg.value;
             WETH9.deposit{ value: msg.value }();
         }   if (long) { pledge.work.debit += amount;
             pledges[address(this)].work.credit += amount;
-        }   else { // 
-            uint in_dollars = FullMath.mulDiv(price, amount, WAD);
+        } 
+        else { uint in_dollars = FullMath.mulDiv(price, amount, WAD);
             uint deductible = FullMath.mulDiv(in_dollars, FEE, WAD);
             // change deductible to be in units of ETH instead...
             deductible = FullMath.mulDiv(WAD, deductible, price);
@@ -503,7 +557,7 @@ contract MO { // Modus Operandi...
                 FullMath.mulDiv(pledges[address(this)].weth.credit,
                     price * 90 / 100, WAD), "over-encumbered");
         }           pledges[beneficiary] = pledge;
-                    repackNFT(0, amount, price);
+                    _repackNFT(0, amount, price);
     }
     
     // "Entropy" comes from a Greek word for transformation;
@@ -515,16 +569,17 @@ contract MO { // Modus Operandi...
     // the halo of a street-lamp, I turn my [straddle] to
     // the cold and damp...know when to hold 'em...know
     // when to..." 
-    function fold(address beneficiary, uint amount,
-        bool sell) external payable { FoldState memory state;
+    function fold(address beneficiary, uint amount, bool sell)
+        external payable nonReentrant { FoldState memory state;
         (uint160 sqrtPriceX96, int24 tick,,,,,) = POOL.slot0();
-        LAST_TWAP_TICK = tick; state.price = getPrice(sqrtPriceX96);
+        LAST_TICK = tick; state.price = getPrice(sqrtPriceX96);
         // call in collateral that's insured, or liquidate;
         // if there is an insured event, QD may be minted,
         // or simply clear the debt of a long position...
         // "we can serve our [wick nest] or we can serve
         // our purpose, but not both" ~ Mother Cabrini
         Offer memory pledge = pledges[beneficiary];
+        flashLoanProtect[beneficiary] = block.number;
         amount = _min(amount, pledge.weth.debit);
         require(amount > 0, "amount too low");
         (, state.cap) = capitalisation(0, false);
@@ -575,8 +630,7 @@ contract MO { // Modus Operandi...
                     state.deductible = amount;
                     state.minting = state.collat -
                         FullMath.mulDiv( // deducted
-                            state.collat, FEE, WAD
-                        );
+                            state.collat, FEE, WAD);
                 } if (state.repay > 0) { // capitalise into credit
                     state.cap = _min(state.minting, state.repay);
                     // ^^^^^^ variable reused to save space...
@@ -584,7 +638,7 @@ contract MO { // Modus Operandi...
                     state.minting -= state.cap;
                     state.repay -= state.cap;
                 }   (, state.cap) = capitalisation(state.delta, false);
-                if (state.minting > state.delta || state.cap > 69) { 
+                if (state.minting > state.delta || state.cap > 69) {
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
@@ -616,26 +670,34 @@ contract MO { // Modus Operandi...
             state.collat = FullMath.mulDiv(pledge.work.debit, state.price, WAD);
             if (state.collat > pledge.work.credit) { state.liquidate = false; }
         }   // "things have gotten closer to the sun, and I've done things
-            // in small doses, so don't think that I'm pushing you away"
-            // "when iron spit, cats fold, infact they
-        if (state.liquidate && // get their life froze"
-            (block.timestamp - pledge.last > 1 hours)) {
-            (, state.cap) = capitalisation(state.repay, true);
-            amount = _min(dollar_amt_to_qd_amt(state.cap,
-                state.repay), QUID.balanceOf(beneficiary)
-            );  
+            // in small doses, so don't think that I'm pushing you away;
+            // iron spits, cats fold, infact they get their life froze"
+        if (state.liquidate) { // "⚡️ strikes and the 🏀 court lights
+            (, state.cap) = capitalisation(state.repay, true); // get
+            amount = _min(dollar_amt_to_qd_amt(state.cap, // dim...
+                state.repay), QUID.balanceOf(beneficiary));
             QUID.transferFrom(beneficiary, address(this), amount);
             amount = qd_amt_to_dollar_amt(state.cap, amount);
-            // subtract the $ value of QD
-            pledge.work.credit -= amount;
-            console.log("FoldSalve...", amount);
-            // "lightnin' ⚡️ strikes and the 🏀 court lights...
-            if (pledge.work.credit > state.collat) { // get dim"
-                if (pledge.work.credit > DIME) { // assumes that
-                // liquidation bot doesn't skip a chance to win
-                    amount = pledge.work.debit / 727;
-                    pledge.work.debit -= amount;
+            pledge.work.credit -= amount; // -- $ value of QD
+            state.delta = block.timestamp - pledge.last.credit;
+            if (pledge.work.credit > state.collat) {
+                if (pledge.work.credit > RACK / 10
+                    && state.delta >= 10 minutes) {
+                    // liquidation bot doesn't
+                    // skip a chance to fold()
+                    state.delta /= 10 minutes; 
+                    // six of this per hour...
+                    // TODO reset billable hours when
+                    // enough consecutive states collat
+                    // is 
+                    amount = _min(pledge.work.debit,
+                                _max(pledge.last.debit +
+                                    pledge.last.debit / 28,
+                                    FullMath.mulDiv(state.delta,
+                                        pledge.work.debit, 6048)));
+                                        // 1008 hours is 42 days...
                     pledges[address(this)].weth.debit += amount;
+                    pledge.work.debit -= amount;
                     amount = _min(pledge.work.credit,
                         FullMath.mulDiv(state.price,
                                         amount, WAD));
@@ -643,63 +705,29 @@ contract MO { // Modus Operandi...
                     // "It's like inch by inch, and step by
                     // step, I'm closin' in on your position
                     // and [eviction] is my mission"
-                    // Euler’s disk 💿 erasure code TODO
+                    pledge.last.debit = amount;
                     pledge.work.credit -= amount;
-                    pledge.last = block.timestamp;
-                } else { // "it don't get no better than this, you catch my [dust]"
-                    // otherwise we run into a vacuum leak (infinite contraction)
-                    pledges[address(this)].weth.debit += pledge.work.debit;
-                     pledges[address(this)].carry.credit += pledge.work.credit;
+                    pledge.last.credit = block.timestamp; // up to 
+                } else { pledges[address(this)].weth.debit += pledge.work.debit;
+                    pledges[address(this)].carry.credit += pledge.work.credit;
                     // debt surplus absorbed ^^^^^^^^^ as if it were coverage
                     pledge.work.credit = 0; pledge.work.debit = 0; // reset
+                    pledge.last.credit = 0; pledge.last.debit = 0; // storage
                 }
             }
         }   pledges[beneficiary] = pledge;
     } 
+    // to close the short call for, let's say 50% max profit... 
+    // Hitting a 50% target like this could happen if ETH falls
+    // far enough for that to happen or implied volatility has 
+    // decreased by that much. The result of legging out of 
+    // the short call like this would keep the risk capped, 
+    // lock in some gains, and maintain uncapped profit 
+    // exposure if there is a continuation down in ETH.
 
-    // fold() doesn't repackNFT (only withdraw, deposit, redeem)
-    // "to improve is to change, to perfect is to change often,"
-    // we want to make sure that all of the WETH deposited to
-    // this contract is always in range (collecting), since
-    // burn & mint is relatively costly in terms of gas, we
-    // want to do that rarely...so as a rule of thumb, the
-    // range is roughly 7% below and above tick, it's how
-    // voltage regulators watch the currents and control the
-    // relay (which turns on & off the alternator, if below
-    // or above 14 volts, respectively, re-charging battery)
-    function repackNFT(uint amount0,
-        uint amount1, uint price) public { uint128 liquidity;
-        if (pledges[address(this)].last != 0) { // not first time
-            if ((LAST_TWAP_TICK > UPPER_TICK
-              || LAST_TWAP_TICK < LOWER_TICK)
-              && block.timestamp - pledges[address(this)].last >= 1 hours) {
-                (,,,,,,, liquidity,,,,) = NFPM.positions(ID);
-                (uint collected0,
-                 uint collected1) = _withdrawAndCollect(liquidity);
-                amount0 += collected0; amount1 += collected1;
-                pledges[address(this)].weth.debit -= collected1;
-                pledges[address(this)].work.debit -= collected0;
-                NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
-                pledges[address(this)].last = block.timestamp;
-            }
-        } if (liquidity > 0 || ID == 0) {
-            (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TWAP_TICK);
-            (amount0, amount1) = _swap(amount0, amount1, price);
-            (ID, liquidityUnderManagement,,) = NFPM.mint(
-                INonfungiblePositionManager.MintParams({ token0: address(token0),
-                    token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK,
-                    tickUpper: UPPER_TICK, amount0Desired: amount0,
-                    amount1Desired: amount1, amount0Min: 0, amount1Min: 0,
-                    recipient: address(this), deadline: block.timestamp }));
-        } // else no need to repack NFT, only collect LP fees
-        else { (uint collected0, uint collected1) = _collect();
-            amount0 += collected0; amount1 += collected1;
-            (amount0, amount1) = _swap(amount0, amount1, price);
-            (liquidity,,) = NFPM.increaseLiquidity(
-                INonfungiblePositionManager.IncreaseLiquidityParams(
-                    ID, amount0, amount1, 0, 0, block.timestamp));
-                    liquidityUnderManagement += liquidity;
-        }   pledges[address(this)].weth.debit += amount1;
-            pledges[address(this)].work.debit += amount0;
-    }
+    // However, at times when not expecting continuation 
+    // it would be better to close both legs all at once 
+    // for clean profit capture on the strategy (sell bool)
+    // Deciding on tactical maneuvers—such as legging out
+    // would always be judged on a case-by-case basis...
 }

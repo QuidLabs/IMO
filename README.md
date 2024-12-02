@@ -1,36 +1,48 @@
 
-## iM ~~Opinion~~ [Offer](http://hackmd.io/@quid/mint) 
+## IM`Offer` 
 
-There are two contracts,  
-both have an `ID`, in the  
-ERC20 related to `MORPHO`,  
-and in the second contract  
-(bound to the ERC20, QD),  
-related to  WETH<>USDC.  
+as inspiration for [ERC777](https://ethereum-magicians.org/t/erc-7770-fractional-reserve-token/21103),  
+with a [30%](https://rulebook.centralbank.ae/en/rulebook/article-2-minimum-guarantee-fund) reserve ratio:  
+~~mom.sol~~ **MO**(**M**oulinette),  
+and her lookalike, ~~my big  
+bro Johnny~~ QuiD (ERC20,  
+but similar to ERC6909).  
 
+QD is supported by an `ID`  
+for a Morpho lien, as well  
+as an `ID` for [selling puts](https://x.com/futurenomics/status/1766173245949014373)  
+in a concentrated liquidity   
+[optimiser](https://x.com/guil_lambert/status/1772423853316219051) for Uniswap...  
+
+QD works like a [bond](https://www.investopedia.com/terms/z/zero-couponbond.asp) to  
+incentivise stablecoins  
+to be staked, allowing  
+to underwrite downside  
+risk for pooled WETH.
+
+Minting 800M over [3yr](https://x.com/lex_node/status/1861032489411588140):  
 8 chances  to `mint` QD  
-(per year) times **[43 days](https://bit.ly/3q4tShS)**,   
+yearly X **42 days** of Lent,  
 "yesterday's price is *not*  
 today's," 46% `AVG_ROI`  
-before counting liabilities.    
+before counting liabilities;    
+
+in doing so...depositors  
+provide solvency capital,  
+whose preferred form is  
+**USDe** (others accepted). 
 
 Over time, retained fees  
-from ΞTH deployed into  
+from WETH deployed into  
 UniV3 adds solvency, as  
 well as deductibles do... 
+  
+Levering long while buying     
+protection (at the same time)  
+hedges against liquidations.  
+Deductible is initially 357bp;   
+APY is distributed relative to  
 
-Hedged against 10% drops,  
-ΞTH insured can't exceed $  
-staked as insurance capital.  
-
-Levering long while buying  
-insurance (at the same time)  
-protects against liquidations...  
-when not hedged against, they  
-are also gradated (less lethal).  
-
-Deductible is initially [357](http://www.niagaramasons.com/Info%20Stuff/The%20Winding%20Staircase.PDF)bp;   
-APY is [distributed](https://www.youtube.com/clip/UgkxOMAUJfrx-_ABwnargyEURpPygXEXJ_d9) relative to  
 one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
 maturity, when any holder  
@@ -40,29 +52,25 @@ This is also the reason that
 spreading liquidations over  
 time is possible as such...   
 voting is incentivised by a   
-6 x 55k QD lotto, dealt out  
+12 x 55k QD lotto, dealt out  
 in `onERC721Received`...  
+ 
+fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
+corresponds to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
+30% APY must be generated  
+in aggregate to reach... 💯%  
+[split](https://x.com/QuidMint/status/1863257152481108154) between swap fees and   
+staking rewards from stables. 
 
-- electric ignition system (nervous system):  
-  `deposit` ΞTH if nervous about its price,  
-  or stables to maximise their time value of $
+© 2022-2027 QuidMint Foundation  
+THIS README IS PROVIDED "AS IS"   
+THE CONTENTS OF README ARE  
+SUITABLE FOR [IMPLEMENTATION](https://x.com/lex_node/status/1845182121553559770)  
+WITHOUT INFRINGING ANY 3RD  
 
-- `repackNFT`: fuel management system...  
-   most of the functionality is internal (send  
-    wei gas to cylinders, combined with air)
-    - controlled by the electrical system,  
-  as are its sensors, observing temp.  
-  (TWAP) and air density (tick range)
-
-- `redeem` engine has a cooling system for absorbing  
-  liabilities (breaks), and hydraulic `withdraw` (clutch)
-  - cannot withdraw without steering (`vote`),  
-  and suspension is related: determines your  
-  ride quality (`fold` suspension/liquidation)
-
-Speaking of cars...one more useful  
-analogy is [carbide](https://www.instagram.com/p/C_t_orDph5p/) lamps...**fiat** *lux*  
-(let there be light); regarding lime,  
-note 🇺🇦 [70/30](https://www.instagram.com/p/DAgKU2dxtUq/) here  corresponds  
-to the initial [capitalisation]() of QD...  
-Earth's surface is also 71% liquid. 
+PARTY PATENTS, COPYRIGHTS,  
+OR TRADEMARKS; WARRANTIES,  
+EXPRESS OR IMPLIED, [INCLUDING](https://x.com/gonbegood/status/1838180646734180611),  
+NOT LIMITED TO, MERCHANTABILITY  
+WARRANTIES OF [FITNESS](https://x.com/QuidMint/status/1840815343364677821) FOR A  
+ PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/mint).  
