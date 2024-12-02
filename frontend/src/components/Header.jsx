@@ -3,7 +3,10 @@ import { useEffect, useState, useCallback } from "react"
 import { shortedHash } from "../utils/shorted-hash"
 import { numberWithCommas } from "../utils/number-with-commas"
 import { useAppContext } from "../contexts/AppContext"
+
 import "./Styles/Header.scss"
+
+import { SepoliaChecker } from "./SepoliaChecker"
 
 export const Header = () => {
   const {
@@ -118,7 +121,8 @@ export const Header = () => {
             </div>
             {shortedHash(account)}
             <Icon name="btn-bg" className="header-walletBackground" />
-          </div>
+            <SepoliaChecker />
+          </div>          
         ) : (
           <button className="header-wallet fade-in" onClick={handleConnectClick}>
             Connect Metamask
