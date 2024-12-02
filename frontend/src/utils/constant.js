@@ -1,8 +1,8 @@
 
-export const addressMO = '0xDE86b070C9A1e2E5B95DFAa884808EDB60B4f4c4'
-export const addressQD = '0x66f2B106FA0F56312f6dc0eeeA7321411b667B88';
-export const addressUSDE = '0x941b9952CE6Bceb5F6889b320BA7CdE0F27b44Da';
-export const addressSUSDE = '0xa2D7A73f671e5f227A5CAfc80B02211CD4Bd8352';
+export const addressMO = '0xC12A7afD173E60631278b92A09f4b7b709D3C15e'
+export const addressQD = '0x3dda0A00Cee5eE745A8239213cDF93b22F307563';
+export const addressUSDE = '0xc30a71DAf3c3D336C25bC965994f3CAB68c3035f';
+export const addressSUSDE = '0x1C0DE86B090c1f6A19aA559F3E10E70795d6b917';
 
 export const MO = [
   {
@@ -30,6 +30,10 @@ export const MO = [
       }
     ],
     "stateMutability": "nonpayable"
+  },
+  {
+    "type": "receive",
+    "stateMutability": "payable"
   },
   {
     "type": "function",
@@ -116,6 +120,11 @@ export const MO = [
         "name": "",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -165,7 +174,7 @@ export const MO = [
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -312,7 +321,7 @@ export const MO = [
         "internalType": "uint256"
       }
     ],
-    "stateMutability": "view"
+    "stateMutability": "pure"
   },
   {
     "type": "function",
@@ -330,23 +339,7 @@ export const MO = [
   {
     "type": "function",
     "name": "repackNFT",
-    "inputs": [
-      {
-        "name": "amount0",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "amount1",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "price",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
+    "inputs": [],
     "outputs": [],
     "stateMutability": "nonpayable"
   },
@@ -451,6 +444,11 @@ export const MO = [
         "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
+      },
+      {
+        "name": "priorBalance",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [
@@ -539,6 +537,19 @@ export const QUID = [
   },
   {
     "type": "function",
+    "name": "COLLATERAL",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "DAI",
     "inputs": [],
     "outputs": [
@@ -610,7 +621,7 @@ export const QUID = [
       {
         "name": "",
         "type": "address",
-        "internalType": "address"
+        "internalType": "address payable"
       }
     ],
     "stateMutability": "view"
@@ -877,30 +888,6 @@ export const QUID = [
   },
   {
     "type": "function",
-    "name": "draw",
-    "inputs": [
-      {
-        "name": "to",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "feeVotes",
     "inputs": [
       {
@@ -976,6 +963,25 @@ export const QUID = [
   },
   {
     "type": "function",
+    "name": "lastRedeem",
+    "inputs": [
+      {
+        "name": "who",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "matureBalanceOf",
     "inputs": [
       {
@@ -1026,14 +1032,27 @@ export const QUID = [
         "internalType": "address"
       }
     ],
-    "outputs": [
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "morph",
+    "inputs": [
       {
-        "name": "cost",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "to",
+        "type": "address",
+        "internalType": "address"
       },
       {
-        "name": "shares",
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1204,7 +1223,7 @@ export const QUID = [
         "internalType": "address"
       },
       {
-        "name": "value",
+        "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1233,7 +1252,7 @@ export const QUID = [
         "internalType": "address"
       },
       {
-        "name": "value",
+        "name": "amount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1265,8 +1284,8 @@ export const QUID = [
     "outputs": [
       {
         "name": "",
-        "type": "bool",
-        "internalType": "bool"
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "nonpayable"
@@ -1382,7 +1401,13 @@ export const QUID = [
 export const USDE = [
   {
     "type": "constructor",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "decimals",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {

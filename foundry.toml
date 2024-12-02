@@ -26,12 +26,7 @@ verbosity = 3
 [profile.dependencies]
 solmate = { git = "https://github.com/Rari-Capital/solmate" }
 forge-std = { git = "https://github.com/foundry-rs/forge-std" }
-LayerZero-v2 = { git = "https://github.com/LayerZero-Labs/" }
-
-
-[profile.rpc_endpoints]
-unichain = "https://sepolia.unichain.org"
-
+    
 remappings = [ 
     '@openzeppelin/=lib/openzeppelin-contracts/',
 ]

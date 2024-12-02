@@ -70,11 +70,11 @@ contract MainnetFork is Test {
         vm.deal(User01, 1_000_000 ether);
         vm.deal(User02, 1_000_000 ether);
         
-        DAI = new mockToken();
+        DAI = new mockToken(18);
         SDAI = new mockVault(DAI);
-        FRAX = new mockToken();
+        FRAX = new mockToken(18);
         SFRAX = new mockVault(FRAX);
-        USDE = new mockToken();
+        USDE = new mockToken(18);
         SUSDE = new mockVault(USDE);
 
         moulinette = new MO(//Moulinette 

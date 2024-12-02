@@ -1,8 +1,7 @@
 
 ## IM`Offer` 
 
-as inspiration for [ERC777](https://ethereum-magicians.org/t/erc-7770-fractional-reserve-token/21103),  
-with a [30%](https://rulebook.centralbank.ae/en/rulebook/article-2-minimum-guarantee-fund) reserve ratio:  
+2 contracts are presented:  
 ~~mom.sol~~ **MO**(**M**oulinette),  
 and her lookalike, ~~my big  
 bro Johnny~~ QuiD (ERC20,  

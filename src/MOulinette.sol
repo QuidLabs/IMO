@@ -5,11 +5,11 @@ import {Quid} from "./QD.sol"; // ERC777
 import "lib/forge-std/src/console.sol"; // TODO delete logging and set_price_eth
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
-import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
+// import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; // TODO uncomment
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
-// import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO only for Sepolia
+import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO only for Sepolia
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
@@ -256,7 +256,7 @@ contract MO is ReentrancyGuard {
                 pledges[address(this)].weth.debit -= _min(collected1, 
                 pledges[address(this)].weth.debit);
                 
-                pledges[address(this)].work.debit -= _min(_collected0,
+                pledges[address(this)].work.debit -= _min(collected0,
                 pledges[address(this)].work.debit);
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
                 pledges[address(this)].last.credit = block.timestamp;
@@ -370,7 +370,7 @@ contract MO is ReentrancyGuard {
             amount0 += ROUTER.exactInput(
                 ISwapRouter.ExactInputParams(abi.encodePacked(
                     address(token1), POOL_FEE, address(token0)),
-                    address(this), block.timestamp, selling, 0));
+                    address(this), /* block.timestamp, */ selling, 0));
         } else if (delta < 0) {
             selling = uint(delta * -1);
             selling = FullMath.mulDiv(
@@ -379,7 +379,7 @@ contract MO is ReentrancyGuard {
             amount1 += ROUTER.exactInput(
                 ISwapRouter.ExactInputParams(abi.encodePacked(
                     address(token0), POOL_FEE, address(token1)),
-                    address(this), block.timestamp, selling, 0));
+                    address(this), /* block.timestamp, */ selling, 0));
         }   return (amount0, amount1);
     }
 
@@ -434,7 +434,7 @@ contract MO is ReentrancyGuard {
         amount = qd_amt_to_dollar_amt(cap, amount);
         console.log("AbsorbAmount...", amount);
         
-        abosrb = _min(absorb, amount / 3); 
+        absorb = _min(absorb, amount / 3); 
         amount -= absorb; amount -= QUID.morph(msg.sender, amount);
         if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
             if (usdc > amount) { token0.transfer(msg.sender, amount); }
@@ -449,7 +449,7 @@ contract MO is ReentrancyGuard {
                 require(amount0 > 0 && amount1 > 0, "nothing withdrawn");
                 amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token1), POOL_FEE, address(token0)),
-                    address(this), block.timestamp, amount1, 0));
+                    address(this), /* block.timestamp, */ amount1, 0));
                 token0.transfer(msg.sender, usdc / 1e12 + amount0);
             }
         }    pledges[address(this)].carry.credit -= absorb;
@@ -520,7 +520,7 @@ contract MO is ReentrancyGuard {
             if (amount0 > 0) {
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
-                    address(this), block.timestamp, amount0, 0)); amount0 = 0;
+                    address(this), /* block.timestamp, */ amount0, 0)); amount0 = 0;
             }       transfer = transfer > amount1 ? amount1 : transfer;
             
             WETH9.withdraw(transfer); amount1 -= transfer;
@@ -687,9 +687,6 @@ contract MO is ReentrancyGuard {
                     // skip a chance to fold()
                     state.delta /= 10 minutes; 
                     // six of this per hour...
-                    // TODO reset billable hours when
-                    // enough consecutive states collat
-                    // is 
                     amount = _min(pledge.work.debit,
                                 _max(pledge.last.debit +
                                     pledge.last.debit / 28,
@@ -715,19 +712,10 @@ contract MO is ReentrancyGuard {
                     pledge.last.credit = 0; pledge.last.debit = 0; // storage
                 }
             }
-        }   pledges[beneficiary] = pledge;
+        } else if (pledge.last.credit != 0) {
+            pledge.last.credit = 0;
+            pledge.last.debit = 0;  
+        } 
+        pledges[beneficiary] = pledge;
     } 
-    // to close the short call for, let's say 50% max profit... 
-    // Hitting a 50% target like this could happen if ETH falls
-    // far enough for that to happen or implied volatility has 
-    // decreased by that much. The result of legging out of 
-    // the short call like this would keep the risk capped, 
-    // lock in some gains, and maintain uncapped profit 
-    // exposure if there is a continuation down in ETH.
-
-    // However, at times when not expecting continuation 
-    // it would be better to close both legs all at once 
-    // for clean profit capture on the strategy (sell bool)
-    // Deciding on tactical maneuvers—such as legging out
-    // would always be judged on a case-by-case basis...
 }

@@ -5,10 +5,11 @@ import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 
 contract mockToken is ERC20 {
 
-    uint constant public WAD = 1e18;
+    uint public WAD;
 
-    // Pass the underlying asset (ERC20 token) to ERC4626 constructor
-    constructor() ERC20("mock", "mock", 18) {}
+    constructor(uint8 decimals) ERC20("mock", "mock", decimals) {
+        WAD = 10 ** decimals;
+    }
 
     function mint() external {
         _mint(msg.sender, WAD * 10000);
