@@ -43,7 +43,7 @@ export const Footer = () => {
         </button>
         <div className="footer-spacer" />
         <a
-          href="https://www.youtube.com/watch?v=ci_g7uwjT4U"
+          href="https://vimeo.com/1034967054"
           target="_blank"
           rel="noreferrer"
           className="footer-youtube"
