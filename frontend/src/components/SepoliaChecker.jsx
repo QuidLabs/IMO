@@ -5,6 +5,8 @@ export const SepoliaChecker = () => {
   const { setStorage } = useAppContext()
   const hasCheckedRef = useRef(false)  
 
+  const chainHex = '515' // '0xaa36a7'
+
   const setNotifications = useCallback((severity, message, status = false) => {
     setStorage(prevNotifications => [
       ...prevNotifications,
@@ -21,18 +23,18 @@ export const SepoliaChecker = () => {
         try {
           const currentChainId = await window.ethereum.request({ method: 'eth_chainId' })
 
-          if (currentChainId.toLowerCase() === '0xaa36a7') return
+          if (currentChainId.toLowerCase() === chainHex) return
           
 
           setNotifications('info', 'Requesting to switch to Sepolia Testnet...')
 
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0xaa36a7' }],
+            params: [{ chainId: chainHex }],
           })
 
           const newChainId = await window.ethereum.request({ method: 'eth_chainId' })
-          if (newChainId.toLowerCase() === '0xaa36a7') {
+          if (newChainId.toLowerCase() === chainHex) {
             setNotifications('success', 'Successfully switched to Sepolia Testnet')
           } else {
             setNotifications('error', 'Failed to switch to Sepolia Testnet')
@@ -53,7 +55,7 @@ export const SepoliaChecker = () => {
     }
 
     const onChainChanged = (chainId) => {
-      if (chainId.toLowerCase() === '0xaa36a7') {
+      if (chainId.toLowerCase() === chainHex) {
         setNotifications('success', 'Connected to Sepolia Testnet')
       } else {
         setNotifications('info', 'Requesting a switch to Sepolia Testnet...')
