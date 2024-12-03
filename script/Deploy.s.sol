@@ -27,18 +27,22 @@ contract Deploy is Script {
     mockToken public USDE; // = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
     mockVault public SUSDE; // = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
 
-    IUniswapV3Factory public factory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
-    IV3SwapRouter public router = IV3SwapRouter(0xd1AAE39293221B77B0C71fBD6dCb7Ea29Bb5B166);
-    // Sepolia : 0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E
+    // IUniswapV3Factory public factory = IUniswapV3Factory(0x1F98431c8aD98523631AE4a59f267346ea31F984);
+    IV3SwapRouter public router = IV3SwapRouter(0x3bFA4769FB09eefC5a80d6E87c3B9C650f7Ae48E);
+    // Sepolia : 
+    // Unichain : 0xd1AAE39293221B77B0C71fBD6dCb7Ea29Bb5B166
     // Taiko : 0xdD489C75be1039ec7d843A6aC2Fd658350B067Cf
-    INonfungiblePositionManager public nfpm = INonfungiblePositionManager(0xB7F724d6dDDFd008eFf5cc2834edDE5F9eF0d075);
-    // Sepolia : 0x1238536071E1c677A632429e3655c799b22cDA52
+    INonfungiblePositionManager public nfpm = INonfungiblePositionManager(0x1238536071E1c677A632429e3655c799b22cDA52);
+    // Sepolia : 
+    // Unichain : 0xB7F724d6dDDFd008eFf5cc2834edDE5F9eF0d075
     // Taiko : 0x8B3c541c30f9b29560f56B9E44b59718916B69EF
-    IUniswapV3Pool public pool = IUniswapV3Pool(0xBeAD5792bB6C299AB11Eaa425aC3fE11ebA47b3B);
-    // Sepolia : 0x3289680dD4d6C10bb19b899729cda5eEF58AEfF1
+    IUniswapV3Pool public pool = IUniswapV3Pool(0x3289680dD4d6C10bb19b899729cda5eEF58AEfF1);
+    // Sepolia : 
+    // Unichain : 0xBeAD5792bB6C299AB11Eaa425aC3fE11ebA47b3B
     // Taiko : 0xE47a76e15a6F3976c8Dc070B3a54C7F7083D668B
-    WETH public weth = WETH(payable(0x4200000000000000000000000000000000000006));
-    // Sepolia : 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14
+    WETH public weth = WETH(payable(0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14));
+    // Sepolia : 
+    // Unichain : 0x4200000000000000000000000000000000000006
     // Taiko : 0xA51894664A773981C6C112C43ce576f315d5b1B6
 
     function run() public {

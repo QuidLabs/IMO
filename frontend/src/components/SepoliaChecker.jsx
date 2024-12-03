@@ -5,7 +5,7 @@ export const SepoliaChecker = () => {
   const { setStorage } = useAppContext()
   const hasCheckedRef = useRef(false)  
 
-  const chainHex = '0x515' // '0xaa36a7'
+  const chainHex = '0xaa36a7' // '0x515' 
 
   const setNotifications = useCallback((severity, message, status = false) => {
     setStorage(prevNotifications => [
