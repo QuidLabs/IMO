@@ -1,14 +1,14 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-import "lib/forge-std/src/console.sol"; // TODO delete logging
-// import {OFTCore} from "lib/LayerZero-v2/packages/layerzero-v2/evm/oapp/contracts/oft/OFTCore.sol";
-import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
+// import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho 
+// import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
-import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
+// import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+/*
 import {IERC721} from "./interfaces/IERC721.sol";
 interface IERC721Receiver {
     function onERC721Received(
@@ -22,11 +22,11 @@ interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
 }
+*/ // TODO uncomment...
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is 
-    ERC20, /*OFTCore,*/
-    IERC721Receiver,
+contract Quid is ERC20, 
+    /* IERC721Receiver,*/
     ReentrancyGuard {
     uint public AVG_ROI;
     uint public START;
@@ -79,7 +79,6 @@ contract Quid is
         address _frax, address _sfrax,
         address _sdai, address _dai) 
         ERC20("QU!D", "QD", 18) {
-        /* OFTCore(18, LZ, QUID) { */ 
         START = block.timestamp;
         /* START = 1733333333; */
         SDAI = _sdai; DAI = _dai;
@@ -304,13 +303,10 @@ contract Quid is
             if (K > new_vote) {
                 while (K >= 1 && (
                     (SUM - WEIGHTS[K]) >= mid
-                )) { SUM -= WEIGHTS[K]; K -= 1;
-                    console.log("MedianizerOne...", K, SUM, WEIGHTS[K]);
-                }
+                )) { SUM -= WEIGHTS[K]; K -= 1; }
             } else { 
-                while (SUM < mid) {
-                    K += 1; SUM += WEIGHTS[K];
-                    console.log("MedianizerTwo...", K, SUM, WEIGHTS[K]);
+                while (SUM < mid) { 
+                    K += 1; SUM += WEIGHTS[K]; 
                 }
             } MO(Moulinette).setFee(K);
         }  else { SUM = 0; } // reset
@@ -364,8 +360,7 @@ contract Quid is
                 Piscine[batch][43].debit += cost;
                 MO(Moulinette).mint(pledge, cost, amount);
             }
-        } // address constant LZ = 0x66A71Dcef29A0fFBDBE3c6a460a3B5BC225Cd675;
-         address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
+        } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
          address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
        address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
     bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
@@ -381,6 +376,7 @@ contract Quid is
      *   by the recipient, the transfer will be reverted.
      */
     // QuidMint...foundation.app/@quid
+    /*
     function onERC721Received(address,
         address from, // previous owner...
         uint tokenId, bytes calldata data)
@@ -414,7 +410,7 @@ contract Quid is
             // a repeat...same level, same rebel that 
             // never settled and overcame the get owe"
         } return this.onERC721Received.selector;
-    }
+    } */
     // failsafe to reboot
     // in case NFT owner
     // is unavailable to
@@ -434,16 +430,20 @@ contract Quid is
             // use it for the Uniswap LP position,
             // converting to WETH in MO.withdraw
             if (msg.sender == address(this)) {
+                // TODO account cost in mint() 
                 amount = _min(amount,
                     FullMath.mulDiv(total,
                         PENNY * 2 / 10, WAD));
         }   require(amount > 0, "no thing");
-        (uint delta, ) = MO(Moulinette).capitalisation(0, false);
+            uint dai; uint usde; uint frax;
+        
+        (uint delta, uint cap ) = MO(Moulinette).capitalisation(0, false);
+        uint borrowed = 0; // TODO uncomment for mainnet deployment
+        /*
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
-                        IMorpho(MORPHO), params, address(this));
+                        IMorpho(MORPHO), params, address(this)); 
         
-        uint dai; uint usde; uint frax;
         if (delta == 0 && borrowed > 0) {
             ERC4626(SDAI).withdraw(borrowed,
                 address(this), address(this));
@@ -470,9 +470,10 @@ contract Quid is
                 ERC4626(SDAI).deposit(
                     dai, address(this));
             }
-        }   dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
-                                   perVault[SDAI], total), WAD);
-                                   dai = _min(perVault[SDAI] -
+        } */ require(cap > 70, "minimum reserve requirement");
+        dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
+                                perVault[SDAI], total), WAD);
+                                dai = _min(perVault[SDAI] -
                                               borrowed, dai);
         
         usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,

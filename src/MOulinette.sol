@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import {Quid} from "./QD.sol"; // ERC777
-import "lib/forge-std/src/console.sol"; // TODO delete logging and set_price_eth
+// import "lib/forge-std/src/console.sol"; // TODO delete logging and set_price_eth
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
-// import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; // TODO uncomment
+// import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; // TODO uncomment for mainnet
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
@@ -68,7 +68,7 @@ contract MO is ReentrancyGuard {
     struct Offer { Pod weth; Pod carry; Pod work;
     Pod last; } // timestamp of last liquidation,
     // amt that was liquidated (smaller over time)
-    // for address(this) it's time since NFPM.burn
+    // for address(this) it's time since NFPM.burn 
     // work is like a checking account (credit can
     // be drawn against it) while weth is savings,
     // but it pays interest to the contract itself;
@@ -188,14 +188,12 @@ contract MO is ReentrancyGuard {
             uint ratio = FullMath.mulDiv(WAD,
                 amount, priorBalance);
             require(ratio <= WAD, "not enough");
-            console.log("TransferHelperEvent...", ratio);
             // proportionally transfer debit...
             uint debit = FullMath.mulDiv(ratio,
             pledges[from].carry.debit, WAD);
-            console.log("DebitTransferHelper...", debit);
             pledges[to].carry.debit += debit;
             pledges[from].carry.debit -= debit;
-            // pledges[address[this]].carry.debit
+            // pledges[address(this)].carry.debit
             // remains constant, and individually
             // pledge.carry.credit in helper...
             // QD minted in coverage claims or
@@ -216,7 +214,6 @@ contract MO is ReentrancyGuard {
         uint debit = pledges[who].carry.debit;
         uint share = FullMath.mulDiv(WAD,
             balance, QUID.totalSupply());
-        console.log("CreditHelperShare...", share, who);
         credit = share; // workaround from using NFT
         if (debit > 0 && QUID.currentBatch() > 0) {
             // projected ROI if QD is $1...
@@ -225,23 +222,24 @@ contract MO is ReentrancyGuard {
             // calculate individual ROI over total...
             roi = FullMath.mulDiv(WAD, roi, AVG_ROI);
             credit = FullMath.mulDiv(roi, share, WAD);
-            console.log("CreditHelperROI...", roi, who);
             // credit is the product (composite) of
             // two separate share (ratio) quantities
             // and the sum of products is what we use
-            // in determining pro rata in redeem()...
+            // in determining pro rata in redeem()
         }   pledges[who].carry.credit = credit;
         SUM += credit; // update sum with new share
-        console.log("CreditHelper...", credit, who);
     }
 
     function _repackNFT(uint amount0,uint amount1, 
         uint price) internal { uint128 liquidity;
+        uint last = flashLoanProtect[address(this)]; 
+        flashLoanProtect[address(this)] = block.number;
         if (pledges[address(this)].last.credit != 0) {
             // not the first time _repackNFT is called
             if ((LAST_TICK > UPPER_TICK || LAST_TICK < LOWER_TICK) &&
-                // "to improve is to change, to perfect is to change often"
-                block.timestamp - pledges[address(this)].last.credit >= 1 hours) {
+            // "to improve is to change, to perfect is to change often"
+            block.timestamp - pledges[address(this)].last.credit >= 1 hours) {
+                // && last != block.number) // TODO uncomment for mainnet) {
                 // we want to make sure that all of the WETH deposited to this
                 // contract is always in range (collecting), and range is ~7% 
                 // below and above tick, as voltage regulators watch currents 
@@ -263,6 +261,7 @@ contract MO is ReentrancyGuard {
         } if (liquidity > 0 || ID == 0) { // first time or repack...
             (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TICK);
             (amount0, amount1) = _swap(amount0, amount1, price);
+            pledges[address(this)].last.debit = amount0; // extra UI metric
             (ID, liquidityUnderManagement,,) = NFPM.mint(
                 INonfungiblePositionManager.MintParams({ token0: address(token0),
                     token1: address(token1), fee: POOL_FEE, tickLower: LOWER_TICK,
@@ -409,7 +408,6 @@ contract MO is ReentrancyGuard {
         // can be said of tea, or a t-bill too
         uint share = FullMath.mulDiv(WAD, amount, 
                 QUID.matureBalanceOf(msg.sender));
-            
         // coverage includes 30% of all QD minted in QUID.mint
         // as this % supply is not 1:1 backed; also includes
         // any remaining debt on a fully liquidated pledge,
@@ -425,15 +423,10 @@ contract MO is ReentrancyGuard {
                                 share, WAD);
         } // helper function called by turn
         // handles PLEDGE.CARRY.CREDIT--
-        absorb = QUID.turn(msg.sender, amount);
-
-        console.log("AbsorbInRedeem...", absorb);
-       
+        absorb = QUID.turn(msg.sender, amount);       
         (, uint cap) = capitalisation(0, false);
         amount = qd_amt_to_dollar_amt(cap, amount);
-        console.log("AbsorbAmount...", amount);
-        
-        absorb = _min(absorb, amount / 3); 
+        absorb = _min(absorb, amount / 3); // TODO safe max? 
         amount -= absorb; amount -= QUID.morph(msg.sender, amount);
         if (amount > 0) { uint usdc = token0.balanceOf(address(this)) * 1e12;
             if (usdc > amount) { token0.transfer(msg.sender, amount); }
@@ -461,8 +454,7 @@ contract MO is ReentrancyGuard {
     // ETH can only be withdrawn from
     // pledge.work.debit; if ETH was
     // deposited pledge.weth.debit,
-    // call fold() before withdraw():
-    // form of flash loan protection
+    // call fold() before withdraw()
     function withdraw(uint amount, bool quid) 
         external nonReentrant payable {
         uint amount0; uint amount1;
@@ -590,13 +582,11 @@ contract MO is ReentrancyGuard {
                 state.repay = pledge.work.credit - state.collat;
                 state.repay += state.collat / 10; // you'll get
                 state.liquidate = true; // dropped, reversibly...
-                console.log("FoldRepayLiquidate...", state.repay);
             } else { // for using claimed coverage to payoff debt
                 state.delta = state.collat - pledge.work.credit;
                 if (state.collat / 10 > state.delta) {
                     state.repay = (state.collat / 10) - state.delta;
                 }
-                console.log("FoldRepayNoLiquidate...", state.repay);
             }
         } if (amount > 0 && pledge.weth.debit > 0) { // repossesion...
             state.collat = FullMath.mulDiv(amount, state.price, WAD);
@@ -606,15 +596,10 @@ contract MO is ReentrancyGuard {
             state.average_value = FullMath.mulDiv(
                 amount, state.average_price, WAD
             );
-            console.log("Fold...", 
-                state.average_price, state.average_value,
-                FullMath.mulDiv(110, state.price, 100)
-            );
             pledges[address(this)].work.credit += amount; pledge.work.debit += amount;
             // if price drop above 10% (average_value > 10% more than current value)...
             if (state.average_price >= FullMath.mulDiv(110, state.price, 100)) {
                 state.delta = state.average_value - state.collat;
-                console.log("FoldDelta...", state.delta);
                 if (!sell) { state.minting = state.delta;
                     state.deductible = FullMath.mulDiv(WAD,
                         FullMath.mulDiv(state.collat, FEE, WAD),
@@ -641,7 +626,6 @@ contract MO is ReentrancyGuard {
                 // minting will equal delta unless it's a sell, and if it's not,
                 // we can't mint coverage if the protocol is under-capitalised...
                     state.minting = dollar_amt_to_qd_amt(state.cap, state.minting);
-                    console.log("FoldMinted...", state.minting, state.delta);
                     QUID.mint(beneficiary, state.minting, address(QUID));
                     pledges[address(this)].carry.credit += state.delta;
                 }   else { state.deductible = 0; } // no mint = no charge
@@ -656,10 +640,6 @@ contract MO is ReentrancyGuard {
             // if we were to deduct actual value instead
             // that could be taken advantage of (increased
             // payouts with each subsequent call to fold)...
-            console.log(
-                "FoldDeductible...", amount,
-                state.deductible
-            );
             pledge.work.debit = (msg.value +
             pledge.work.debit) - state.deductible;
             // if sell true...pledge doesn't get any ETH back...
@@ -697,7 +677,6 @@ contract MO is ReentrancyGuard {
                     amount = _min(pledge.work.credit,
                         FullMath.mulDiv(state.price,
                                         amount, WAD));
-                    console.log("FoldLiquidate", amount);
                     // "It's like inch by inch, and step by
                     // step, I'm closin' in on your position
                     // and [eviction] is my mission"
@@ -714,7 +693,6 @@ contract MO is ReentrancyGuard {
         } else if (pledge.last.credit != 0) {
             pledge.last.credit = 0;
             pledge.last.debit = 0;  
-        } 
-        pledges[beneficiary] = pledge;
+        }   pledges[beneficiary] = pledge;
     } 
 }

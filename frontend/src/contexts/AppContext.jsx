@@ -112,6 +112,7 @@ export const AppContextProvider = ({ children }) => {
     try {
       if (connected && account && quid && usde && addressQD) {
         const totalSupply = await quid.methods.totalSupply().call()
+        сonsole.log('totalSupply', totalSupply)
         const formattedTotalMinted = formatUnits(totalSupply, 18).split(".")[0]
 
         const total = await quid.methods.get_total_deposits(true).call()

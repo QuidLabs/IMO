@@ -51,7 +51,7 @@ This is also the reason that
 spreading liquidations over  
 time is possible as such...   
 voting is incentivised by a   
-12 x 55k QD lotto, dealt out  
+12 x 55k QD lotto, dealt   
 in `onERC721Received`...  
  
 fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   

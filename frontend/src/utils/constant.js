@@ -1,8 +1,14 @@
+// Sepolia
+// export const addressMO = '0xA7760DAeC0C5Aa474192847fb9294f597258C2c3'
+// export const addressQD = '0x388bc628AB5575857a120A50078A3a9E12e1194b';
+// export const addressUSDE = '0x8f44b598235305011485Fbd7930697Bb3e0c9945';
+// export const addressSUSDE = '0xA7EF15bc1ec6De058e605ce132232E2d33e3cB5C';
 
-export const addressMO = '0xA7760DAeC0C5Aa474192847fb9294f597258C2c3'
-export const addressQD = '0x388bc628AB5575857a120A50078A3a9E12e1194b';
-export const addressUSDE = '0x8f44b598235305011485Fbd7930697Bb3e0c9945';
-export const addressSUSDE = '0xA7EF15bc1ec6De058e605ce132232E2d33e3cB5C';
+// Unichain
+export const addressMO = '0xC12A7afD173E60631278b92A09f4b7b709D3C15e'
+export const addressQD = '0x3dda0A00Cee5eE745A8239213cDF93b22F307563';
+export const addressUSDE = '0xc30a71DAf3c3D336C25bC965994f3CAB68c3035f';
+export const addressSUSDE = '0x1C0DE86B090c1f6A19aA559F3E10E70795d6b917';
 
 export const MO = [
   {
@@ -1090,40 +1096,6 @@ export const QUID = [
       }
     ],
     "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "onERC721Received",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "from",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "tokenId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "data",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
