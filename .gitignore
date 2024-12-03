@@ -5,7 +5,6 @@
 /lib
 /out
 /cache
-/broadcast
 /frontend/node_modules
 /frontend/build
 /coverage
