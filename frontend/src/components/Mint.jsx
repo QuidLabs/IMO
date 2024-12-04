@@ -318,8 +318,6 @@ export const Mint = () => {
         const workUsdBalance = await getDepositInfo().then(depositInfo => {return depositInfo.work_usd_balance})
         
         if (!chooseCurrency && inputValue > workUsdBalance) return setNotifications("error", "Cost shouldn't be more than your owed USDe balance. Use The QD's withdrow for top up your account.")
-        if (!chooseCurrency && inputValue > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
-
         if (chooseCurrency && balanceStatus) return setNotifications("error", "Cost shouldn't be more than your Etherum balance")
         if (chooseCurrency && insureStatus && inputValue*parseEthPrice > insurable) return setNotifications("error", "The amount shouldn't be more than insurable")
 
@@ -343,7 +341,7 @@ export const Mint = () => {
             })
 
           if (inputValue <= maturebalance) await mo.methods.redeem(valueDepo).send({ from: account })
-          else await quid.methods.transfer(addressMO, valueDepo).send({ from: account })
+          else if (inputValue <= depositInfo.work_usd_balance) await quid.methods.transfer(addressMO, valueDepo).send({ from: account })
         }
 
         setNotifications("success", "Your deposit has been pending completed!", true)
