@@ -341,7 +341,7 @@ export const Mint = () => {
             })
 
           if (inputValue <= maturebalance) await mo.methods.redeem(valueDepo).send({ from: account })
-          else if (inputValue <= workUsdBalancee) await quid.methods.transfer(addressMO, valueDepo).send({ from: account })
+          else if (inputValue <= workUsdBalance) await quid.methods.transfer(addressMO, valueDepo).send({ from: account })
         }
 
         setNotifications("success", "Your deposit has been pending completed!", true)
