@@ -38,7 +38,8 @@ well as deductibles do...
   
 Levering long while buying     
 protection (at the same time)  
-hedges against liquidations.  
+hedges against liquidations  
+(they're gradated, non-linear).    
 Deductible is initially 357bp;   
 APY is distributed relative to  
 

@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
 import {Quid} from "./QD.sol"; // ERC777
-// import "lib/forge-std/src/console.sol"; // TODO delete logging and set_price_eth
+import "lib/forge-std/src/console.sol"; // TODO delete logging and set_price_eth
 import {TickMath} from "./interfaces/math/TickMath.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
-// import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; // TODO uncomment for mainnet
+import {ISwapRouter} from "./interfaces/ISwapRouter.sol"; // TODO uncomment for mainnet
 import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./interfaces/math/LiquidityAmounts.sol";
 import {INonfungiblePositionManager} from "./interfaces/INonfungiblePositionManager.sol";
-import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO only for Sepolia
+// import {IV3SwapRouter as ISwapRouter} from "./interfaces/IV3SwapRouter.sol"; // TODO only for Sepolia
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
@@ -194,8 +194,8 @@ contract MO is ReentrancyGuard {
             pledges[to].carry.debit += debit;
             pledges[from].carry.debit -= debit;
             // pledges[address(this)].carry.debit
-            // remains constant, and individually
-            // pledge.carry.credit in helper...
+            // remains constant; handled case-by-
+            // case in helper (pledge.carry.credit)
             // QD minted in coverage claims or
             // over-collateralisation does not
             // transfer over carry.credit b/c
@@ -368,7 +368,7 @@ contract MO is ReentrancyGuard {
             amount0 += ROUTER.exactInput(
                 ISwapRouter.ExactInputParams(abi.encodePacked(
                     address(token1), POOL_FEE, address(token0)),
-                    address(this), /* block.timestamp, */ selling, 0));
+                    address(this), block.timestamp, selling, 0));
         } else if (delta < 0) {
             selling = uint(delta * -1);
             selling = FullMath.mulDiv(
@@ -377,7 +377,7 @@ contract MO is ReentrancyGuard {
             amount1 += ROUTER.exactInput(
                 ISwapRouter.ExactInputParams(abi.encodePacked(
                     address(token0), POOL_FEE, address(token1)),
-                    address(this), /* block.timestamp, */ selling, 0));
+                    address(this), block.timestamp, selling, 0));
         }   return (amount0, amount1);
     }
 
@@ -441,7 +441,7 @@ contract MO is ReentrancyGuard {
                 require(amount0 > 0 && amount1 > 0, "nothing withdrawn");
                 amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token1), POOL_FEE, address(token0)),
-                    address(this), /* block.timestamp, */ amount1, 0));
+                    address(this), block.timestamp, amount1, 0));
                 token0.transfer(msg.sender, usdc / 1e12 + amount0);
             }
         }    pledges[address(this)].carry.credit -= absorb;
@@ -511,7 +511,7 @@ contract MO is ReentrancyGuard {
             if (amount0 > 0) {
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
-                    address(this), /* block.timestamp, */ amount0, 0)); amount0 = 0;
+                    address(this), block.timestamp, amount0, 0)); amount0 = 0;
             }       transfer = transfer > amount1 ? amount1 : transfer;
             
             WETH9.withdraw(transfer); amount1 -= transfer;
@@ -546,7 +546,7 @@ contract MO is ReentrancyGuard {
             pledge.weth.credit += in_dollars - deductible;
             require(pledges[address(this)].carry.debit >
                 FullMath.mulDiv(pledges[address(this)].weth.credit,
-                    price * 90 / 100, WAD), "over-encumbered");
+                    price, WAD), "over-encumbered");
         }           pledges[beneficiary] = pledge;
                     _repackNFT(0, amount, price);
     }

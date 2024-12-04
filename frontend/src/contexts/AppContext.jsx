@@ -170,6 +170,7 @@ export const AppContextProvider = ({ children }) => {
   const getDepositInfo = useCallback(async (addres = account) => {
     try {
       if (connected && account && mo) {
+        
         const more_info = await mo.methods.get_more_info(addres).call()
         const priceCall = await mo.methods.getPrice(42).call()
         // TODO use formatUnits !!! everywhere you use ParseFloat
@@ -178,7 +179,7 @@ export const AppContextProvider = ({ children }) => {
         const workUsdBalance = (parseFloat(more_info[1]) / 1e18)
         const wethEthBalance = (parseFloat(more_info[2]) / 1e18)
         const wethUsdBalance = (parseFloat(more_info[3]) / 1e18)
-
+        
         const ethPrice = (parseFloat(priceCall) / 1e18)
 
         const depoInfo = {

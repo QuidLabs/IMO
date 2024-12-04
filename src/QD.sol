@@ -1,14 +1,13 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-// import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho 
-// import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
+import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho 
+import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
-// import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
+import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./interfaces/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-/*
 import {IERC721} from "./interfaces/IERC721.sol";
 interface IERC721Receiver {
     function onERC721Received(
@@ -22,11 +21,11 @@ interface ICollection is IERC721 {
     function latestTokenId() 
     external view returns (uint);
 }
-*/ // TODO uncomment...
+
 // http://42.fr Piscine...
 import "./MOulinette.sol";
 contract Quid is ERC20, 
-    /* IERC721Receiver,*/
+    IERC721Receiver,
     ReentrancyGuard {
     uint public AVG_ROI;
     uint public START;
@@ -376,7 +375,6 @@ contract Quid is ERC20,
      *   by the recipient, the transfer will be reverted.
      */
     // QuidMint...foundation.app/@quid
-    /*
     function onERC721Received(address,
         address from, // previous owner...
         uint tokenId, bytes calldata data)
@@ -410,7 +408,7 @@ contract Quid is ERC20,
             // a repeat...same level, same rebel that 
             // never settled and overcame the get owe"
         } return this.onERC721Received.selector;
-    } */
+    }
     // failsafe to reboot
     // in case NFT owner
     // is unavailable to
@@ -438,8 +436,8 @@ contract Quid is ERC20,
             uint dai; uint usde; uint frax;
         
         (uint delta, uint cap ) = MO(Moulinette).capitalisation(0, false);
-        uint borrowed = 0; // TODO uncomment for mainnet deployment
-        /*
+        // uint borrowed = 0;
+
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
                         IMorpho(MORPHO), params, address(this)); 
@@ -470,7 +468,7 @@ contract Quid is ERC20,
                 ERC4626(SDAI).deposit(
                     dai, address(this));
             }
-        } */ require(cap > 70, "minimum reserve requirement");
+        } // require(cap > 70, "minimum reserve requirement");
         dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                 perVault[SDAI], total), WAD);
                                 dai = _min(perVault[SDAI] -
