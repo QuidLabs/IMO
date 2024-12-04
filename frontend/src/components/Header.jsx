@@ -99,7 +99,7 @@ export const Header = () => {
   return (
     <header className="header-root">
       <div className="header-logoContainer fade-in">
-        <a className="header-logo" href="/"> </a>
+        <a className="header-logo" href="https://yo.quid.io"> </a>
       </div>
       <div className="header-summary fade-in">
         {connected && account ? summary : null}

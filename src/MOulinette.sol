@@ -49,6 +49,7 @@ contract MO is ReentrancyGuard {
     }   function get_more_info(address who) view
         external returns (uint, uint, uint, uint) {
         Offer memory pledge = pledges[who];
+        // work is pledged as a CDP, weth is insurance
         return (pledge.work.debit, pledge.work.credit,
                 pledge.weth.debit, pledge.weth.credit);
         // for address(this), this ^^^^^^^^^^^^^^^^^^
@@ -258,7 +259,7 @@ contract MO is ReentrancyGuard {
                 NFPM.burn(ID); // this ^^^^^^^^^^ is USDC fees
                 pledges[address(this)].last.credit = block.timestamp;
             }
-        } if (liquidity > 0 || ID == 0) { // first time or repack...
+        } if (liquidity > 0 || ID == 0) { // 1st time or repack
             (UPPER_TICK, LOWER_TICK) = _adjustTicks(LAST_TICK);
             (amount0, amount1) = _swap(amount0, amount1, price);
             pledges[address(this)].last.debit = amount0; // extra UI metric
@@ -422,7 +423,7 @@ contract MO is ReentrancyGuard {
             absorb = FullMath.mulDiv(absorb,
                                 share, WAD);
         } // helper function called by turn
-        // handles PLEDGE.CARRY.CREDIT--
+        // which handles PLEDGE.CARRY.CREDIT--
         absorb = QUID.turn(msg.sender, amount);       
         (, uint cap) = capitalisation(0, false);
         amount = qd_amt_to_dollar_amt(cap, amount);
@@ -569,6 +570,7 @@ contract MO is ReentrancyGuard {
         // or simply clear the debt of a long position...
         // "we can serve our [wick nest] or we can serve
         // our purpose, but not both" ~ Mother Cabrini
+        // Pods were formalised by Luca Pacioli, 1494
         Offer memory pledge = pledges[beneficiary];
         flashLoanProtect[beneficiary] = block.number;
         amount = _min(amount, pledge.weth.debit);
