@@ -3,6 +3,7 @@
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho 
 import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
+import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
@@ -27,6 +28,8 @@ import "./MOulinette.sol";
 contract Quid is ERC20, 
     IERC721Receiver,
     ReentrancyGuard {
+    using SafeTransferLib for ERC20;
+    using SafeTransferLib for ERC4626;
     uint public AVG_ROI;
     uint public START;
     // "Walked in the
