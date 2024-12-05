@@ -1,7 +1,7 @@
 
 ## IM`Offer` 
 
-2 contracts are presented:  
+2 contracts are [presented](https://x.com/QuidMint/status/1864463054622040131):  
 ~~mom.sol~~ **MO**(**M**oulinette),  
 and her lookalike, ~~my big  
 bro Johnny~~ QuiD (ERC20,  
