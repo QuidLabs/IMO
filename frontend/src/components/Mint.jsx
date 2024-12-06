@@ -218,7 +218,7 @@ export const Mint = () => {
               insurableValue = (wethEthBalance * price) - carryDebit   
             }
           }
-          if (chooseButton.current === "DEPOSIT") {
+          else if (chooseButton.current === "DEPOSIT") {
             insurableValue = carryDebit
           }
           setTotalSupplyCap(value[0])

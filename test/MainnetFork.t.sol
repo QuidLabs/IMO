@@ -61,14 +61,15 @@ contract MainnetFork is Test {
     uint public bill = 100000000000000000000; // $100
     uint public half_a_rack = 500000000000000000000; // $500
     uint public grant = 50000000000000000000; // $50
-    uint public jackson_in_ETH = 1000000000000000; // ~$26
+    uint public dub_dub_in_eth = 10000000000000000; // ~$40
     
     function setUp() public {
-        uint256 mainnetFork = vm.createFork("https://rpc.ankr.com/eth", 21239597);
+        uint256 mainnetFork = vm.createFork("https://rpc.ankr.com/eth", 21346033);
         vm.selectFork(mainnetFork);
 
-        vm.deal(User01, 1_000_000 ether);
-        vm.deal(User02, 1_000_000 ether);
+        vm.deal(User01, 1_000_000_000_000_000 ether);
+        vm.deal(User02, 1_000_000_000_000_000 ether);
+        vm.deal(User03, 1_000_000_000_000_000 ether);
         
         DAI = new mockToken(18);
         SDAI = new mockVault(DAI);
@@ -156,8 +157,8 @@ contract MainnetFork is Test {
         
         vm.startPrank(User01);
         
-        weth.approve(address(moulinette), jackson_in_ETH);
-        moulinette.deposit(User01, jackson_in_ETH, false);
+        weth.approve(address(moulinette), dub_dub_in_eth);
+        moulinette.deposit(User01, dub_dub_in_eth, false);
         
         (work_debit, work_credit, 
          weth_debit, weth_credit) = moulinette.get_more_info(User01);
@@ -165,7 +166,7 @@ contract MainnetFork is Test {
         console.log("User1...more_info beforeFOLD", 
             work_debit, work_credit, weth_debit
         );
-        moulinette.fold(User01, jackson_in_ETH, false);
+        moulinette.fold(User01, dub_dub_in_eth, false);
 
         (work_debit, work_credit, 
          weth_debit, weth_credit) = moulinette.get_more_info(User01);
@@ -173,15 +174,52 @@ contract MainnetFork is Test {
         console.log("User1...more_info AFTERfold", 
             work_debit, work_credit, weth_debit
         );
-        vm.stopPrank();
-
-        vm.startPrank(User01);
-        // vm.deal(User02, 1_000_000_000 ether);
         
-        // moulinette.deposit{value: jackson_in_ETH}(User02, 0, false);
-        moulinette.withdraw(jackson_in_ETH, false);
+        uint256 balanceBefore = User01.balance;
+        console.log("user1BalanceBefore withdraw ETH...", balanceBefore);
+        moulinette.withdraw(dub_dub_in_eth, false);
+
+        uint256 balanceAfter = User01.balance;
+        console.log("user1BalanceAFTER withdraw ETH...", balanceAfter);
+        vm.stopPrank(); // TODO no deductible if fold without price drop
+
+        vm.startPrank(User03);
+
+        uint thirtyThree = 33000000000000000000;
+        moulinette.withdraw{value: dub_dub_in_eth}(thirtyThree, true);
+
+        (work_debit, work_credit, 
+         weth_debit, weth_credit) = moulinette.get_more_info(User03);
+
+        console.log("User3...more_info AFTER borrow", 
+            work_debit, work_credit, weth_debit
+        );
+        console.log("QD that was minted for User3...", quid.balanceOf(User03));
 
         vm.stopPrank();
+        console.log("price before drop", moulinette.getPrice(42));
+        moulinette.set_price_eth(false, false);
+        moulinette.set_price_eth(false, false);
+        console.log("price AFTER drop", moulinette.getPrice(42));
+        moulinette.fold(User03, 1, false); // for a liquidation amount variable is irrelevant
+
+        (work_debit, work_credit, 
+         weth_debit, weth_credit) = moulinette.get_more_info(User03);
+
+        console.log("User3...more_info AFTER liquidation (1st)", 
+            work_debit, work_credit, weth_debit
+        );
+
+        vm.warp(block.timestamp + 61 minutes);
+
+        moulinette.fold(User03, 1, false); // for a liquidation amount variable is irrelevant
+         (work_debit, work_credit, 
+         weth_debit, weth_credit) = moulinette.get_more_info(User03);
+
+        console.log("User3...more_info AFTER liquidation (1 hour later)", 
+            work_debit, work_credit, weth_debit
+        );
+
 
         // TODO 
         // assertEq(minted, rack);

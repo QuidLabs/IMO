@@ -287,14 +287,15 @@ contract MO is ReentrancyGuard {
         // set_price_eth
     }
 
-    function getPrice(uint160 sqrtPriceX96)
+    // from v3-periphery/OracleLibrary...
+    function getPrice(uint160 sqrtRatioX96)
         public view returns (uint) {
-        if (_ETH_PRICE > 0) { // TODO b4 12/12
-            return _ETH_PRICE; // remove local
-        }   return FullMath.mulDiv( // testing
-            uint(sqrtPriceX96) * 1e7, // only
-            uint(sqrtPriceX96) * 1e7, // 1:1
-            2 ** 192) / 10; // for precision
+        if (_ETH_PRICE > 0) { // TODO 
+            return _ETH_PRICE; // remove 
+        }
+        uint casted = uint(sqrtRatioX96);
+        uint ratioX128 = FullMath.mulDiv(casted, casted, 1 << 64);
+        return FullMath.mulDiv(1 << 128, WAD * 1e12, ratioX128);    
     }
     function _collect() internal returns
         (uint amount0, uint amount1) {
@@ -467,7 +468,6 @@ contract MO is ReentrancyGuard {
         // require(flashLoanProtect[msg.sender] != block.number,
         //             "can't fold & withdraw in same block");
         if (quid) { // amount is in units of QD
-            require(amount >= RACK, "too small");
             if (msg.value > 0) { amount1 = msg.value;
                 WETH9.deposit{ value: amount1 }();
                 pledges[address(this)].work.credit +=
@@ -574,12 +574,14 @@ contract MO is ReentrancyGuard {
         Offer memory pledge = pledges[beneficiary];
         flashLoanProtect[beneficiary] = block.number;
         amount = _min(amount, pledge.weth.debit);
-        require(amount > 0, "amount too low");
+        // require(amount > 0, "amount too low");
         (, state.cap) = capitalisation(0, false);
         if (pledge.work.credit > 0) {
+
             state.collat = FullMath.mulDiv(
                 state.price, pledge.work.debit, WAD
             );  // "lookin' too hot; simmer down" ~ Bob Marley...
+            console.log("state.collat...", state.collat);
             if (pledge.work.credit > state.collat) { // "or soon"
                 state.repay = pledge.work.credit - state.collat;
                 state.repay += state.collat / 10; // you'll get
@@ -657,6 +659,7 @@ contract MO is ReentrancyGuard {
             (, state.cap) = capitalisation(state.repay, true); // get
             amount = _min(dollar_amt_to_qd_amt(state.cap, // dim...
                 state.repay), QUID.balanceOf(beneficiary));
+            console.log("liquidating");
             QUID.transferFrom(beneficiary, address(this), amount);
             amount = qd_amt_to_dollar_amt(state.cap, amount);
             pledge.work.credit -= amount; // -- $ value of QD
