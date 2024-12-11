@@ -1,11 +1,10 @@
 
-## IM`Offer` 
+## IM`Offer`
 
 2 contracts are [presented](https://x.com/QuidMint/status/1864463054622040131):  
 ~~mom.sol~~ **MO**(**M**oulinette),  
 and her lookalike, ~~my big  
-bro Johnny~~ QuiD (ERC20,  
-but similar to ERC6909).  
+bro Johnny~~ QuiD (ERC20).  
 
 QD is supported by an `ID`  
 for a Morpho lien, as well  
@@ -29,13 +28,13 @@ before counting liabilities;
 in doing so...depositors  
 provide solvency capital,  
 whose preferred form is  
-**USDe** (others accepted). 
+**USDe** (others accepted).
 
 Over time, retained fees  
 from WETH deployed into  
 UniV3 adds solvency, as  
-well as deductibles do... 
-  
+well as deductibles do...
+
 Levering long while buying     
 protection (at the same time)  
 hedges against liquidations  
@@ -54,13 +53,13 @@ time is possible as such...
 voting is incentivised by a   
 12 x 55k QD lotto, dealt   
 in `onERC721Received`...  
- 
+
 fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
 corresponds to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
 30% APY must be generated  
 in aggregate to reach... 💯%  
 [split](https://x.com/QuidMint/status/1863257152481108154) between swap fees and   
-staking rewards from stables. 
+staking rewards from stables.
 
 © 2022-2027 QuidMint Foundation  
 THIS README IS PROVIDED "AS IS"   
@@ -73,4 +72,4 @@ OR TRADEMARKS; WARRANTIES,
 EXPRESS OR IMPLIED, INCLUDING,  
 NOT LIMITED TO, MERCHANTABILITY  
 WARRANTIES OF FITNESS FOR A  
- PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/mint).  
+PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/mint).  

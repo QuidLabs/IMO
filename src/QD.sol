@@ -1,15 +1,15 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho 
-import {MorphoBalancesLib} from "./interfaces/morpho/libraries/MorphoBalancesLib.sol";
+import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho
+import {MorphoBalancesLib} from "./imports/morpho/libraries/MorphoBalancesLib.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
-import {IMorpho, MarketParams} from "./interfaces/morpho/IMorpho.sol";
+import {IMorpho, MarketParams} from "./imports/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
-import {FullMath} from "./interfaces/math/FullMath.sol";
+import {FullMath} from "./imports/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import {IERC721} from "./interfaces/IERC721.sol";
+import {IERC721} from "./imports/IERC721.sol";
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -19,13 +19,14 @@ interface IERC721Receiver {
     ) external returns (bytes4);
 }
 interface ICollection is IERC721 {
-    function latestTokenId() 
+    function latestTokenId()
     external view returns (uint);
 }
 
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is ERC20, 
+contract Quid is 
+    OFT, RateLimiter,
     IERC721Receiver,
     ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -35,11 +36,11 @@ contract Quid is ERC20,
     // "Walked in the
     // kitchen, found a
     // [Pod] to [Piscine]" ~ 2 tune chi
-    Pod[44][24] Piscine; // 24 batches
+    Pod[43][24] Piscine; // 24 batches
     uint constant PENNY = 1e16; // 0.01
     // in for a penny, in for a pound...
     uint constant LAMBO = 16508; // NFT
-    // 44th day stores batch's total... 
+    // 44th day stores batch's total...
     uint constant public DAYS = 42 days;
     uint public START_PRICE = 50 * PENNY;
     struct Pod { uint credit; uint debit; }
@@ -63,9 +64,11 @@ contract Quid is ERC20,
     uint constant STACK = 10000 * WAD;
     address public immutable USDC;
     address public immutable DAI;
-    address public immutable SDAI;
-    address public immutable SFRAX;
-    address public immutable FRAX;
+    // address public immutable SDAI;
+    address public immutable USDS;
+    // address public immutable SFRAX;
+    address public immutable SUSDS;
+    // address public immutable FRAX;
     address public immutable USDE;
     address public immutable SUSDE;
     uint public COLLATERAL; // ^
@@ -74,76 +77,119 @@ contract Quid is ERC20,
         address sender = msg.sender;
         require(sender == Moulinette ||
                 sender == address(this), "!?");
-        _; 
-    } // en.wiktionary.org/wiki/moulinette
-    constructor(address _mo, // спутник
+        _;
+    } 
+   
+    // en.wiktionary.org/wiki/moulinette
+    constructor(address _mo, address _usdc, 
         address _usde, address _susde,
-        address _frax, address _sfrax,
-        address _sdai, address _dai) 
-        ERC20("QU!D", "QD", 18) {
-        START = block.timestamp;
-        /* START = 1733333333; */
-        SDAI = _sdai; DAI = _dai;
-        FRAX = _frax; SFRAX = _sfrax;
-        USDE = _usde; SUSDE = _susde;
-        vaults[USDC] = USDC; vaults[DAI] = SDAI;
-        vaults[FRAX] = SFRAX; vaults[USDE] = SUSDE;
-        deployed = START; Moulinette = payable(_mo);
-        USDC = address(MO(Moulinette).token0());
-        ERC20(DAI).approve(_sdai, type(uint256).max);
+        // address _frax, address _sfrax,
+        /* address _sdai, */ address _dai,
+        address _usds, address _susds)
+        OFT("QU!D", "QD", LZ, QUID) {
+        START = block.timestamp; // test-only
+        // START = 1733333333; // TODO base
+        /* SDAI = _sdai; */ deployed = START; 
+        USDC = _usdc; USDE = _usde; 
+        SUSDE = _susde; DAI = _dai; 
+        USDS = _usds; SUSDS = _susds; 
+        /* FRAX = _frax; SFRAX = _sfrax;
+        vaults[FRAX] = SFRAX; */
+        vaults[USDC] = USDC; 
+        vaults[DAI] = DAI; 
+        vaults[USDE] = SUSDE;
+        Moulinette = payable(_mo);
+        if (MO(Moulinette).token0() == USDC) {
+          require(MO(Moulinette).token1()
+            == MO(Moulinette).WETH9(), "42");
+        } else { require(MO(Moulinette).token1()
+              == USDC && MO(Moulinette).token0()
+                == MO(Moulinette).WETH9(), "42");
+        }
+        // ERC20(DAI).approve(_sdai, type(uint256).max);
         ERC20(DAI).approve(MORPHO, type(uint256).max);
-        ERC20(FRAX).approve(_sfrax,  type(uint256).max);
+        // ERC20(FRAX).approve(_sfrax,  type(uint256).max);
         ERC20(USDE).approve(_susde,  type(uint256).max);
         ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     } uint constant GRIEVANCES = 113310303333333333333333;
     uint constant BACKEND = 666699333333333333333333; // QD
-    mapping(address => uint[24]) public consideration; 
+    mapping(address => uint[24]) public consideration;
     // https://www.law.cornell.edu/wex/consideration
-    uint constant public MAX_PER_DAY = 777_777 * WAD;
-    
+    // uint constant public MAX_PER_DAY = 777_777 * WAD;
+    uint constant public MAX_PER_DAY = 77_777 * WAD;
+    // TODO uncomment greater max after Base deploy
+    // Event emitted when the rate limiter is set
+    event RateLimiterSet(address indexed rateLimiter);
+    // Error to be thrown when 
+    // only the rate limiter is 
+    // allowed to perform an action
+    error OnlyRateLimiter();
+    address public rateLimiter;
     function _min(uint _a, uint _b) internal
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
-    } 
+    }
+
+    // TODO uncomment for L1 
+    // mainnet ETH deployment 
+    // L2 doesn't use 4626...
+    /*
     function _minAmount(address from,
         address token, uint amount)
         internal returns (uint usd) {
-        bool isDollar = false; // $
+        bool isDollar = false; // $ 
         if (token == address(SDAI)
-         || token == address(SFRAX) 
-         || token == address(SUSDE)) {
+         || token == address(SFRAX)
+         || token == address(SUSDE)
+         || token == address(SUSDS)) {
             isDollar = true; amount = _min(
-                ERC4626(token).balanceOf(from),
-                ERC4626(token).convertToShares(amount)
-            );
+            ERC4626(token).balanceOf(from),
+            ERC4626(token).convertToShares(amount));
             usd = ERC4626(token).convertToAssets(amount);
             ERC4626(token).transferFrom(msg.sender,
                             address(this), amount);
                             perVault[token] += usd;
-        }  
-        else if (token == address(DAI)  ||
-                 token == address(FRAX) ||
-                 token == address(USDE) ||
-                 token == USDC) { 
-                 isDollar = true; usd = _min(amount,
-                    ERC20(token).balanceOf(from));
-                
+        } else if (token == address(DAI)  ||
+                   token == address(FRAX) ||
+                   token == address(USDE) ||
+                   token == address(USDS) ||
+                   token == USDC) {
+                     isDollar = true;
+                     usd = _min(amount,
+                ERC20(token).balanceOf(from));
                 address vault = vaults[token];
                 perVault[vault] += usd;
                 if (vault != USDC) {
                     ERC20(token).transferFrom(from,
                                 address(this), usd);
-
                     amount = ERC4626(vault).deposit(
                                 usd, address(this));
-                } 
-                else { ERC20(USDC).transferFrom(
-                        from, Moulinette, usd);
+                } else { ERC20(USDC).transferFrom(
+                          from, Moulinette, usd);
                 }
         } require(isDollar && amount > 0, "$");
-    }
-    function lastRedeem(address who) public view 
+    } */
+
+    function lastRedeem(address who) public view
         returns (uint) { return lastRedeemed[who]; }
+   
+    /**
+     * @dev Sets the rate limiter contract address. Only callable by the owner.
+     * @param _rateLimiter Address of the rate limiter contract.
+     */
+    function setRateLimiter(address _rateLimiter) external onlyOwner {
+        rateLimiter = _rateLimiter;
+        emit RateLimiterSet(_rateLimiter);
+    }
+    /**
+     * @dev Sets the rate limits based on RateLimitConfig array. Only callable by the owner or the rate limiter.
+     * @param _rateLimitConfigs An array of RateLimitConfig structures defining the rate limits.
+     */
+    function setRateLimits(RateLimitConfig[] calldata _rateLimitConfigs) external {
+        if (msg.sender != rateLimiter && msg.sender != owner()) revert OnlyRateLimiter();
+        _setRateLimits(_rateLimitConfigs);
+    }
+
     function qd_amt_to_dollar_amt(uint qd_amt) public
         view returns (uint amount) { uint in_days = (
             (block.timestamp - START) / 1 days
@@ -156,23 +202,22 @@ contract Quid is ERC20,
         uint in_days = ( // used in frontend...
             (block.timestamp - START) / 1 days
         ) + 1; return in_days * MAX_PER_DAY -
-               Piscine[batch][43].credit;
+               Piscine[batch][42].credit;
     }
     function get_total_deposits(bool usdc)
         public view returns (uint total) {
-        total += _min(perVault[SDAI], ERC4626(
+        /* total += _min(perVault[SDAI], ERC4626(
             SDAI).maxWithdraw(address(this)));
-
-        total += _min(perVault[SFRAX], ERC4626(
+           total += _min(perVault[SFRAX], ERC4626(
             SFRAX).maxWithdraw(address(this)));
+        */ // TODO uncomment for L1 mainnet deploy
 
         total += _min(perVault[SUSDE], ERC4626(
             SUSDE).maxWithdraw(address(this)));
+        return usdc ? total + perVault[USDC]
+             * 1e12 : total;
+    }
 
-        return usdc ? total + 
-        perVault[USDC] * 1e12 : total;
-    } 
-    
     function vote(uint new_vote) external {
         uint batch = currentBatch(); // 0-24
         if (batch < 24
@@ -194,7 +239,7 @@ contract Quid is ERC20,
     function _batchup(uint batch) internal {
         batch = _min(1, batch);
         require(batch < 25, "!");
-        Pod memory day = Piscine[batch - 1][43];
+        Pod memory day = Piscine[batch - 1][42];
         AVG_ROI += FullMath.mulDiv(WAD,
         day.credit - day.debit, day.debit);
         MO(Moulinette).setMetrics(AVG_ROI /
@@ -204,7 +249,7 @@ contract Quid is ERC20,
     function currentBatch()
         public view returns (uint batch) {
         batch = (block.timestamp - deployed) / DAYS;
-        // for the last 8 batches to be 
+        // for the last 8 batches to be
         // redeemable, batch reaches 32,
         // for 24 mature batches total
         // require(batch < 33, "3 years");
@@ -224,7 +269,7 @@ contract Quid is ERC20,
             total += consideration[account][i];
         }
     }
-    
+
     // turning a generator is what redeems it
     function turn(address from, uint value)
         public onlyGenerators returns (uint) {
@@ -233,7 +278,7 @@ contract Quid is ERC20,
         _transferHelper(from, address(0), value);
         // carry.debit will be untouched here...
         return MO(Moulinette).transferHelper(from,
-                address(0), value, balance_from); 
+                address(0), value, balance_from);
     }
     function transfer(address to, uint amount)
         public override(ERC20) returns (bool) {
@@ -255,7 +300,7 @@ contract Quid is ERC20,
         if (value != sent) { value = amount - sent;
             _mint(msg.sender, value);
             consideration[msg.sender][currentBatch()] += value;
-        } else { _calculateMedian(this.balanceOf(msg.sender), 
+        } else { _calculateMedian(this.balanceOf(msg.sender),
                         from_vote, balance_from, from_vote);
         } return result;
     }
@@ -265,7 +310,7 @@ contract Quid is ERC20,
         uint value = _min(amount, balance_from);
         uint from_vote = feeVotes[to];
         bool result = true;
-        if (msg.sender != Moulinette) { 
+        if (msg.sender != Moulinette) {
             uint to_vote = feeVotes[to];
             uint balance_to = this.balanceOf(to);
             result = super.transferFrom(from, to, value);
@@ -298,7 +343,7 @@ contract Quid is ERC20,
         }   if (new_stake != 0) {
                 if (new_vote <= K) {
                     SUM += new_stake;
-                }         
+                }
                 WEIGHTS[new_vote] += new_stake;
         } uint mid = this.totalSupply() / 2;
         if (mid != 0) {
@@ -306,9 +351,9 @@ contract Quid is ERC20,
                 while (K >= 1 && (
                     (SUM - WEIGHTS[K]) >= mid
                 )) { SUM -= WEIGHTS[K]; K -= 1; }
-            } else { 
-                while (SUM < mid) { 
-                    K += 1; SUM += WEIGHTS[K]; 
+            } else {
+                while (SUM < mid) {
+                    K += 1; SUM += WEIGHTS[K];
                 }
             } MO(Moulinette).setFee(K);
         }  else { SUM = 0; } // reset
@@ -319,10 +364,10 @@ contract Quid is ERC20,
         require(amount > WAD, "insufficient QD");
         int i; // must be int otherwise tx reverts
         // when we go below 0 in the while loop...
-        if (to == address(0)) { 
+        if (to == address(0)) {
             i = int(matureBatches());
             _burn(from, amount);
-        }   else { i = int(currentBatch()); } 
+        }   else { i = int(currentBatch()); }
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k]; // QD...
             if (amt > 0) { amt = _min(amount, amt);
@@ -334,6 +379,23 @@ contract Quid is ERC20,
         }   require(amount == 0, "transfer");
     }
 
+    /**
+     * @dev Checks and updates the rate limit before initiating a token transfer.
+     * @param _amountLD The amount of tokens to be transferred.
+     * @param _minAmountLD The minimum amount of tokens expected to be received.
+     * @param _dstEid The destination endpoint identifier.
+     * @return amountSentLD The actual amount of tokens sent.
+     * @return amountReceivedLD The actual amount of tokens received.
+     */
+    function _debit(
+        uint256 _amountLD,
+        uint256 _minAmountLD,
+        uint32 _dstEid
+    ) internal virtual override returns (uint256 amountSentLD, uint256 amountReceivedLD) {
+        _checkAndUpdateRateLimit(_dstEid, _amountLD);
+        return super._debit(_amountLD, _minAmountLD, _dstEid);
+    }
+
     function mint(address pledge, uint amount, address token)
         public nonReentrant { uint batch = currentBatch(); // 0-24
         if (token == address(this)) { _mint(pledge, amount); // QD
@@ -342,7 +404,7 @@ contract Quid is ERC20,
         }   else if (block.timestamp <= START + DAYS && batch < 24) {
                 uint in_days = ((block.timestamp - START) / 1 days);
                 require(amount >= 10 * WAD, "mint more QD");
-                require(Piscine[batch][43].credit + amount <
+                require(Piscine[batch][42].credit + amount <
                         (in_days + 1) * MAX_PER_DAY, "cap");
                 // Yesterday's price is NOT today's price,
                 // and when I think I'm running low, you're
@@ -358,14 +420,16 @@ contract Quid is ERC20,
                 Piscine[batch][in_days].credit += amount;
                 Piscine[batch][in_days].debit += cost;
                 // 44th row is the total for the batch
-                Piscine[batch][43].credit += amount;
-                Piscine[batch][43].debit += cost;
+                Piscine[batch][42].credit += amount;
+                Piscine[batch][42].debit += cost;
                 MO(Moulinette).mint(pledge, cost, amount);
+                // TODO cut for grievances, and backend
             }
-        } address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
-         address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
-       address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28;
+        } address constant LZ = 0x1a44076050125825900e736c501f859c50fE728c;
+         address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
+        address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
+      address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28; // TODO deploy on base
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
     recipient prevent tokens from being forever locked.
@@ -404,11 +468,11 @@ contract Quid is ERC20,
                         backend -= cut; _mint(winner, cut);
                         consideration[winner][batch] += cut;
                     }
-                } 
+                }
             } cut = backend; _mint(from, cut); // keep
             consideration[from][batch] += cut; // in QD
             _batchup(batch); // "like a boomerang, I need
-            // a repeat...same level, same rebel that 
+            // a repeat...same level, same rebel that
             // never settled and overcame the get owe"
         } return this.onERC721Received.selector;
     }
@@ -431,30 +495,30 @@ contract Quid is ERC20,
             // use it for the Uniswap LP position,
             // converting to WETH in MO.withdraw
             if (msg.sender == address(this)) {
-                // TODO account cost in mint() 
+                // TODO account cost in mint()
                 amount = _min(amount,
                     FullMath.mulDiv(total,
                         PENNY * 2 / 10, WAD));
         }   require(amount > 0, "no thing");
             uint dai; uint usde; uint frax;
-        
+
         (uint delta, uint cap ) = MO(Moulinette).capitalisation(0, false);
         // uint borrowed = 0;
 
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
-                        IMorpho(MORPHO), params, address(this)); 
-        
+                        IMorpho(MORPHO), params, address(this));
+
         if (delta == 0 && borrowed > 0) {
             ERC4626(SDAI).withdraw(borrowed,
                 address(this), address(this));
                 perVault[SDAI] -= borrowed;
             IMorpho(MORPHO).repay(params,
                 borrowed, 0, address(this), "");
-            
+
             IMorpho(MORPHO).withdrawCollateral(params,
                 COLLATERAL, address(this), address(this));
-        } 
+        }
         else if (delta > 0 && perVault[SUSDE] > delta) {
             uint collat = delta + delta / 5; // safety margin
             collat = _min(collat, perVault[SUSDE] - COLLATERAL);
@@ -464,7 +528,7 @@ contract Quid is ERC20,
                         collat), address(this), "");
 
                 COLLATERAL += collat; delta = collat - collat / 5;
-                (dai, ) = IMorpho(MORPHO).borrow(params, delta, 0, 
+                (dai, ) = IMorpho(MORPHO).borrow(params, delta, 0,
                                     address(this), address(this));
 
                 perVault[SDAI] += dai;
@@ -476,7 +540,7 @@ contract Quid is ERC20,
                                 perVault[SDAI], total), WAD);
                                 dai = _min(perVault[SDAI] -
                                               borrowed, dai);
-        
+
         usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                 perVault[SUSDE], total), WAD);
                                 usde = _min(perVault[SUSDE] -

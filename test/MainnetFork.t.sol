@@ -72,20 +72,24 @@ contract MainnetFork is Test {
         vm.deal(User03, 1_000_000_000_000_000 ether);
         
         DAI = new mockToken(18);
-        SDAI = new mockVault(DAI);
-        FRAX = new mockToken(18);
-        SFRAX = new mockVault(FRAX);
+        // SDAI = new mockVault(DAI);
+        // FRAX = new mockToken(18);
+        // SFRAX = new mockVault(FRAX);
         USDE = new mockToken(18);
         SUSDE = new mockVault(USDE);
+        USDS = new mockToken(18);
+        SUSDS = new mockToken(USDE);
 
-        moulinette = new MO(//Moulinette 
-            address(weth), address(nfpm), 
-            address(pool), address(router)
+        moulinette = new MO(// Moulinette 
+            address(weth), address(usdc), 
+            address(nfpm), address(pool), 
+            address(router)
         );
         quid = new Quid(address(moulinette), 
-            address(USDE), address(SUSDE),
-            address(FRAX), address (SFRAX),
-            address (SDAI), address (DAI)
+            address(usdc), address(USDE), 
+            address(SUSDE), /* address(FRAX), address (SFRAX),
+            address (SDAI), */ address(DAI),
+            address(USDS), address(SUSDS)
         );
 
         moulinette.setQuid(address(quid));
