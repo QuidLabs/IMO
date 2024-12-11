@@ -7,11 +7,11 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {IMorpho, MarketParams} from "./imports/morpho/IMorpho.sol";
+import {OFTOwnable2Step} from "./imports/OFTOwnable2Step.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./imports/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import {OFT} from "./imports/OFT.sol"; // must be ERC20
-import {RateLimiter} from "./imports/RateLimiter.sol";
+
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -26,10 +26,8 @@ interface ICollection is IERC721 {
 }
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is OFT, 
-    IERC721Receiver,
-    ReentrancyGuard,
-    RateLimiter { 
+contract Quid is OFTOwnable2Step, 
+    IERC721Receiver, ReentrancyGuard { 
     using SafeTransferLib for ERC20;
     using SafeTransferLib for ERC4626;
     uint public AVG_ROI;
@@ -90,7 +88,7 @@ contract Quid is OFT,
         /* address _sdai, */ address _dai,
         address _usds, address _susds,
         address _crv, address _scrv)
-        OFT("QU!D", "QD", LZ, QUID) {
+        OFTOwnable2Step("QU!D", "QD", LZ, QUID) {
         START = block.timestamp; // test-only
         // START = 1733333333; // TODO base
         /* SDAI = _sdai; */ deployed = START; 
@@ -123,13 +121,6 @@ contract Quid is OFT,
     // uint constant public MAX_PER_DAY = 777_777 * WAD;
     uint constant public MAX_PER_DAY = 77_777 * WAD;
     // TODO uncomment greater max after Base deploy
-    // Event emitted when the rate limiter is set
-    event RateLimiterSet(address indexed rateLimiter);
-    // Error to be thrown when 
-    // only the rate limiter is 
-    // allowed to perform an action
-    error OnlyRateLimiter();
-    address public rateLimiter;
     function _min(uint _a, uint _b) internal
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
@@ -184,23 +175,6 @@ contract Quid is OFT,
     function lastRedeem(address who) public view
         returns (uint) { return lastRedeemed[who]; }
    
-    /**
-     * @dev Sets the rate limiter contract address. Only callable by the owner.
-     * @param _rateLimiter Address of the rate limiter contract.
-     */
-    function setRateLimiter(address _rateLimiter) external onlyOwner {
-        rateLimiter = _rateLimiter;
-        emit RateLimiterSet(_rateLimiter);
-    }
-    /**
-     * @dev Sets the rate limits based on RateLimitConfig array. Only callable by the owner or the rate limiter.
-     * @param _rateLimitConfigs An array of RateLimitConfig structures defining the rate limits.
-     */
-    function setRateLimits(RateLimitConfig[] calldata _rateLimitConfigs) external {
-        if (msg.sender != rateLimiter && msg.sender != owner()) revert OnlyRateLimiter();
-        _setRateLimits(_rateLimitConfigs);
-    }
-
     function qd_amt_to_dollar_amt(uint qd_amt) public
         view returns (uint amount) { uint in_days = (
             (block.timestamp - START) / 1 days
@@ -391,23 +365,6 @@ contract Quid is OFT,
                 }   amount -= amt;
             }   i -= 1;
         }   require(amount == 0, "transfer");
-    }
-
-    /**
-     * @dev Checks and updates the rate limit before initiating a token transfer.
-     * @param _amountLD The amount of tokens to be transferred.
-     * @param _minAmountLD The minimum amount of tokens expected to be received.
-     * @param _dstEid The destination endpoint identifier.
-     * @return amountSentLD The actual amount of tokens sent.
-     * @return amountReceivedLD The actual amount of tokens received.
-     */
-    function _debit(
-        uint256 _amountLD,
-        uint256 _minAmountLD,
-        uint32 _dstEid
-    ) internal virtual override returns (uint256 amountSentLD, uint256 amountReceivedLD) {
-        _checkAndUpdateRateLimit(_dstEid, _amountLD);
-        return super._debit(_amountLD, _minAmountLD, _dstEid);
     }
 
     function mint(address pledge, uint amount, address token)
