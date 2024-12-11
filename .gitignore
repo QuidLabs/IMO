@@ -2,7 +2,6 @@
 .vscode
 .idea
 .env
-/lib
 /out
 /cache
 /frontend/node_modules
