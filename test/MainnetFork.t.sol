@@ -5,17 +5,16 @@ import {MO} from "../src/MOulinette.sol";
 
 import {mockVault} from "../src/mockVault.sol";
 import {mockToken} from "../src/mockToken.sol";
-
-import "../src/interfaces/IERC721.sol";
 import "lib/forge-std/src/console.sol"; // TODO delete
-import {Test} from "../lib/forge-std/src/Test.sol";
+import {Test} from "lib/forge-std/src/Test.sol";
 
-import {WETH} from "../lib/solmate/src/tokens/WETH.sol";
-import {ERC20} from "../lib/solmate/src/tokens/ERC20.sol";
-import {ERC4626} from "../lib/solmate/src/tokens/ERC4626.sol";
-import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
-import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
-import {INonfungiblePositionManager} from "../src/interfaces/INonfungiblePositionManager.sol";
+import {WETH} from "lib/solmate/src/tokens/WETH.sol";
+import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
+import {ISwapRouter} from "../src/imports/ISwapRouter.sol";
+import {IUniswapV3Pool} from "../src/imports/IUniswapV3Pool.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {INonfungiblePositionManager} from "../src/imports/INonfungiblePositionManager.sol";
 
 interface ICollection is IERC721 {
     function latestTokenId()
@@ -26,10 +25,14 @@ contract MainnetFork is Test {
     MO public moulinette;
     mockToken public DAI; // = ERC20(0x6B175474E89094C44Da98b954EedeAC495271d0F);
     mockVault public SDAI; // = ERC4626(0x83F20F44975D03b1b09e64809B757c47f942BEeA);
+    mockToken public USDS; // = ERC20(0xdC035D45d973E3EC169d2276DDab16f1e407384F);
+    mockVault public SUSDS; // = ERC4626(0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD);
     mockToken public FRAX; // = ERC20(0x853d955aCEf822Db058eb8505911ED77F175b99e);
     mockVault public SFRAX; // = ERC4626(0xA663B02CF0a4b149d2aD41910CB81e23e1c41c32);
     mockToken public USDE; // = ERC20(0x4c9EDD5852cd905f086C759E8383e09bff1E68B3);
     mockVault public SUSDE; // = ERC4626(0x9D39A5DE30e57443BfF2A8307A4256c8797A3497);
+    mockToken public CRVUSD; // ERC20(0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E);
+    mockVault public SCRVUSD; // ERC4626(0x0655977FEb2f289A4aB78af67BAB0d17aAb84367);
 
     ICollection public F8N = ICollection(0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405); 
     ISwapRouter public router = ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
@@ -72,13 +75,15 @@ contract MainnetFork is Test {
         vm.deal(User03, 1_000_000_000_000_000 ether);
         
         DAI = new mockToken(18);
-        // SDAI = new mockVault(DAI);
-        // FRAX = new mockToken(18);
-        // SFRAX = new mockVault(FRAX);
+        SDAI = new mockVault(DAI);
+        FRAX = new mockToken(18);
+        SFRAX = new mockVault(FRAX);
         USDE = new mockToken(18);
         SUSDE = new mockVault(USDE);
         USDS = new mockToken(18);
-        SUSDS = new mockToken(USDE);
+        SUSDS = new mockVault(USDS);
+        CRVUSD = new mockToken(18);
+        SCRVUSD = new mockVault(CRVUSD);
 
         moulinette = new MO(// Moulinette 
             address(weth), address(usdc), 
@@ -89,7 +94,8 @@ contract MainnetFork is Test {
             address(usdc), address(USDE), 
             address(SUSDE), /* address(FRAX), address (SFRAX),
             address (SDAI), */ address(DAI),
-            address(USDS), address(SUSDS)
+            address(USDS), address(SUSDS),
+            address(CRVUSD), address(SCRVUSD)
         );
 
         moulinette.setQuid(address(quid));

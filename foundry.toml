@@ -26,4 +26,4 @@ verbosity = 3
 [profile.dependencies]
 solmate = { git = "https://github.com/Rari-Capital/solmate" }
 forge-std = { git = "https://github.com/foundry-rs/forge-std" }
-
+openzeppelin-contracts = { git = "https://github.com/OpenZeppelin/openzeppelin-contracts.git" }

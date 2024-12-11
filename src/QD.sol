@@ -3,13 +3,15 @@
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho
 import {MorphoBalancesLib} from "./imports/morpho/libraries/MorphoBalancesLib.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {IMorpho, MarketParams} from "./imports/morpho/IMorpho.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./imports/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
-import {IERC721} from "./imports/IERC721.sol";
+import {OFT} from "./imports/OFT.sol"; // must be ERC20
+import {RateLimiter} from "./imports/RateLimiter.sol";
 interface IERC721Receiver {
     function onERC721Received(
         address operator,
@@ -22,13 +24,12 @@ interface ICollection is IERC721 {
     function latestTokenId()
     external view returns (uint);
 }
-
 // http://42.fr Piscine...
 import "./MOulinette.sol";
-contract Quid is 
-    OFT, RateLimiter,
+contract Quid is OFT, 
     IERC721Receiver,
-    ReentrancyGuard {
+    ReentrancyGuard,
+    RateLimiter { 
     using SafeTransferLib for ERC20;
     using SafeTransferLib for ERC4626;
     uint public AVG_ROI;
@@ -69,6 +70,8 @@ contract Quid is
     // address public immutable SFRAX;
     address public immutable SUSDS;
     // address public immutable FRAX;
+     address public immutable CRVUSD;
+    address public immutable SCRVUSD;
     address public immutable USDE;
     address public immutable SUSDE;
     uint public COLLATERAL; // ^
@@ -85,7 +88,8 @@ contract Quid is
         address _usde, address _susde,
         // address _frax, address _sfrax,
         /* address _sdai, */ address _dai,
-        address _usds, address _susds)
+        address _usds, address _susds,
+        address _crv, address _scrv)
         OFT("QU!D", "QD", LZ, QUID) {
         START = block.timestamp; // test-only
         // START = 1733333333; // TODO base
@@ -93,18 +97,19 @@ contract Quid is
         USDC = _usdc; USDE = _usde; 
         SUSDE = _susde; DAI = _dai; 
         USDS = _usds; SUSDS = _susds; 
+        CRVUSD = _crv; SCRVUSD = _scrv;
         /* FRAX = _frax; SFRAX = _sfrax;
         vaults[FRAX] = SFRAX; */
         vaults[USDC] = USDC; 
         vaults[DAI] = DAI; 
         vaults[USDE] = SUSDE;
         Moulinette = payable(_mo);
-        if (MO(Moulinette).token0() == USDC) {
-          require(MO(Moulinette).token1()
-            == MO(Moulinette).WETH9(), "42");
-        } else { require(MO(Moulinette).token1()
-              == USDC && MO(Moulinette).token0()
-                == MO(Moulinette).WETH9(), "42");
+        if (address(MO(Moulinette).token0()) == USDC) {
+            require(address(MO(Moulinette).token1())
+            == address(MO(Moulinette).WETH9()), "42");
+        } else { require(address(MO(Moulinette).token1())
+              == USDC && address(MO(Moulinette).token0())
+                == address(MO(Moulinette).WETH9()), "42");
         }
         // ERC20(DAI).approve(_sdai, type(uint256).max);
         ERC20(DAI).approve(MORPHO, type(uint256).max);
@@ -133,7 +138,7 @@ contract Quid is
     // TODO uncomment for L1 
     // mainnet ETH deployment 
     // L2 doesn't use 4626...
-    /*
+    /* 
     function _minAmount(address from,
         address token, uint amount)
         internal returns (uint usd) {
@@ -168,7 +173,13 @@ contract Quid is
                           from, Moulinette, usd);
                 }
         } require(isDollar && amount > 0, "$");
-    } */
+    } 
+    */
+    function _minAmount(address from,
+        address token, uint amount)
+        internal returns (uint usd) {
+            return 42; // TODO
+    }
 
     function lastRedeem(address who) public view
         returns (uint) { return lastRedeemed[who]; }
@@ -214,6 +225,9 @@ contract Quid is
 
         total += _min(perVault[SUSDE], ERC4626(
             SUSDE).maxWithdraw(address(this)));
+
+        // TODO add the rest, don't use maxWithdraw for L2
+
         return usdc ? total + perVault[USDC]
              * 1e12 : total;
     }
@@ -281,7 +295,7 @@ contract Quid is
                 address(0), value, balance_from);
     }
     function transfer(address to, uint amount)
-        public override(ERC20) returns (bool) {
+        public override returns (bool) {
         uint balance_from = this.balanceOf(msg.sender);
         uint value = _min(amount, balance_from);
         uint from_vote = feeVotes[msg.sender];
@@ -305,7 +319,7 @@ contract Quid is
         } return result;
     }
     function transferFrom(address from, address to,
-        uint amount) public override(ERC20) returns (bool) {
+        uint amount) public override returns (bool) {
         uint balance_from = this.balanceOf(from);
         uint value = _min(amount, balance_from);
         uint from_vote = feeVotes[to];
@@ -503,8 +517,8 @@ contract Quid is
             uint dai; uint usde; uint frax;
 
         (uint delta, uint cap ) = MO(Moulinette).capitalisation(0, false);
-        // uint borrowed = 0;
-
+        uint borrowed = 0;
+        /*
         MarketParams memory params = IMorpho(MORPHO).idToMarketParams(ID);
         uint borrowed = MorphoBalancesLib.expectedBorrowAssets(
                         IMorpho(MORPHO), params, address(this));
@@ -535,26 +549,29 @@ contract Quid is
                 ERC4626(SDAI).deposit(
                     dai, address(this));
             }
-        } // require(cap > 70, "minimum reserve requirement");
+        } */ // TODO create morpho market on Base
+        // require(cap > 70, "minimum reserve requirement");
         dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
-                                perVault[SDAI], total), WAD);
-                                dai = _min(perVault[SDAI] -
-                                              borrowed, dai);
+                                perVault[DAI], total), WAD);
+                                dai = _min(perVault[DAI] -
+                                              borrowed, dai); // TODO SDAI
 
         usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                 perVault[SUSDE], total), WAD);
                                 usde = _min(perVault[SUSDE] -
                                             COLLATERAL, usde);
-        frax = _min(perVault[SFRAX], amount - (dai + usde));
+        // frax = _min(perVault[SFRAX], amount - (dai + usde));
         if (dai > 0) {
+            /*
             ERC4626(SDAI).withdraw(dai,
                     to, address(this));
                     perVault[SDAI] -= dai;
-        } if (frax > 0) {
+            */ // TODO enable on L1 mainnet
+        } /* if (frax > 0) {
               ERC4626(SFRAX).withdraw(frax,
                         to, address(this));
                         perVault[SFRAX] -= frax;
-        } if (usde > 0) {
+        } */ if (usde > 0) {
                 ERC4626(SUSDE).withdraw(usde,
                         to, address(this));
                         perVault[SUSDE] -= usde;

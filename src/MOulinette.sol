@@ -1,20 +1,19 @@
 
 // SPDX-License-Identifier: AGPL-3.0
 pragma solidity 0.8.25; // EVM: london
-import "lib/forge-std/src/console.sol"; // TODO delete logging, set_price_eth
+import "lib/forge-std/src/console.sol"; // TODO 
 
 import {Quid} from "./QD.sol";
 import {WETH} from "lib/solmate/src/tokens/WETH.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
 import {TickMath} from "./imports/math/TickMath.sol";
 import {FullMath} from "./imports/math/FullMath.sol";
-import {ISwapRouter} from "./imports/ISwapRouter.sol"; // TODO uncomment for mainnet
+import {ISwapRouter} from "./imports/ISwapRouter.sol"; 
 import {IUniswapV3Pool} from "./imports/IUniswapV3Pool.sol";
-import {IPyth} from "@pythnetwork/pyth-sdk-solidity/IPyth.sol";
 import {LiquidityAmounts} from "./imports/math/LiquidityAmounts.sol";
-import {PythStructs} from "@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
+import {AggregatorV3Interface} from "./imports/AggregatorV3Interface.sol";
 import {INonfungiblePositionManager} from "./imports/INonfungiblePositionManager.sol";
 // import {IV3SwapRouter as ISwapRouter} from "./imports/IV3SwapRouter.sol"; // TODO base
 
@@ -30,22 +29,19 @@ contract MO is ReentrancyGuard {
     uint public FEE = WAD / 28;
     uint24 constant POOL_FEE = 500;
     uint constant BAND = 1000 * WAD;
-    // what's a rock'n'rolla, tell em
     INonfungiblePositionManager NFPM;
     int24 internal LAST_TICK;
     int24 internal UPPER_TICK;
     int24 internal LOWER_TICK;
-    uint internal _ETH_PRICE; // TODO delete
+    uint internal _ETH_PRICE; // TODO 
     IUniswapV3Pool POOL; ISwapRouter ROUTER;
     uint128 liquidityUnderManagement; // UniV3
-    // TODO compare to harmonic as volatility
     mapping(address => uint) flashLoanProtect;
-    // TODO storage perecentage delta in vol
     struct FoldState { uint delta; uint price;
         uint average_price; uint average_value;
         uint deductible; uint cap; uint minting;
         bool liquidate; uint repay; uint collat;
-    }   IPyth pyth; Quid QUID; // tethered to MO
+    } Quid QUID; // tethered to the MO contract
     function get_info(address who) view
         external returns (uint, uint) {
         Offer memory pledge = pledges[who];
@@ -146,9 +142,8 @@ contract MO is ReentrancyGuard {
         token1.approve(_router, type(uint256).max);
         token0.approve(_nfpm, type(uint256).max);
         token1.approve(_nfpm, type(uint256).max);
-        pyth = IPyth(0x8250f4aF4B972684F7b336503E2D6dFeDeB1487a);
-        // 0x4305FB66699C3B2702D4d05CF36551390A4c69C6 // TODO L1
-    }
+    } // 0xdEd37FC1400B8022968441356f771639ad1B23aA 
+    // TODO chainlink sUSDe rate 
 
     // present value of the expected cash flows
     function capitalisation(uint qd, bool burn)
@@ -376,6 +371,7 @@ contract MO is ReentrancyGuard {
     // from (block.timestamp - secondsAgo) to now
     /// @return harmonicMeanLiquidity
     // from (block.timestamp - secondsAgo) to now
+    /*
     function consult(address pool) internal view returns
       (int24 meanTick, uint128 harmonicMeanLiquidity) { // vol
           uint32[] memory secondsAgos = new uint32[](2);
@@ -402,7 +398,7 @@ contract MO is ReentrancyGuard {
           uint192 secondsAgoX160 = uint192(secondsAgos[0]) * type(uint160).max;
           harmonicMeanLiquidity = uint128(secondsAgoX160 /
             (uint192(secondsPerLiquidityCumulativesDelta) << 32));
-    }
+    } */ // TODO get TWAP
 
     function _swap(uint amount0, uint amount1,
         uint price) internal returns (uint, uint) {
