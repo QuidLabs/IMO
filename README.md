@@ -1,10 +1,6 @@
 
 ## IM`Offer`
 
-2 contracts are [presented](https://x.com/QuidMint/status/1864463054622040131):  
-~~mom.sol~~ **MO**(**M**oulinette),  
-and her lookalike, ~~my big  
-bro Johnny~~ QuiD (ERC20).  
 
 QD is supported by an `ID`  
 for a Morpho lien, as well  
@@ -50,16 +46,26 @@ may `redeem` 1 QD for $1.
 This is also the reason that  
 spreading liquidations over  
 time is possible as such...   
-voting is incentivised by a   
+voting is [incentivised](https://x.com/0xdasha/status/1770827459396559211) by a   
 12 x 55k QD lotto, dealt   
 in `onERC721Received`...  
 
-fiat lux `GRIEVANCES` 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
+> *"30% discount from book...gr8 cash flow.*   
+> *GEKKO: It's a dog...what else you got?"*
+		
+Male dog, QD, and female cat...   
+`mom.sol` was about ossification?  
+MO(Moulinette) is objectification.  
+
+For your information, 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
 corresponds to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
-30% APY must be generated  
+30% APY *might* be generated  
 in aggregate to reach... 💯%  
+
 [split](https://x.com/QuidMint/status/1863257152481108154) between swap fees and   
-staking rewards from stables.
+staking rewards from stables.  
+All we can say is, QD will not    
+be redeemed for more than $1.  
 
 © 2022-2027 QuidMint Foundation  
 THIS README IS PROVIDED "AS IS"   

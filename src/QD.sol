@@ -388,12 +388,14 @@ contract Quid is OFTOwnable2Step,
                 consideration[pledge][batch] += amount;
                 _mint(pledge, amount); // totalSupply++
                 consideration[pledge][batch] += amount;
+                MO(Moulinette).mint(pledge, cost, amount);
+                // amount = amount + amount / 
                 Piscine[batch][in_days].credit += amount;
                 Piscine[batch][in_days].debit += cost;
                 // 44th row is the total for the batch
-                Piscine[batch][42].credit += amount;
+                Piscine[batch][42].credit += amount + ;
                 Piscine[batch][42].debit += cost;
-                MO(Moulinette).mint(pledge, cost, amount);
+                
                 // TODO cut for grievances, and backend
             }
         } address constant LZ = 0x1a44076050125825900e736c501f859c50fE728c;

@@ -30,6 +30,7 @@ contract MO is ReentrancyGuard {
     uint24 constant POOL_FEE = 500;
     uint constant BAND = 1000 * WAD;
     INonfungiblePositionManager NFPM;
+    bool internal zeroForOne;
     int24 internal LAST_TICK;
     int24 internal UPPER_TICK;
     int24 internal LOWER_TICK;
@@ -136,12 +137,18 @@ contract MO is ReentrancyGuard {
         POOL = IUniswapV3Pool(_pool);
         ROUTER = ISwapRouter(_router);
         NFPM = INonfungiblePositionManager(_nfpm);
-        token0 = ERC20(IUniswapV3Pool(_pool).token0());
-        token1 = ERC20(IUniswapV3Pool(_pool).token1());
-        token0.approve(_router, type(uint256).max);
-        token1.approve(_router, type(uint256).max);
-        token0.approve(_nfpm, type(uint256).max);
-        token1.approve(_nfpm, type(uint256).max);
+        // bool needed as order is swapped on Base
+        zeroForOne = address(POOL.token0()) == USDC;
+        token0 = ERC20(POOL.token0());
+        token1 = ERC20(POOL.token1());
+        token0.approve(_router, 
+            type(uint256).max);
+        token0.approve(_nfpm,
+            type(uint256).max);
+        token1.approve(_nfpm,
+            type(uint256).max);
+        token1.approve(_router,
+            type(uint256).max);
     } // 0xdEd37FC1400B8022968441356f771639ad1B23aA 
     // TODO chainlink sUSDe rate 
 
@@ -171,8 +178,7 @@ contract MO is ReentrancyGuard {
             else { return ((total - assets),
             FullMath.mulDiv(100, assets, total));
         }
-    } // 0xca3ba9a619a4b3755c10ac7d5e760275aa95e9823d38a84fedd416856cdba37c
-    // TODO pyth id
+    } 
 
     // helpers allow treating QD balances
     // uniquely without needing ERC721...
@@ -371,6 +377,7 @@ contract MO is ReentrancyGuard {
     // from (block.timestamp - secondsAgo) to now
     /// @return harmonicMeanLiquidity
     // from (block.timestamp - secondsAgo) to now
+    // observe don't absorb (until you can redeem self)
     /*
     function consult(address pool) internal view returns
       (int24 meanTick, uint128 harmonicMeanLiquidity) { // vol
@@ -461,7 +468,8 @@ contract MO is ReentrancyGuard {
               FullMath.mulDiv(pledges[address(this)].weth.credit,
                 price, WAD), "over-encumbered");
         }       pledges[beneficiary] = pledge;
-                _repackNFT(0, amount, price);
+                zeroForOne ? _repackNFT(0, amount, price) 
+                           : _repackNFT(amount, 0, price);
     }
 
     function mint(address to, // use in ERC20.mint
@@ -558,9 +566,8 @@ contract MO is ReentrancyGuard {
             }   uint debit = FullMath.mulDiv(price,
                              pledge.work.debit, WAD);
             uint haircut = debit - (debit / 5);
-            require(haircut >= pledge.work.credit
-            && haircut > 0, "CR"); amount = _min(
-                amount, haircut - pledge.work.credit);
+            require(haircut >= pledge.work.credit && haircut > 0, "CR"); 
+            amount = _min(amount, haircut - pledge.work.credit);
             if (amount > 0) { pledge.work.credit += amount;
                 (, uint cap) = capitalisation(amount, false);
                 amount = dollar_amt_to_qd_amt(cap, amount);
@@ -592,6 +599,7 @@ contract MO is ReentrancyGuard {
                     TickMath.getSqrtPriceAtTick(UPPER_TICK),
                     FullMath.mulDiv(price, transfer / 2,
                               WAD * 1e12), transfer / 2));
+            
             if (amount0 > 0) {
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
