@@ -387,7 +387,6 @@ contract Quid is OFTOwnable2Step,
                 amount = FullMath.mulDiv(WAD, cost, price);
                 consideration[pledge][batch] += amount;
                 _mint(pledge, amount); // totalSupply++
-                consideration[pledge][batch] += amount;
                 MO(Moulinette).mint(pledge, cost, amount);
                 // amount = amount + amount / 
                 Piscine[batch][in_days].credit += amount;
@@ -426,8 +425,8 @@ contract Quid is OFTOwnable2Step,
             uint cut = GRIEVANCES / 2; uint count = 0;
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT...
-            // this.morph(QUID, cut); this.morph(from, cut); // TODO uncomment
-            uint backend = BACKEND; cut = backend / 12; // voire dire...
+            uint backend = BACKEND; cut = backend / 12;
+
             if (voters[batch - 1].length >= 10 && data.length >= 32) {
                 bytes32 _seed = abi.decode(data[:32], (bytes32));
                 for (uint i = 0; count < 10 && i < 30; i++) {
@@ -443,7 +442,7 @@ contract Quid is OFTOwnable2Step,
                     }
                 }
             } cut = backend; _mint(from, cut); // keep
-            consideration[from][batch] += cut; // in QD
+            consideration[from][0] += cut; // in QD...
             _batchup(batch); // "like a boomerang, I need
             // a repeat...same level, same rebel that
             // never settled and overcame the get owe"
