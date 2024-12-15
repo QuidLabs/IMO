@@ -24,18 +24,20 @@ contract MO is ReentrancyGuard {
     ERC20 public immutable token1;
     ERC20 public immutable token0;
     WETH public immutable WETH9;
-    uint public ID; // V3 NFT
+    uint public ID; // V3 NFT...
+    bool public zeroForOne;
     uint constant WAD = 1e18;
     uint public FEE = WAD / 28;
     uint24 constant POOL_FEE = 500;
     uint constant BAND = 1000 * WAD;
     INonfungiblePositionManager NFPM;
-    bool internal zeroForOne;
+    bool internal token1isETH;
     int24 internal LAST_TICK;
     int24 internal UPPER_TICK;
     int24 internal LOWER_TICK;
     uint internal _ETH_PRICE; // TODO 
-    IUniswapV3Pool POOL; ISwapRouter ROUTER;
+    IUniswapV3Pool public POOL; 
+    ISwapRouter public ROUTER;
     uint128 liquidityUnderManagement; // UniV3
     mapping(address => uint) flashLoanProtect;
     struct FoldState { uint delta; uint price;
@@ -80,7 +82,7 @@ contract MO is ReentrancyGuard {
     // carry is relevant for redemption purposes.
     // fold() holds depositors accountable for
     // work, as well as accountability for weth
-    function setQuid(address _quid)
+    function setQuid(address _quid) 
         external { QUID = Quid(_quid);
             require(QUID.Moulinette()
              == address(this), "42");
@@ -138,7 +140,6 @@ contract MO is ReentrancyGuard {
         ROUTER = ISwapRouter(_router);
         NFPM = INonfungiblePositionManager(_nfpm);
         // bool needed as order is swapped on Base
-        zeroForOne = address(POOL.token0()) == USDC;
         token0 = ERC20(POOL.token0());
         token1 = ERC20(POOL.token1());
         token0.approve(_router, 
@@ -149,6 +150,7 @@ contract MO is ReentrancyGuard {
             type(uint256).max);
         token1.approve(_router,
             type(uint256).max);
+        token1isETH = address(token0) == USDC;
     } // 0xdEd37FC1400B8022968441356f771639ad1B23aA 
     // TODO chainlink sUSDe rate 
 
@@ -252,7 +254,7 @@ contract MO is ReentrancyGuard {
             if ((LAST_TICK > UPPER_TICK || LAST_TICK < LOWER_TICK) &&
             // "to improve is to change, to perfect is to change often"
             block.timestamp - pledges[address(this)].last.credit >= 10 minutes) {
-                // && last != block.number) // TODO uncomment for mainnet) {
+                // && last != block.number) // TODO uncomment for deployment) {
                 // we want to make sure that all of the WETH deposited to this
                 // contract is always in range (collecting), and range is ~7%
                 // below and above tick, as voltage regulators watch currents
@@ -303,6 +305,7 @@ contract MO is ReentrancyGuard {
         if (_ETH_PRICE > 0) { // TODO
             return _ETH_PRICE; // remove
         }
+        console.log("consulted price", _consult());
         uint casted = uint(sqrtRatioX96);
         uint ratioX128 = FullMath.mulDiv(
           casted, casted, 1 << 64);
@@ -367,45 +370,16 @@ contract MO is ReentrancyGuard {
             adjustedIncrease += 10;
         }
     }
-
-    /// @notice time-weighted means of tick
-    // and liquidity for given UniV3 pool
-    /// @param pool Address of the pool
-    /// @param secondsAgo Number of secs
-    // in the past from which to calculate
-    /// @return meanTick (time-weigted)
-    // from (block.timestamp - secondsAgo) to now
-    /// @return harmonicMeanLiquidity
-    // from (block.timestamp - secondsAgo) to now
-    // observe don't absorb (until you can redeem self)
-    /*
-    function consult(address pool) internal view returns
-      (int24 meanTick, uint128 harmonicMeanLiquidity) { // vol
-          uint32[] memory secondsAgos = new uint32[](2);
-          secondsAgos[0] = 28800; secondsAgos[1] = 0;
-          (int56[] memory tickCumulatives,
-            uint160[] memory secondsPerLiquidityCumulativeX128s) =
-              IUniswapV3Pool(pool).observe(secondsAgos);
-
-          int56 tickCumulativesDelta = tickCumulatives[1] -
-                                       tickCumulatives[0];
-
-          uint160 secondsPerLiquidityCumulativesDelta =
-              secondsPerLiquidityCumulativeX128s[1] -
-              secondsPerLiquidityCumulativeX128s[0];
-
-          meanTick = int24(
-            tickCumulativesDelta / secondsAgos[0]);
-          // Always round to negative infinity
-          if (tickCumulativesDelta < 0 &&
-            (tickCumulativesDelta %
-              secondsAgos[0] != 0))
-                meanTick--;
-          // multiplying instead of shifting to ensure harmonicMeanLiquidity
-          uint192 secondsAgoX160 = uint192(secondsAgos[0]) * type(uint160).max;
-          harmonicMeanLiquidity = uint128(secondsAgoX160 /
-            (uint192(secondsPerLiquidityCumulativesDelta) << 32));
-    } */ // TODO get TWAP
+    function _consult() internal 
+        view returns (int24 mean) { 
+        uint32[] memory ago = new 
+        uint32[](2); ago[0] = 28800; ago[1] = 0;
+        (int56[] memory ticks,) = POOL.observe(ago);
+        int56 delta = ticks[1] - ticks[0]; 
+        int56 since = int56(int32(ago[0]));
+        mean = int24(delta / since);
+        if (delta < 0 &&  (delta % since != 0)) mean--;
+    } 
 
     function _swap(uint amount0, uint amount1,
         uint price) internal returns (uint, uint) {
@@ -414,6 +388,12 @@ contract MO is ReentrancyGuard {
                 amount1, price, WAD);
         if (in_usd > scaled && // from QUID.mint...
             token0.balanceOf(address(this)) > 0) {
+            // TODO we never have the tokens 
+            // here, so withdraw from AAVE...
+            // and if we don't have in ^^^ try
+            // to sell what we can on curve...
+            // for as much USDC as we need, or
+            // revert to using 50:50 
             amount0 = _min((in_usd - scaled) / 1e12,
                 token0.balanceOf(address(this)));
         } else if (scaled > in_usd) { scaled = in_usd;
@@ -421,6 +401,7 @@ contract MO is ReentrancyGuard {
         } int delta = (int(in_usd) - int(scaled))
                       / int(2 * price / 1e18);
         // TODO ratio 
+        // QUID.withdrawUSDC()
         uint selling;
         if (delta > 0) {
             selling = uint(delta);
@@ -532,6 +513,7 @@ contract MO is ReentrancyGuard {
                         amount / (2 * 1e12), FullMath.mulDiv(WAD,
                          amount / 2, getPrice(sqrtPriceX96))));
                 require(amount0 > 0 && amount1 > 0, "nothing withdrawn");
+
                 amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token1), POOL_FEE, address(token0)),
                     address(this), block.timestamp, amount1, 0));
@@ -597,16 +579,24 @@ contract MO is ReentrancyGuard {
                 LiquidityAmounts.getLiquidityForAmounts(sqrtPriceX96,
                     TickMath.getSqrtPriceAtTick(LOWER_TICK),
                     TickMath.getSqrtPriceAtTick(UPPER_TICK),
-                    FullMath.mulDiv(price, transfer / 2,
+                    FullMath.mulDiv(price, transfer / 2, // TODO order based on zeroForOne
                               WAD * 1e12), transfer / 2));
             
-            if (amount0 > 0) {
+            if (amount1 > 0 && token1isETH) {
+                amount0 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
+                    abi.encodePacked(address(token1), POOL_FEE, address(token0)),
+                    address(this), block.timestamp, amount1, 0)); amount1 = 0;
+                    transfer = transfer > amount0 ? amount0 : transfer;
+            }
+            else if (amount0 > 0 && !token1isETH) {
                 amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
                     abi.encodePacked(address(token0), POOL_FEE, address(token1)),
                     address(this), block.timestamp, amount0, 0)); amount0 = 0;
-            }       transfer = transfer > amount1 ? amount1 : transfer;
+                    transfer = transfer > amount1 ? amount1 : transfer;
+            }       
 
-            WETH9.withdraw(transfer); amount1 -= transfer;
+            WETH9.withdraw(transfer); 
+            amount1 -= transfer;
             (bool success, ) = msg.sender.call{value: transfer}("");
             require(success, "raw"); if (amount1 > 0) { _repackNFT(
                                          amount0, amount1, price); }
@@ -754,8 +744,8 @@ contract MO is ReentrancyGuard {
                     // debt surplus absorbed ^^^^^^^^^ as if it were coverage
                     pledge.work.credit = 0; pledge.work.debit = 0; // reset
                     pledge.last.credit = 0; pledge.last.debit = 0; // storage
-                }
-            }
+                }   // Thinkin' about them licks I hit, I had to
+            } 
         } else if (pledge.last.credit != 0) {
             pledge.last.credit = 0;
             pledge.last.debit = 0;

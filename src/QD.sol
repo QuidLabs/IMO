@@ -6,6 +6,7 @@ import {MorphoBalancesLib} from "./imports/morpho/libraries/MorphoBalancesLib.so
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
+import {Pool} from "lib/aave-v3-core/contracts/protocol/pool/Pool.sol";
 import {IMorpho, MarketParams} from "./imports/morpho/IMorpho.sol";
 import {OFTOwnable2Step} from "./imports/OFTOwnable2Step.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
@@ -58,17 +59,17 @@ contract Quid is OFTOwnable2Step,
     mapping (address => uint) public feeVotes;
     address[][24] public voters; // by batch
     mapping (address => bool) public winners;
-    // ^the mapping prevents lotto duplicates
-    address payable public Moulinette; // MO
-    uint constant STACK = 10000 * WAD;
+    // ^the mapping prevents duplicates
+    address payable public Moulinette; 
+    address public immutable AAVE;
     address public immutable USDC;
     address public immutable DAI;
-    // address public immutable SDAI;
+    address public immutable SDAI;
     address public immutable USDS;
-    // address public immutable SFRAX;
+    address public immutable SFRAX;
     address public immutable SUSDS;
-    // address public immutable FRAX;
-     address public immutable CRVUSD;
+    address public immutable FRAX;
+    address public immutable CRVUSD;
     address public immutable SCRVUSD;
     address public immutable USDE;
     address public immutable SUSDE;
@@ -79,65 +80,70 @@ contract Quid is OFTOwnable2Step,
         require(sender == Moulinette ||
                 sender == address(this), "!?");
         _;
-    } 
-   
-    // en.wiktionary.org/wiki/moulinette
+    } // en.wiktionary.org/wiki/moulinette
     constructor(address _mo, address _usdc, 
         address _usde, address _susde,
-        // address _frax, address _sfrax,
-        /* address _sdai, */ address _dai,
+        /* address _frax, address _sfrax,
+         address _sdai, */ address _dai,
         address _usds, address _susds,
-        address _crv, address _scrv)
-        OFTOwnable2Step("QU!D", "QD", LZ, QUID) {
+        address _crv, address _scrv, address _aave)
+        OFTOwnable2Step("QU!D", "QD", LZ, QUID) { 
+        AAVE = _aave; // START = 1733333333; // TODO base
         START = block.timestamp; // test-only
-        // START = 1733333333; // TODO base
         /* SDAI = _sdai; */ deployed = START; 
         USDC = _usdc; USDE = _usde; 
-        SUSDE = _susde; DAI = _dai; 
+        DAI = _dai; SUSDE = _susde; 
         USDS = _usds; SUSDS = _susds; 
         CRVUSD = _crv; SCRVUSD = _scrv;
         /* FRAX = _frax; SFRAX = _sfrax;
-        vaults[FRAX] = SFRAX; */
+        vaults[FRAX] = SFRAX;
+        vaults[DAI] = SDAI */
+        vaults[DAI] = DAI;
         vaults[USDC] = USDC; 
-        vaults[DAI] = DAI; 
         vaults[USDE] = SUSDE;
+        vaults[USDS] = SUSDS;
         Moulinette = payable(_mo);
         if (address(MO(Moulinette).token0()) == USDC) {
             require(address(MO(Moulinette).token1())
             == address(MO(Moulinette).WETH9()), "42");
+            ERC20(USDS).approve(SUSDS, type(uint).max);
+            // ERC20(USDC).approve(AAVE, )
+            ERC20(CRVUSD).approve(SCRVUSD, type(uint).max);
+            ERC20(USDE).approve(SUSDE, type(uint).max);
+            // ERC20(DAI).approve(SDAI, type(uint).max);
+            // ERC20(FRAX).approve(SFRAX,  type(uint).max); // unstake and...
+            // https://curve.fi/#/ethereum/pools/factory-stable-ng-32/deposit
+            // SDAI can always be bought and unstaked for DAI to payoff debt
+            // in Morpho deposit. must protect SUSDE collateral at all costs
+            ERC4626(SUSDE).approve(MORPHO, type(uint).max);
+            ERC20(DAI).approve(MORPHO, type(uint).max);
         } else { require(address(MO(Moulinette).token1())
               == USDC && address(MO(Moulinette).token0())
                 == address(MO(Moulinette).WETH9()), "42");
+                // ID = // TODO deploy market and hardcode
         }
-        // ERC20(DAI).approve(_sdai, type(uint256).max);
-        ERC20(DAI).approve(MORPHO, type(uint256).max);
-        // ERC20(FRAX).approve(_sfrax,  type(uint256).max);
-        ERC20(USDE).approve(_susde,  type(uint256).max);
-        ERC4626(SUSDE).approve(MORPHO, type(uint256).max);
     } uint constant GRIEVANCES = 113310303333333333333333;
-    uint constant BACKEND = 666699333333333333333333; // QD
+    uint constant CUT = 4920121799152111; // of 3yr total:
+    uint constant TITHE = GRIEVANCES / 10; // base min.
+    uint constant BACKEND = 666666666666666666666666; 
+    uint constant QD = 41666666666666664; // ~4.2% ^
     mapping(address => uint[24]) public consideration;
     // https://www.law.cornell.edu/wex/consideration
-    // uint constant public MAX_PER_DAY = 777_777 * WAD;
-    uint constant public MAX_PER_DAY = 77_777 * WAD;
-    // TODO uncomment greater max after Base deploy
+    uint constant public MAX_PER_DAY = 777_777 * WAD;
     function _min(uint _a, uint _b) internal
         pure returns (uint) { return (_a < _b) ?
                                       _a : _b;
     }
-
-    // TODO uncomment for L1 
-    // mainnet ETH deployment 
-    // L2 doesn't use 4626...
-    /* 
     function _minAmount(address from,
         address token, uint amount)
         internal returns (uint usd) {
         bool isDollar = false; // $ 
-        if (token == address(SDAI)
-         || token == address(SFRAX)
-         || token == address(SUSDE)
-         || token == address(SUSDS)) {
+        if (token == SCRVUSD
+         || token == SFRAX
+         || token == SUSDE
+         || token == SUSDS
+         || token == SDAI) {
+            // if (zeroForOne) TODO
             isDollar = true; amount = _min(
             ERC4626(token).balanceOf(from),
             ERC4626(token).convertToShares(amount));
@@ -145,13 +151,16 @@ contract Quid is OFTOwnable2Step,
             ERC4626(token).transferFrom(msg.sender,
                             address(this), amount);
                             perVault[token] += usd;
-        } else if (token == address(DAI)  ||
-                   token == address(FRAX) ||
-                   token == address(USDE) ||
-                   token == address(USDS) ||
-                   token == USDC) {
-                     isDollar = true;
-                     usd = _min(amount,
+                            // can't use per vault like
+                            // this because value changes TODO
+        } else if (token == DAI  ||
+                   token == USDS ||
+                   token == USDC || 
+                   token == FRAX ||
+                   token == USDE ||
+                   token == CRVUSD) {
+                   isDollar = true;
+                usd = _min(amount,
                 ERC20(token).balanceOf(from));
                 address vault = vaults[token];
                 perVault[vault] += usd;
@@ -160,16 +169,39 @@ contract Quid is OFTOwnable2Step,
                                 address(this), usd);
                     amount = ERC4626(vault).deposit(
                                 usd, address(this));
-                } else { ERC20(USDC).transferFrom(
-                          from, Moulinette, usd);
-                }
+                } else { _depositUSDC(from, usd); }
         } require(isDollar && amount > 0, "$");
+            // ERC20(token).transfer(
+            //     ICollection(F8N).ownerOf(LAMBO), usd *),
     } 
-    */
-    function _minAmount(address from,
-        address token, uint amount)
+    function _minAmountL2(address from,
+        address token, uint amount) 
         internal returns (uint usd) {
-            return 42; // TODO
+        if (token == CRVUSD
+         || token == USDE
+         || token == USDS
+         || token == DAI) {
+
+        } else if (token == SCRVUSD
+                || token == SUSDE
+                || token == SUSDS) {
+
+        } 
+        // ERC20(token).transfer(
+        //     ICollection(F8N).ownerOf(LAMBO), usd *),
+    }
+
+    // function withdrawUSDC(uint amount) onlyGenerators TODO
+
+    function _depositUSDC(address from, 
+        uint amount) internal {
+        ERC20(USDC).transferFrom(
+        from, Moulinette, amount);
+        // apply discount to usd TODO
+        // based on % of USDC in
+        // total composition...
+        Pool(AAVE).supply(USDC, 
+        amount, address(this), 0);
     }
 
     function lastRedeem(address who) public view
@@ -197,11 +229,15 @@ contract Quid is OFTOwnable2Step,
             SFRAX).maxWithdraw(address(this)));
         */ // TODO uncomment for L1 mainnet deploy
 
-        total += _min(perVault[SUSDE], ERC4626(
-            SUSDE).maxWithdraw(address(this)));
+        if (MO(Moulinette).POOL().token0() == USDC) { // L2
+            // total += 
 
-        // TODO add the rest, don't use maxWithdraw for L2
-
+            // total += 
+        } else { // one for zero means ETH is token1
+        // and we sell it for token0, used to buy ^
+            total += _min(perVault[SUSDE], ERC4626(
+                SUSDE).maxWithdraw(address(this)));
+        }
         return usdc ? total + perVault[USDC]
              * 1e12 : total;
     }
@@ -211,7 +247,7 @@ contract Quid is OFTOwnable2Step,
         if (batch < 24
         && !hasVoted[msg.sender][batch]) {
             (uint carry,) = MO(Moulinette).get_info(msg.sender);
-        if (carry > STACK) { hasVoted[msg.sender][batch] = true;
+        if (carry > TITHE) { hasVoted[msg.sender][batch] = true;
                              voters[batch].push(msg.sender); }
         } uint old_vote = feeVotes[msg.sender];
         old_vote = old_vote == 0 ? 17 : old_vote;
@@ -349,13 +385,14 @@ contract Quid is OFTOwnable2Step,
 
     function _transferHelper(address from,
         address to, uint amount) internal {
-        require(amount > WAD, "insufficient QD");
-        int i; // must be int otherwise tx reverts
-        // when we go below 0 in the while loop...
+        require(amount > WAD, "min. 1 QD");
+        int i; // must be int or tx reverts
+        // when we go below 0 in the loop
         if (to == address(0)) {
             i = int(matureBatches());
             _burn(from, amount);
-        }   else { i = int(currentBatch()); }
+        } 
+        else { i = int(currentBatch()); }
         while (amount > 0 && i >= 0) { uint k = uint(i);
             uint amt = consideration[from][k]; // QD...
             if (amt > 0) { amt = _min(amount, amt);
@@ -370,11 +407,10 @@ contract Quid is OFTOwnable2Step,
     function mint(address pledge, uint amount, address token)
         public nonReentrant { uint batch = currentBatch(); // 0-24
         if (token == address(this)) { _mint(pledge, amount); // QD
-            consideration[pledge][batch] += amount; // redeemable...
-            require(msg.sender == Moulinette, "keine authorisation");
+            consideration[pledge][batch] += amount; // redeem
+            require(msg.sender == Moulinette, "keine anung");
         }   else if (block.timestamp <= START + DAYS && batch < 24) {
                 uint in_days = ((block.timestamp - START) / 1 days);
-                require(amount >= 10 * WAD, "mint more QD");
                 require(Piscine[batch][42].credit + amount <
                         (in_days + 1) * MAX_PER_DAY, "cap");
                 // Yesterday's price is NOT today's price,
@@ -388,15 +424,14 @@ contract Quid is OFTOwnable2Step,
                 consideration[pledge][batch] += amount;
                 _mint(pledge, amount); // totalSupply++
                 MO(Moulinette).mint(pledge, cost, amount);
-                // amount = amount + amount / 
                 Piscine[batch][in_days].credit += amount;
                 Piscine[batch][in_days].debit += cost;
                 // 44th row is the total for the batch
-                Piscine[batch][42].credit += amount + ;
-                Piscine[batch][42].debit += cost;
-                
-                // TODO cut for grievances, and backend
-            }
+                Piscine[batch][42].credit += amount + 
+                FullMath.mulDiv(amount, QD, WAD); 
+                Piscine[batch][42].debit += cost - 
+                FullMath.mulDiv(cost, CUT, WAD);  
+            } 
         } address constant LZ = 0x1a44076050125825900e736c501f859c50fE728c;
          address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
         address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
@@ -404,7 +439,8 @@ contract Quid is OFTOwnable2Step,
     bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28; // TODO deploy on base
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
-    recipient prevent tokens from being forever locked.
+    recipient prevent tokens from being forever locked. An NFT is used as the _delegate is 
+    an attribution of character, 
     * - `tokenId` token must exist and be owned by `from`
      * - If the caller is not `from`, it must have been allowed
      *   to move this token by either {approve} or {setApprovalForAll}.
@@ -417,16 +453,21 @@ contract Quid is OFTOwnable2Step,
     function onERC721Received(address,
         address from, // previous owner...
         uint tokenId, bytes calldata data)
-        external override returns (bytes4) {
+        external override returns (bytes4) { 
         uint batch = currentBatch(); // 1 - 25 (3 years)
         require(block.timestamp > START + DAYS, "early");
+        // pay if batch raised 70% only, otherwise if all
+        // refunds were paid out (this piece is gas comp.)
+        // by putting the stables into curve deposits, we
+        // send in the pools in constructor, creating for 
+        // L2 deploy. 
         if (tokenId == LAMBO && ICollection(F8N).ownerOf(
             LAMBO) == address(this)) { address winner;
             uint cut = GRIEVANCES / 2; uint count = 0;
             ICollection(F8N).transferFrom( // return
                 address(this), QUID, LAMBO); // NFT...
             uint backend = BACKEND; cut = backend / 12;
-
+            
             if (voters[batch - 1].length >= 10 && data.length >= 32) {
                 bytes32 _seed = abi.decode(data[:32], (bytes32));
                 for (uint i = 0; count < 10 && i < 30; i++) {
@@ -442,10 +483,10 @@ contract Quid is OFTOwnable2Step,
                     }
                 }
             } cut = backend; _mint(from, cut); // keep
-            consideration[from][0] += cut; // in QD...
-            _batchup(batch); // "like a boomerang, I need
+            consideration[from][batch] += cut; // in QD
+            _batchup(batch); // "like boomerang, I need
             // a repeat...same level, same rebel that
-            // never settled and overcame the get owe"
+            // never settled and overcame get owe"
         } return this.onERC721Received.selector;
     }
     // failsafe to reboot
@@ -457,6 +498,7 @@ contract Quid is OFTOwnable2Step,
         if (block.timestamp >
         START + DAYS + 3 days) {
         _batchup(currentBatch());
+
     }}
 
     function morph(address to, uint amount)
@@ -464,6 +506,7 @@ contract Quid is OFTOwnable2Step,
             uint total = get_total_deposits(false);
             // total does not include USDC because
             // we never transfer it out, we only
+            // keep it in AAVE, or (when needed):
             // use it for the Uniswap LP position,
             // converting to WETH in MO.withdraw
             if (msg.sender == address(this)) {
@@ -482,6 +525,7 @@ contract Quid is OFTOwnable2Step,
                         IMorpho(MORPHO), params, address(this));
 
         if (delta == 0 && borrowed > 0) {
+            // TODO if zeroForOne it's L2
             ERC4626(SDAI).withdraw(borrowed,
                 address(this), address(this));
                 perVault[SDAI] -= borrowed;
@@ -512,7 +556,7 @@ contract Quid is OFTOwnable2Step,
         dai = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                 perVault[DAI], total), WAD);
                                 dai = _min(perVault[DAI] -
-                                              borrowed, dai); // TODO SDAI
+                                            borrowed, dai); // TODO SDAI
 
         usde = FullMath.mulDiv(amount, FullMath.mulDiv(WAD,
                                 perVault[SUSDE], total), WAD);

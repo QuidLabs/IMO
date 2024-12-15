@@ -78,7 +78,7 @@ contract Deploy is Script {
         // TODO some way to hardcode the order of token0 and token1
         // pool = IUniswapV3Pool(factory.createPool(
         //     address(weth), address(USDC), 500));
-        // WETH<>QD, USDC<>QD, and mainnet Curve
+        // create pool USDC<>QD
         // TODO import layerzero contracts 
         // https://etherscan.io/address/0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640#readContract#F11
         // pool.initialize(1321184935443179556068722157521329);
@@ -106,7 +106,8 @@ contract Deploy is Script {
             /* address(FRAX), address (SFRAX),
             address (SDAI), */ address(DAI), 
             address(USDS), address(SUSDS),
-            address(CRVUSD), address(SCRVUSD)); 
+            address(CRVUSD), address(SCRVUSD),
+            0xA238Dd80C259a72e81d7e4664a9801593F98d1c5); 
         
         
         moulinette.setQuid( // TODO delete set_price

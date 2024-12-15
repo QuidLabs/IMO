@@ -1,32 +1,29 @@
 
-## IM`Offer`
+## O mio babbino 
 
+2 `POOL` contracts, both  
+supported by an `ID`, 1  
+pools USDC in AAVE, has   
+`ID` for a Morpho lien; 
 
-QD is supported by an `ID`  
-for a Morpho lien, as well  
-as an `ID` for [selling puts](https://x.com/futurenomics/status/1766173245949014373)  
-in a concentrated liquidity   
-[optimiser](https://x.com/guil_lambert/status/1772423853316219051) for Uniswap...  
-
+`MO` has an `ID` for [selling  
+ puts](https://x.com/futurenomics/status/1766173245949014373) in a concentrated  
+liquidity [optimiser](https://x.com/guil_lambert/status/1772423853316219051) hook  
 QD works like a [bond](https://www.investopedia.com/terms/z/zero-couponbond.asp) to  
-incentivise stablecoins  
+
+[incentivise](https://ethercalc.net/qe4b2gbfmxwl) stablecoins  
 to be staked, allowing  
 to underwrite downside  
 risk for pooled WETH.
 
 Minting 800M over [3yr](https://x.com/lex_node/status/1861032489411588140):  
 8 chances  to `mint` QD  
-yearly X **42 days** of Lent,  
+yearly X 42 days of Lent,  
 "yesterday's price is *not*  
+
 today's," 46% `AVG_ROI`  
 before counting liabilities;    
-
-in doing so...depositors  
-provide solvency capital,  
-whose preferred form is  
-**USDe** (others accepted).
-
-Over time, retained fees  
+over time, retained fees  
 from WETH deployed into  
 UniV3 adds solvency, as  
 well as deductibles do...
@@ -46,19 +43,14 @@ may `redeem` 1 QD for $1.
 This is also the reason that  
 spreading liquidations over  
 time is possible as such...   
-voting is [incentivised](https://x.com/0xdasha/status/1770827459396559211) by a   
 12 x 55k QD lotto, dealt   
 in `onERC721Received`...  
 
 > *"30% discount from book...gr8 cash flow.*   
-> *GEKKO: It's a dog...what else you got?"*
+> *GEKKO: It's a dog...what else you got..."*
 		
-Male dog, QD, and female cat...   
-`mom.sol` was about ossification?  
-MO(Moulinette) is objectification.  
-
-For your information, 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
-corresponds to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L142):  
+..for your information, 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
+corresponds to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L154):  
 30% APY *might* be generated  
 in aggregate to reach... 💯%  
 
@@ -78,4 +70,4 @@ OR TRADEMARKS; WARRANTIES,
 EXPRESS OR IMPLIED, INCLUDING,  
 NOT LIMITED TO, MERCHANTABILITY  
 WARRANTIES OF FITNESS FOR A  
-PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/mint).  
+PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/labs).  
