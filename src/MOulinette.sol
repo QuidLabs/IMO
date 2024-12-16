@@ -13,7 +13,6 @@ import {IUniswapV3Pool} from "./imports/IUniswapV3Pool.sol";
 import {LiquidityAmounts} from "./imports/math/LiquidityAmounts.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
-import {AggregatorV3Interface} from "./imports/AggregatorV3Interface.sol";
 import {INonfungiblePositionManager} from "./imports/INonfungiblePositionManager.sol";
 // import {IV3SwapRouter as ISwapRouter} from "./imports/IV3SwapRouter.sol"; // TODO base
 
@@ -25,19 +24,19 @@ contract MO is ReentrancyGuard {
     ERC20 public immutable token0;
     WETH public immutable WETH9;
     uint public ID; // V3 NFT...
-    bool public zeroForOne;
     uint constant WAD = 1e18;
     uint public FEE = WAD / 28;
     uint24 constant POOL_FEE = 500;
     uint constant BAND = 1000 * WAD;
     INonfungiblePositionManager NFPM;
-    bool internal token1isETH;
-    int24 internal LAST_TICK;
-    int24 internal UPPER_TICK;
-    int24 internal LOWER_TICK;
-    uint internal _ETH_PRICE; // TODO 
     IUniswapV3Pool public POOL; 
     ISwapRouter public ROUTER;
+    bool internal token1isETH;
+    int24 internal UPPER_TICK;
+    int24 internal LOWER_TICK;
+    int24 internal LAST_TICK;
+    uint internal _ETH_PRICE; // TODO 
+    
     uint128 liquidityUnderManagement; // UniV3
     mapping(address => uint) flashLoanProtect;
     struct FoldState { uint delta; uint price;
@@ -139,7 +138,7 @@ contract MO is ReentrancyGuard {
         POOL = IUniswapV3Pool(_pool);
         ROUTER = ISwapRouter(_router);
         NFPM = INonfungiblePositionManager(_nfpm);
-        // bool needed as order is swapped on Base
+        
         token0 = ERC20(POOL.token0());
         token1 = ERC20(POOL.token1());
         token0.approve(_router, 
@@ -151,8 +150,8 @@ contract MO is ReentrancyGuard {
         token1.approve(_router,
             type(uint256).max);
         token1isETH = address(token0) == USDC;
-    } // 0xdEd37FC1400B8022968441356f771639ad1B23aA 
-    // TODO chainlink sUSDe rate 
+        // needed as order is swapped on Base
+    } 
 
     // present value of the expected cash flows
     function capitalisation(uint qd, bool burn)
@@ -306,6 +305,7 @@ contract MO is ReentrancyGuard {
             return _ETH_PRICE; // remove
         }
         console.log("consulted price", _consult());
+        console.log("SUSDE price", QUID.getPrice(false));
         uint casted = uint(sqrtRatioX96);
         uint ratioX128 = FullMath.mulDiv(
           casted, casted, 1 << 64);
@@ -378,7 +378,8 @@ contract MO is ReentrancyGuard {
         int56 delta = ticks[1] - ticks[0]; 
         int56 since = int56(int32(ago[0]));
         mean = int24(delta / since);
-        if (delta < 0 &&  (delta % since != 0)) mean--;
+        if (delta < 0 &&  (delta
+         % since != 0)) mean--;
     } 
 
     function _swap(uint amount0, uint amount1,
@@ -449,8 +450,8 @@ contract MO is ReentrancyGuard {
               FullMath.mulDiv(pledges[address(this)].weth.credit,
                 price, WAD), "over-encumbered");
         }       pledges[beneficiary] = pledge;
-                zeroForOne ? _repackNFT(0, amount, price) 
-                           : _repackNFT(amount, 0, price);
+                token1isETH ? _repackNFT(0, amount, price) 
+                            : _repackNFT(amount, 0, price);
     }
 
     function mint(address to, // use in ERC20.mint
@@ -547,7 +548,7 @@ contract MO is ReentrancyGuard {
                 amount1; pledge.work.debit += amount1;
             }   uint debit = FullMath.mulDiv(price,
                              pledge.work.debit, WAD);
-            uint haircut = debit - (debit / 5);
+            uint haircut = debit - (debit / 9);
             require(haircut >= pledge.work.credit && haircut > 0, "CR"); 
             amount = _min(amount, haircut - pledge.work.credit);
             if (amount > 0) { pledge.work.credit += amount;
@@ -559,7 +560,7 @@ contract MO is ReentrancyGuard {
             if (pledge.work.credit > 0) { // see if we owe debt on it
                 uint debit = FullMath.mulDiv( // dollar value of ETH
                     price, pledge.work.debit, WAD);
-                uint haircut = debit - debit / 5;
+                uint haircut = debit - debit / 9;
                 require(haircut >= pledge.work.credit, "CR!");
                 withdrawable = FullMath.mulDiv(WAD,
                     haircut - pledge.work.credit, price);
@@ -587,16 +588,12 @@ contract MO is ReentrancyGuard {
                     abi.encodePacked(address(token1), POOL_FEE, address(token0)),
                     address(this), block.timestamp, amount1, 0)); amount1 = 0;
                     transfer = transfer > amount0 ? amount0 : transfer;
-            }
-            else if (amount0 > 0 && !token1isETH) {
-                amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
-                    abi.encodePacked(address(token0), POOL_FEE, address(token1)),
-                    address(this), block.timestamp, amount0, 0)); amount0 = 0;
-                    transfer = transfer > amount1 ? amount1 : transfer;
-            }       
-
-            WETH9.withdraw(transfer); 
-            amount1 -= transfer;
+            }   else if (amount0 > 0 && !token1isETH) {
+                    amount1 += ROUTER.exactInput(ISwapRouter.ExactInputParams(
+                        abi.encodePacked(address(token0), POOL_FEE, address(token1)),
+                        address(this), block.timestamp, amount0, 0)); amount0 = 0;
+                        transfer = transfer > amount1 ? amount1 : transfer;
+            }                WETH9.withdraw(transfer); amount1 -= transfer;
             (bool success, ) = msg.sender.call{value: transfer}("");
             require(success, "raw"); if (amount1 > 0) { _repackNFT(
                                          amount0, amount1, price); }
@@ -621,7 +618,8 @@ contract MO is ReentrancyGuard {
         // or simply clear the debt of a long position...
         // "we can serve our [wick nest] or we can serve
         // our purpose, but not both" ~ Mother Cabrini
-        // Pods were formalised by Luca Pacioli, 1494
+        // "menace ou prière, L'un parle bien, l'autre 
+        // se tait; et c'est l'autre que je préfère"
         Offer memory pledge = pledges[beneficiary];
         flashLoanProtect[beneficiary] = block.number;
         amount = _min(amount, pledge.weth.debit);

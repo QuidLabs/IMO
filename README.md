@@ -1,20 +1,18 @@
 
 ## O mio babbino 
 
-2 `POOL` contracts, both  
-supported by an `ID`, 1  
-pools USDC in AAVE, has   
-`ID` for a Morpho lien; 
-
-`MO` has an `ID` for [selling  
+`MO` has `ID` for [selling  
  puts](https://x.com/futurenomics/status/1766173245949014373) in a concentrated  
-liquidity [optimiser](https://x.com/guil_lambert/status/1772423853316219051) hook  
+liquidity [optimiser](https://x.com/guil_lambert/status/1772423853316219051) hook.  
 QD works like a [bond](https://www.investopedia.com/terms/z/zero-couponbond.asp) to  
 
 [incentivise](https://ethercalc.net/qe4b2gbfmxwl) stablecoins  
-to be staked, allowing  
+to be staked, and used  
 to underwrite downside  
-risk for pooled WETH.
+
+risk for pooled WETH,  
+has an `ID` for Morpho,  
+lending USDC on AAVE  
 
 Minting 800M over [3yr](https://x.com/lex_node/status/1861032489411588140):  
 8 chances  to `mint` QD  
@@ -24,13 +22,15 @@ yearly X 42 days of Lent,
 today's," 46% `AVG_ROI`  
 before counting liabilities;    
 over time, retained fees  
-from WETH deployed into  
+from WET
+H deployed into  
 UniV3 adds solvency, as  
 well as deductibles do...
 
 Levering long while buying     
 protection (at the same time)  
 hedges against liquidations  
+
 (they're gradated, non-linear).    
 Deductible is initially 357bp;   
 APY is distributed relative to  
@@ -45,12 +45,8 @@ spreading liquidations over
 time is possible as such...   
 12 x 55k QD lotto, dealt   
 in `onERC721Received`...  
-
-> *"30% discount from book...gr8 cash flow.*   
-> *GEKKO: It's a dog...what else you got..."*
 		
-..for your information, 🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412)   
-corresponds to initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L154):  
+🇺🇦 [70/30](https://x.com/QuidMint/status/1863365053996552412) is the initial [backing](https://github.com/QuidLabs/IMO/blob/main/src/MOulinette.sol#L154):  
 30% APY *might* be generated  
 in aggregate to reach... 💯%  
 
@@ -68,6 +64,7 @@ WITHOUT INFRINGING ANY 3RD
 PARTY PATENTS, COPYRIGHTS,  
 OR TRADEMARKS; WARRANTIES,  
 EXPRESS OR IMPLIED, INCLUDING,  
+
 NOT LIMITED TO, MERCHANTABILITY  
 WARRANTIES OF FITNESS FOR A  
 PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/labs).  

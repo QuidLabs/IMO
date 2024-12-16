@@ -75,14 +75,8 @@ contract Deploy is Script {
         // SUSDE = new mockVault(USDE);
 
         // factory.getPool(0x31d0220469e10c4E71834a79b1f276d740d3768F, address(weth), 500);
-        // TODO some way to hardcode the order of token0 and token1
-        // pool = IUniswapV3Pool(factory.createPool(
-        //     address(weth), address(USDC), 500));
-        // create pool USDC<>QD
-        // TODO import layerzero contracts 
         // https://etherscan.io/address/0x88e6a0c2ddd26feeb64f039a2c41296fcb3f5640#readContract#F11
         // pool.initialize(1321184935443179556068722157521329);
-        
         // USDC.approve(address(nfpm), type(uint256).max);
         // weth.approve(address(nfpm), type(uint256).max);
 
@@ -100,15 +94,19 @@ contract Deploy is Script {
         //     recipient: 0xBE80666aA26710c2b2c3FD40c6663A013600D9b6,
         //     deadline: block.timestamp + 3600
         // }));
-
+        // TODO deploy Morpho market
+        bytes32 ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28; // TODO temporary
         quid = new Quid(address(moulinette), 
             address(USDC), address(USDE), address(SUSDE),
             /* address(FRAX), address (SFRAX),
             address (SDAI), */ address(DAI), 
             address(USDS), address(SUSDS),
             address(CRVUSD), address(SCRVUSD),
-            0xA238Dd80C259a72e81d7e4664a9801593F98d1c5); 
+            0xA238Dd80C259a72e81d7e4664a9801593F98d1c5, ID); 
         
+        // pool = IUniswapV3Pool(factory.createPool(
+        //     address(quid), address(USDC), 500));
+        // create pool USDC<>QD // TODO
         
         moulinette.setQuid( // TODO delete set_price
             address(quid)); 

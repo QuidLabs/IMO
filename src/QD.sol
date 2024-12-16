@@ -3,8 +3,10 @@
 pragma solidity 0.8.25; // EVM: london
 import "lib/forge-std/src/console.sol"; // TODO delete logging, uncomment morpho
 import {MorphoBalancesLib} from "./imports/morpho/libraries/MorphoBalancesLib.sol";
+
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeTransferLib} from "lib/solmate/src/utils/SafeTransferLib.sol";
+import {AggregatorV3Interface} from "./imports/AggregatorV3Interface.sol";
 import {ReentrancyGuard} from "lib/solmate/src/utils/ReentrancyGuard.sol";
 import {Pool} from "lib/aave-v3-core/contracts/protocol/pool/Pool.sol";
 import {IMorpho, MarketParams} from "./imports/morpho/IMorpho.sol";
@@ -12,6 +14,7 @@ import {OFTOwnable2Step} from "./imports/OFTOwnable2Step.sol";
 import {ERC4626} from "lib/solmate/src/tokens/ERC4626.sol";
 import {FullMath} from "./imports/math/FullMath.sol";
 import {ERC20} from "lib/solmate/src/tokens/ERC20.sol";
+import {IDSROracle} from "./imports/IDSROracle.sol";
 
 interface IERC721Receiver {
     function onERC721Received(
@@ -21,6 +24,10 @@ interface IERC721Receiver {
         bytes calldata data
     ) external returns (bytes4);
 }
+interface ISCRVusdOracle {
+    function pricePerShare(uint ts) 
+    external view returns (uint);
+}
 interface ICollection is IERC721 {
     function latestTokenId()
     external view returns (uint);
@@ -29,9 +36,9 @@ interface ICollection is IERC721 {
 import "./MOulinette.sol";
 contract Quid is OFTOwnable2Step, 
     IERC721Receiver, ReentrancyGuard { 
-    using SafeTransferLib for ERC20;
     using SafeTransferLib for ERC4626;
-    uint public AVG_ROI;
+    using SafeTransferLib for ERC20;
+    uint public AVG_ROI; 
     uint public START;
     // "Walked in the
     // kitchen, found a
@@ -74,7 +81,10 @@ contract Quid is OFTOwnable2Step,
     address public immutable USDE;
     address public immutable SUSDE;
     uint public COLLATERAL; // ^
+    bytes32 public immutable ID;
+    ISCRVusdOracle internal CRV;
     uint constant WAD = 1e18;
+    IDSROracle internal DSR;
     modifier onlyGenerators {
         address sender = msg.sender;
         require(sender == Moulinette ||
@@ -86,10 +96,12 @@ contract Quid is OFTOwnable2Step,
         /* address _frax, address _sfrax,
          address _sdai, */ address _dai,
         address _usds, address _susds,
-        address _crv, address _scrv, address _aave)
-        OFTOwnable2Step("QU!D", "QD", LZ, QUID) { 
-        AAVE = _aave; // START = 1733333333; // TODO base
-        START = block.timestamp; // test-only
+        address _crv, address _scrv, 
+        address _aave, bytes32 _morpho)
+        OFTOwnable2Step("QU!D", "QD", 
+        LZ, QUID) { // START = 1733333333; 
+        AAVE = _aave; ID = _morpho;
+        START = block.timestamp; 
         /* SDAI = _sdai; */ deployed = START; 
         USDC = _usdc; USDE = _usde; 
         DAI = _dai; SUSDE = _susde; 
@@ -102,25 +114,27 @@ contract Quid is OFTOwnable2Step,
         vaults[USDC] = USDC; 
         vaults[USDE] = SUSDE;
         vaults[USDS] = SUSDS;
+
         Moulinette = payable(_mo);
         if (address(MO(Moulinette).token0()) == USDC) {
             require(address(MO(Moulinette).token1())
             == address(MO(Moulinette).WETH9()), "42");
             ERC20(USDS).approve(SUSDS, type(uint).max);
-            // ERC20(USDC).approve(AAVE, )
+            // ERC20(USDC).approve(AAVE, ) // TODO
             ERC20(CRVUSD).approve(SCRVUSD, type(uint).max);
             ERC20(USDE).approve(SUSDE, type(uint).max);
             // ERC20(DAI).approve(SDAI, type(uint).max);
-            // ERC20(FRAX).approve(SFRAX,  type(uint).max); // unstake and...
-            // https://curve.fi/#/ethereum/pools/factory-stable-ng-32/deposit
-            // SDAI can always be bought and unstaked for DAI to payoff debt
-            // in Morpho deposit. must protect SUSDE collateral at all costs
+            // ERC20(FRAX).approve(SFRAX,  type(uint).max); 
             ERC4626(SUSDE).approve(MORPHO, type(uint).max);
             ERC20(DAI).approve(MORPHO, type(uint).max);
         } else { require(address(MO(Moulinette).token1())
               == USDC && address(MO(Moulinette).token0())
                 == address(MO(Moulinette).WETH9()), "42");
-                // ID = // TODO deploy market and hardcode
+                DSR = IDSROracle(0x2Dd2a2Fe346B5704380EfbF6Bd522042eC3E8FAe);
+                CRV = ISCRVusdOracle(0x3d8EADb739D1Ef95dd53D718e4810721837c69c1);
+                // https://curve.fi/#/ethereum/pools/factory-stable-ng-32/deposit
+                // SDAI can always be bought and unstaked for DAI to payoff debt
+                // in Morpho deposit. must protect SUSDE collateral at all costs
         }
     } uint constant GRIEVANCES = 113310303333333333333333;
     uint constant CUT = 4920121799152111; // of 3yr total:
@@ -143,12 +157,11 @@ contract Quid is OFTOwnable2Step,
          || token == SUSDE
          || token == SUSDS
          || token == SDAI) {
-            // if (zeroForOne) TODO
-            isDollar = true; amount = _min(
-            ERC4626(token).balanceOf(from),
-            ERC4626(token).convertToShares(amount));
+            isDollar = true; 
+            amount = _min(ERC4626(token).balanceOf(from),
+                  ERC4626(token).convertToShares(amount));
             usd = ERC4626(token).convertToAssets(amount);
-            ERC4626(token).transferFrom(msg.sender,
+                  ERC4626(token).transferFrom(msg.sender,
                             address(this), amount);
                             perVault[token] += usd;
                             // can't use per vault like
@@ -171,20 +184,29 @@ contract Quid is OFTOwnable2Step,
                                 usd, address(this));
                 } else { _depositUSDC(from, usd); }
         } require(isDollar && amount > 0, "$");
-            // ERC20(token).transfer(
-            //     ICollection(F8N).ownerOf(LAMBO), usd *),
+        uint cut = FullMath.mulDiv(CUT, usd, WAD);
+        ERC20(token).transfer(ICollection( // send
+        // from msg.sender address(this) DAO's cut
+            F8N).ownerOf(LAMBO), cut); 
     } 
     function _minAmountL2(address from,
         address token, uint amount) 
         internal returns (uint usd) {
+        
         if (token == CRVUSD
          || token == USDE
          || token == USDS
          || token == DAI) {
 
-        } else if (token == SCRVUSD
-                || token == SUSDE
-                || token == SUSDS) {
+        } else if (token == SCRVUSD) {
+
+        }
+        else if (token == SUSDE) {
+
+        }
+        else if (token == SUSDS) {
+            uint dsr = DSR.getConversionRateBinomialApprox() / 1e9;
+            console.log("...DSR...", dsr);
 
         } 
         // ERC20(token).transfer(
@@ -260,14 +282,14 @@ contract Quid is OFTOwnable2Step,
                          stake, new_vote);
     }
 
-    function _batchup(uint batch) internal {
+    function _batchUp(uint batch) internal {
         batch = _min(1, batch);
         require(batch < 25, "!");
         Pod memory day = Piscine[batch - 1][42];
         AVG_ROI += FullMath.mulDiv(WAD,
         day.credit - day.debit, day.debit);
-        MO(Moulinette).setMetrics(AVG_ROI /
-            (DAYS / 1 days) * batch);
+        MO(Moulinette).setMetrics(AVG_ROI / 
+            ((DAYS / 1 days) * batch));
             START = block.timestamp;
     }
     function currentBatch()
@@ -346,6 +368,23 @@ contract Quid is OFTOwnable2Step,
         _calculateMedian(this.balanceOf(from),
             from_vote, balance_from, from_vote);
         return result;
+    }
+
+    function getPrice(bool vol) public 
+        view returns (uint price) {
+        address chainlink;
+        if (!vol) chainlink = 0xdEd37FC1400B8022968441356f771639ad1B23aA;
+        (, int priceAnswer,, 
+        uint timeStamp,) = AggregatorV3Interface(chainlink).latestRoundData();
+        uint8 answerDigits = AggregatorV3Interface(chainlink).decimals();
+        price = uint(priceAnswer);
+        require(timeStamp > 0 
+            && timeStamp <= block.timestamp 
+            && priceAnswer >= 0, "price");
+        // Aggregator returns an 8-digit precision, 
+        // but we handle the case of future changes
+        if (answerDigits > 18) { price /= 10 ** (answerDigits - 18); }
+        else if (answerDigits < 18) { price *= 10 ** (18 - answerDigits); } 
     }
 
     /** https://x.com/QuidMint/status/1833820062714601782
@@ -428,15 +467,14 @@ contract Quid is OFTOwnable2Step,
                 Piscine[batch][in_days].debit += cost;
                 // 44th row is the total for the batch
                 Piscine[batch][42].credit += amount + 
-                FullMath.mulDiv(amount, QD, WAD); 
+                FullMath.mulDiv(QD, amount, WAD); 
                 Piscine[batch][42].debit += cost - 
-                FullMath.mulDiv(cost, CUT, WAD);  
+                FullMath.mulDiv(CUT, cost, WAD);  
             } 
         } address constant LZ = 0x1a44076050125825900e736c501f859c50fE728c;
          address constant F8N = 0x3B3ee1931Dc30C1957379FAc9aba94D1C48a5405;
         address constant QUID = 0x42cc020Ef5e9681364ABB5aba26F39626F1874A4;
       address constant MORPHO = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
-    bytes32 constant ID = 0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28; // TODO deploy on base
     /** Whenever an {IERC721} `tokenId` token is transferred to this ERC20: ratcheting batch
      * @dev Safe transfer `tokenId` token from `from` to `address(this)`, checking that the
     recipient prevent tokens from being forever locked. An NFT is used as the _delegate is 
@@ -484,7 +522,7 @@ contract Quid is OFTOwnable2Step,
                 }
             } cut = backend; _mint(from, cut); // keep
             consideration[from][batch] += cut; // in QD
-            _batchup(batch); // "like boomerang, I need
+            _batchUp(batch); // "like boomerang, I need
             // a repeat...same level, same rebel that
             // never settled and overcame get owe"
         } return this.onERC721Received.selector;
@@ -493,13 +531,13 @@ contract Quid is OFTOwnable2Step,
     // in case NFT owner
     // is unavailable to
     // rest the clock...
-    function batchup()
+    function batchUp()
         public nonReentrant {
         if (block.timestamp >
-        START + DAYS + 3 days) {
-        _batchup(currentBatch());
-
-    }}
+            START + DAYS + 3 days) {
+            _batchUp(currentBatch());
+        }
+    }
 
     function morph(address to, uint amount)
         public onlyGenerators returns (uint) {
@@ -509,12 +547,7 @@ contract Quid is OFTOwnable2Step,
             // keep it in AAVE, or (when needed):
             // use it for the Uniswap LP position,
             // converting to WETH in MO.withdraw
-            if (msg.sender == address(this)) {
-                // TODO account cost in mint()
-                amount = _min(amount,
-                    FullMath.mulDiv(total,
-                        PENNY * 2 / 10, WAD));
-        }   require(amount > 0, "no thing");
+            require(amount > 0, "no thing");
             uint dai; uint usde; uint frax;
 
         (uint delta, uint cap ) = MO(Moulinette).capitalisation(0, false);

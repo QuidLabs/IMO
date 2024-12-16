@@ -96,7 +96,8 @@ contract MainnetFork is Test {
             address (SDAI), */ address(DAI),
             address(USDS), address(SUSDS),
             address(CRVUSD), address(SCRVUSD),
-            0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2
+            0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2,
+            0x1247f1c237eceae0602eab1470a5061a6dd8f734ba88c7cdc5d6109fb0026b28
         );
 
         moulinette.setQuid(address(quid));
