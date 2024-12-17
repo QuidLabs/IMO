@@ -1,5 +1,5 @@
 
-## O mio babbino 
+## Forward contract 
 
 `MO` has `ID` for [selling  
  puts](https://x.com/futurenomics/status/1766173245949014373) in a concentrated  
@@ -10,31 +10,28 @@ QD works like a [bond](https://www.investopedia.com/terms/z/zero-couponbond.asp)
 to be staked, and used  
 to underwrite downside  
 
-risk for pooled WETH,  
+risk for pooled WETH;  
 has an `ID` for Morpho,  
-lending USDC on AAVE  
-
+lending USDC on AAVE.  
 Minting 800M over [3yr](https://x.com/lex_node/status/1861032489411588140):  
+
 8 chances  to `mint` QD  
 yearly X 42 days of Lent,  
 "yesterday's price is *not*  
-
 today's," 46% `AVG_ROI`  
 before counting liabilities;    
+
 over time, retained fees  
-from WET
-H deployed into  
+off WETH deployed into  
 UniV3 adds solvency, as  
-well as deductibles do...
+well as deductibles do...  
 
 Levering long while buying     
-protection (at the same time)  
+protection (simultaneously)  
 hedges against liquidations  
 
-(they're gradated, non-linear).    
 Deductible is initially 357bp;   
 APY is distributed relative to  
-
 one's ROI vs. `AVG_ROI`, by    
 absorbing liabilties upon  
 maturity, when any holder  
@@ -63,8 +60,7 @@ WITHOUT INFRINGING ANY 3RD
 
 PARTY PATENTS, COPYRIGHTS,  
 OR TRADEMARKS; WARRANTIES,  
-EXPRESS OR IMPLIED, INCLUDING,  
-
+EXPRESS OR IMPLIED, INCLUDING...  
 NOT LIMITED TO, MERCHANTABILITY  
 WARRANTIES OF FITNESS FOR A  
 PARTICULAR [PURPOSE OR TITLE](http://hackmd.io/@quid/labs).  

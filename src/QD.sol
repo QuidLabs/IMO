@@ -24,7 +24,7 @@ interface IERC721Receiver {
         bytes calldata data
     ) external returns (bytes4);
 }
-interface ISCRVusdOracle {
+interface ISCRVOracle {
     function pricePerShare(uint ts) 
     external view returns (uint);
 }
@@ -82,9 +82,9 @@ contract Quid is OFTOwnable2Step,
     address public immutable SUSDE;
     uint public COLLATERAL; // ^
     bytes32 public immutable ID;
-    ISCRVusdOracle internal CRV;
-    uint constant WAD = 1e18;
     IDSROracle internal DSR;
+    ISCRVOracle internal CRV;
+    uint constant WAD = 1e18;
     modifier onlyGenerators {
         address sender = msg.sender;
         require(sender == Moulinette ||
@@ -116,11 +116,11 @@ contract Quid is OFTOwnable2Step,
         vaults[USDS] = SUSDS;
 
         Moulinette = payable(_mo);
+        // ERC20(USDC).approve(AAVE, USDC) // TODO
         if (address(MO(Moulinette).token0()) == USDC) {
             require(address(MO(Moulinette).token1())
             == address(MO(Moulinette).WETH9()), "42");
             ERC20(USDS).approve(SUSDS, type(uint).max);
-            // ERC20(USDC).approve(AAVE, ) // TODO
             ERC20(CRVUSD).approve(SCRVUSD, type(uint).max);
             ERC20(USDE).approve(SUSDE, type(uint).max);
             // ERC20(DAI).approve(SDAI, type(uint).max);
@@ -129,9 +129,9 @@ contract Quid is OFTOwnable2Step,
             ERC20(DAI).approve(MORPHO, type(uint).max);
         } else { require(address(MO(Moulinette).token1())
               == USDC && address(MO(Moulinette).token0())
-                == address(MO(Moulinette).WETH9()), "42");
+              == address(MO(Moulinette).WETH9()), "42");
                 DSR = IDSROracle(0x2Dd2a2Fe346B5704380EfbF6Bd522042eC3E8FAe);
-                CRV = ISCRVusdOracle(0x3d8EADb739D1Ef95dd53D718e4810721837c69c1);
+                CRV = ISCRVOracle(0x3d8EADb739D1Ef95dd53D718e4810721837c69c1);
                 // https://curve.fi/#/ethereum/pools/factory-stable-ng-32/deposit
                 // SDAI can always be bought and unstaked for DAI to payoff debt
                 // in Morpho deposit. must protect SUSDE collateral at all costs
@@ -207,7 +207,6 @@ contract Quid is OFTOwnable2Step,
         else if (token == SUSDS) {
             uint dsr = DSR.getConversionRateBinomialApprox() / 1e9;
             console.log("...DSR...", dsr);
-
         } 
         // ERC20(token).transfer(
         //     ICollection(F8N).ownerOf(LAMBO), usd *),
@@ -446,14 +445,13 @@ contract Quid is OFTOwnable2Step,
     function mint(address pledge, uint amount, address token)
         public nonReentrant { uint batch = currentBatch(); // 0-24
         if (token == address(this)) { _mint(pledge, amount); // QD
-            consideration[pledge][batch] += amount; // redeem
-            require(msg.sender == Moulinette, "keine anung");
+            consideration[pledge][batch] += amount; // redeem...^
+            require(msg.sender == Moulinette, "keine authorisation");
         }   else if (block.timestamp <= START + DAYS && batch < 24) {
                 uint in_days = ((block.timestamp - START) / 1 days);
-                require(Piscine[batch][42].credit + amount <
-                        (in_days + 1) * MAX_PER_DAY, "cap");
-                // Yesterday's price is NOT today's price,
-                // and when I think I'm running low, you're
+                require(amount > WAD * 10 && 
+                    (in_days + 1) * MAX_PER_DAY > 
+                Piscine[batch][42].credit + amount, "cap"); 
                 uint price = in_days * PENNY + START_PRICE;
                 uint cost = _minAmount(pledge, token,
                     FullMath.mulDiv(price, amount, WAD));
@@ -496,9 +494,6 @@ contract Quid is OFTOwnable2Step,
         require(block.timestamp > START + DAYS, "early");
         // pay if batch raised 70% only, otherwise if all
         // refunds were paid out (this piece is gas comp.)
-        // by putting the stables into curve deposits, we
-        // send in the pools in constructor, creating for 
-        // L2 deploy. 
         if (tokenId == LAMBO && ICollection(F8N).ownerOf(
             LAMBO) == address(this)) { address winner;
             uint cut = GRIEVANCES / 2; uint count = 0;

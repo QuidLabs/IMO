@@ -27,7 +27,6 @@ contract MO is ReentrancyGuard {
     uint constant WAD = 1e18;
     uint public FEE = WAD / 28;
     uint24 constant POOL_FEE = 500;
-    uint constant BAND = 1000 * WAD;
     INonfungiblePositionManager NFPM;
     IUniswapV3Pool public POOL; 
     ISwapRouter public ROUTER;
@@ -138,7 +137,6 @@ contract MO is ReentrancyGuard {
         POOL = IUniswapV3Pool(_pool);
         ROUTER = ISwapRouter(_router);
         NFPM = INonfungiblePositionManager(_nfpm);
-        
         token0 = ERC20(POOL.token0());
         token1 = ERC20(POOL.token1());
         token0.approve(_router, 
@@ -713,7 +711,7 @@ contract MO is ReentrancyGuard {
             pledge.work.credit -= amount; // -- $ value of QD
             state.delta = block.timestamp - pledge.last.credit;
             if (pledge.work.credit > state.collat) {
-                if (pledge.work.credit > BAND / 10
+                if (pledge.work.credit > WAD * 10
                     && state.delta >= 10 minutes) {
                     // liquidation bot doesn't
                     // skip a chance to fold()
